@@ -7,8 +7,8 @@ export default function TermosDeUso() {
     <div className="min-h-screen bg-[#F5F4F2]">
       <Navbar />
 
-      <main className="pt-16">
-        <div className="container mx-auto px-6 max-w-[800px] py-16 md:py-24">
+      <main>
+        <div className="container mx-auto px-6 max-w-[800px] pt-8 pb-16 md:pt-10 md:pb-24">
           <div className="mb-8">
             <Link
               href="/"
