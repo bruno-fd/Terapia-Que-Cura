@@ -1,0 +1,557 @@
+# Prompt para o Replit — Minha Causa Justa
+
+---
+
+## Instrução geral
+
+Crie um site estático em HTML, CSS e JavaScript puro (sem frameworks) chamado **Minha Causa Justa**. O site é uma plataforma de diretório de advogados para o público popular brasileiro. O design deve ser simples, acessível, limpo e não intimidador. Nada de visual de escritório de advocacia tradicional.
+
+O site tem três páginas:
+1. `index.html` — Home
+2. `advogados.html` — Lista de advogados
+3. `cadastro.html` — Cadastro de advogados
+
+Use um arquivo `style.css` único e compartilhado entre as três páginas. Use um arquivo `main.js` para interações simples (menu mobile, filtros, accordion do FAQ).
+
+---
+
+## Design System
+
+### Fontes
+
+Importe do Google Fonts:
+```html
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+```
+
+Aplique globalmente:
+```css
+font-family: 'Inter', sans-serif;
+```
+
+Escala tipográfica:
+```css
+--font-size-xs:  12px;
+--font-size-sm:  14px;
+--font-size-md:  16px;
+--font-size-lg:  18px;
+--font-size-xl:  24px;
+--font-size-2xl: 32px;
+--font-size-3xl: 40px;
+
+--font-weight-regular: 400;
+--font-weight-medium:  500;
+--font-weight-bold:    700;
+
+--line-height-tight: 1.2;
+--line-height-base:  1.6;
+--line-height-loose: 1.8;
+```
+
+### Paleta de cores
+
+```css
+:root {
+  /* Primária — Azul popular */
+  --color-primary-900: #0D2B52;
+  --color-primary-800: #1A3F73;
+  --color-primary-700: #1E4D8C;
+  --color-primary-600: #2260AA;
+  --color-primary-500: #2B75CC;
+  --color-primary-400: #4A8FD9;
+  --color-primary-100: #D6E8F7;
+  --color-primary-50:  #EEF5FC;
+
+  /* Acento — Laranja empoderamento */
+  --color-accent-600: #C45200;
+  --color-accent-500: #E86100;
+  --color-accent-400: #FF7A1A;
+  --color-accent-100: #FDE8D5;
+
+  /* Neutros */
+  --color-neutral-900: #1A1A1A;
+  --color-neutral-700: #3D3D3D;
+  --color-neutral-500: #717171;
+  --color-neutral-300: #C4C4C4;
+  --color-neutral-100: #F5F4F2;
+  --color-neutral-0:   #FFFFFF;
+
+  /* Semânticas */
+  --color-success: #1E7D4F;
+  --color-warning: #B97D00;
+  --color-error:   #C0392B;
+
+  /* Espaçamento */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   24px;
+  --space-6:   32px;
+  --space-7:   48px;
+  --space-8:   64px;
+  --space-9:   96px;
+  --space-10: 128px;
+
+  /* Bordas */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+  --border-color: #C4C4C4;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+```
+
+### Regras de uso obrigatórias
+
+- Laranja (`--color-accent-500`) APENAS em botões primários e destaques pontuais. Nunca como fundo de seção.
+- Azul escuro (`--color-primary-800`) APENAS no hero e em textos de peso máximo.
+- Fundo da página: sempre `--color-neutral-100` (off-white quente). Nunca branco puro.
+- Branco puro (`--color-neutral-0`) reservado para cards e superfícies elevadas.
+- Texto principal: `--color-neutral-900`. Texto secundário: `--color-neutral-700`. Apoio: `--color-neutral-500`. Nunca `#000000`.
+- Nunca mais de duas cores em um mesmo componente.
+
+### Componentes
+
+**Botão primário:**
+```css
+.btn-primary {
+  background: var(--color-accent-500);
+  color: #FFFFFF;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  padding: 14px 28px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--color-accent-600); }
+```
+
+**Botão secundário:**
+```css
+.btn-secondary {
+  background: transparent;
+  color: var(--color-primary-500);
+  border: 1.5px solid var(--color-primary-500);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  padding: 13px 27px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-secondary:hover { background: var(--color-primary-50); }
+```
+
+**Card de advogado:**
+```css
+.card-advogado {
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+.card-advogado:hover { box-shadow: var(--shadow-md); }
+```
+
+**Badge de especialidade:**
+```css
+.badge {
+  background: var(--color-primary-100);
+  color: var(--color-primary-800);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+```
+
+**Selo OAB verificado:**
+```css
+.selo-oab {
+  background: var(--color-success);
+  color: #FFFFFF;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+```
+
+**Input e Select:**
+```css
+.input, select {
+  background: var(--color-neutral-0);
+  border: 1.5px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: var(--font-size-md);
+  color: var(--color-neutral-900);
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.input:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+}
+```
+
+**Fundo de seções:**
+```css
+.section-white  { background: var(--color-neutral-100); }
+.section-blue   { background: var(--color-primary-50); }
+.section-hero   { background: var(--color-primary-800); color: #FFFFFF; }
+```
+
+---
+
+## Página 1 — index.html (Home)
+
+### NAV
+- Logo "Minha Causa Justa" à esquerda em `--color-primary-800`, bold.
+- Links: Encontrar Advogado · Áreas de Atuação · Blog · Sou Advogado
+- Botão "Sou Advogado" com estilo `.btn-secondary` à direita.
+- Menu hamburguer em mobile.
+- Fundo branco, sombra suave ao rolar.
+
+### Seção 1 — Hero
+Fundo `--color-primary-800`. Texto branco.
+
+**Título (font-size-3xl, bold):**
+Você tem direitos.
+A gente te ajuda a encontrar quem pode garantir eles.
+
+**Texto (font-size-lg, line-height-loose):**
+Tem horas que a vida bate de frente com a gente. O INSS nega um benefício que você precisa, o plano de saúde recusa um tratamento, o patrão não paga o que deve, a pensão não chega. E aí vem aquela sensação de que o sistema foi feito pra te cansar — pra você desistir antes de lutar.
+
+Mas a verdade é que você provavelmente tem direito a muito mais do que imagina. O que falta, na maioria das vezes, não é sorte. É saber por onde começar e ter ao seu lado alguém que entende do assunto.
+
+A Minha Causa Justa existe pra isso: mostrar que existe um caminho, e conectar você com advogados que trabalham com situações como a sua todo dia.
+
+Você não precisa entender de lei. Precisa dar o primeiro passo.
+
+**Dois selects lado a lado + botão primário laranja:**
+- Select 1: "Qual é o seu problema?" com opções listadas abaixo
+- Select 2: "Seu estado" com todos os estados brasileiros
+- Botão: "Encontrar advogado" (`.btn-primary`)
+
+Opções do select 1:
+- INSS — benefício negado ou cortado
+- Auxílio Doença
+- Aposentadoria
+- BPC/LOAS
+- Plano de saúde — reajuste abusivo ou negativa de cobertura
+- Pensão alimentícia
+- Pensão por morte
+- Inventário e herança
+- Demissão e direitos trabalhistas
+- Outro
+
+### Seção 2 — Problemas que a gente resolve
+Fundo `--color-primary-50`.
+
+**Título:** Qual situação se parece com a sua?
+
+Grid de 4 colunas (desktop) / 2 colunas (tablet) / 1 coluna (mobile).
+Cada card tem: emoji grande, título em bold, subtítulo em neutral-700.
+Cards são clicáveis e levam para advogados.html com o filtro pré-selecionado.
+
+Conteúdo dos cards:
+1. 🏥 INSS negou meu benefício — Seu pedido foi recusado ou cortado sem explicação.
+2. 🤕 Preciso do Auxílio Doença — Está afastado do trabalho e o INSS não reconhece sua situação.
+3. 👴 Quero me aposentar — Não sabe se já tem direito ou como dar entrada.
+4. ♿ BPC/LOAS — benefício para quem precisa — Pessoa com deficiência ou idoso sem renda que foi negado.
+5. 💊 Plano de saúde aumentou absurdamente — Reajuste abusivo ou negativa de cobertura indevida.
+6. 👶 Pensão alimentícia — Precisa cobrar ou revisar o valor que o pai ou a mãe paga.
+7. ⚰️ Pensão por morte — Perdeu alguém e não sabe como garantir o benefício.
+8. 📋 Inventário e herança — Familiar faleceu e a família não sabe como dividir os bens.
+
+Link abaixo: "→ Ver todas as áreas de atuação"
+
+### Seção 3 — Como funciona
+Fundo `--color-neutral-100`.
+
+**Título:** Simples assim
+
+**Texto intro:**
+Nunca contratou um advogado? Não tem problema. Aqui não tem formulário complicado, não tem compromisso e ninguém vai te ligar tentando vender nada. É você no seu ritmo, entendendo as opções e decidindo com calma.
+
+Três passos em linha horizontal (desktop) / empilhados (mobile).
+Cada passo tem: número grande em `--color-accent-500`, título em bold, descrição em neutral-700.
+
+Passo 1 — Conta pra gente o que está acontecendo
+Escolha o problema que mais se parece com a sua situação.
+
+Passo 2 — Veja advogados disponíveis
+Perfis com especialidade, localização e informações de contato.
+
+Passo 3 — Entre em contato diretamente
+Você fala com o advogado pelo canal que preferir. Sem intermediários.
+
+### Seção 4 — Por que a Minha Causa Justa?
+Fundo `--color-primary-50`.
+
+**Título:** Feito para quem precisa de resposta, não de complicação
+
+**Texto intro:**
+A maioria das pessoas que precisam de um advogado nunca teve um. Não sabe por onde começar, não sabe a quem recorrer, não sabe se existe alguém que resolva exatamente o que ela está passando. A Minha Causa Justa foi pensada pra esse momento — quando você precisa encontrar a pessoa certa, sem perder tempo nem cair em mãos erradas.
+
+Três itens em grid. Cada item tem ícone simples, título em bold, texto em neutral-700.
+
+Item 1 — Direto ao ponto
+Sem processos complicados para encontrar quem você precisa. Você descreve sua situação, vê os perfis disponíveis e entra em contato. Rápido e sem rodeios.
+
+Item 2 — Advogados de verdade, para situações reais
+Profissionais inscritos na OAB que trabalham com as causas do dia a dia — não com grandes empresas.
+
+Item 3 — Você no controle
+Ninguém vai te ligar para vender nada. Você busca, você escolhe, você decide.
+
+### Seção 5 — Blog
+Fundo `--color-neutral-100`.
+
+**Título:** Entenda seus direitos antes de qualquer coisa
+
+**Texto:**
+Escrevemos sobre direitos do jeito que a gente gostaria de ter aprendido: sem complicação, sem letra miúda, sem precisar ter feito faculdade de direito pra entender.
+
+Três cards em grid. Cada card tem: título do post em bold, link "→ Ler mais" em `--color-primary-500`.
+
+Card 1: INSS cortou seu benefício? Veja o que fazer em até 30 dias
+Card 2: Plano de saúde negou exame ou cirurgia? Isso pode ser ilegal
+Card 3: Pensão por morte: quem tem direito e como pedir
+
+Link abaixo: "→ Ver todos os artigos"
+
+### Seção 6 — CTA principal
+Fundo `--color-primary-800`. Texto branco. Centralizado.
+
+**Título (font-size-2xl):** Não deixa o seu direito passar em branco.
+**Texto:** Muita gente desiste porque não sabe por onde começar. A gente mostra o caminho.
+**Botão:** "Encontrar um advogado agora" (`.btn-primary`)
+
+### Seção 7 — CTA advogados
+Fundo `--color-neutral-100`. Centralizado.
+
+**Título:** Você é advogado?
+**Texto:** Cadastre seu perfil e apareça para pessoas que estão exatamente com o problema que você resolve.
+**Botão:** "Quero cadastrar meu perfil" (`.btn-secondary`, leva para cadastro.html)
+
+### Rodapé
+Fundo `--color-primary-900`. Texto branco.
+
+4 colunas (desktop) / 2 colunas (tablet) / 1 coluna (mobile):
+- Institucional: Quem somos · Termos de uso · Política de privacidade
+- Para quem precisa: Encontrar advogado · Áreas de atuação · Blog
+- Para advogados: Cadastre seu perfil · Dúvidas frequentes · Fale conosco
+- Contato: contato@minhacausajusta.com.br · Instagram · Facebook · TikTok
+
+Linha final: "© 2025 Minha Causa Justa. Todos os direitos reservados."
+Texto menor abaixo: "Este site tem caráter informativo e não presta serviços jurídicos. O contato com advogados é feito diretamente entre as partes."
+
+---
+
+## Página 2 — advogados.html (Lista de advogados)
+
+Mesma NAV e rodapé da Home.
+
+### Seção 1 — Hero com filtros
+Fundo `--color-primary-800`. Texto branco.
+
+**Título:** Encontrar Advogado
+**Subtítulo:** Use os filtros abaixo para encontrar um profissional na sua área e no seu estado.
+
+Dois selects lado a lado + botão:
+- Select 1: "Qual é o seu problema?" (mesmas opções da Home)
+- Select 2: "Seu estado" (todos os estados brasileiros)
+- Botão: "Buscar" (`.btn-primary`)
+
+### Seção 2 — Lista de advogados
+Fundo `--color-neutral-100`.
+
+Gere 6 cards fictícios de advogados para demonstração. Cada card `.card-advogado` deve ter:
+
+- **Foto:** círculo de 80px com inicial do nome em `--color-primary-100` e texto `--color-primary-800` (placeholder enquanto não há foto real)
+- **Nome** em bold + selo `.selo-oab` com "✓ OAB/[UF] [número]"
+- **Área principal** e área secundária em `--color-neutral-700`, font-size-sm
+- **Atende:** estados em `--color-neutral-500`, font-size-sm
+- **Especialidades:** 3 a 4 badges `.badge`
+- **Sobre mim:** texto curto em `--color-neutral-700`, máximo 2 linhas, font-size-sm
+- **Botão:** "Ver contato" (`.btn-secondary`, abre modal simples com telefone/WhatsApp fictício)
+
+Layout: 1 coluna em mobile, 2 colunas em desktop. Cards com espaçamento generoso.
+
+### Seção 3 — CTA advogados
+Fundo `--color-primary-50`. Centralizado.
+
+**Título:** Você é advogado e não está aqui?
+**Texto:** Cadastre seu perfil e apareça para pessoas que precisam exatamente do que você faz.
+**Botão:** "Quero cadastrar meu perfil" (`.btn-primary`, leva para cadastro.html)
+
+---
+
+## Página 3 — cadastro.html (Cadastro de advogados)
+
+Mesma NAV e rodapé da Home.
+
+### Seção 1 — Hero
+Fundo `--color-primary-800`. Texto branco.
+
+**Título (font-size-2xl):**
+Pessoas com problemas jurídicos estão procurando um advogado agora.
+Seu perfil está aqui?
+
+**Texto:**
+Todo dia, brasileiros pesquisam na internet o que fazer quando o INSS nega um benefício, quando o plano de saúde recusa uma cirurgia, quando a pensão não chega. Eles estão com um problema real, já decidiram que precisam de ajuda — e estão procurando alguém de confiança para falar.
+
+A Minha Causa Justa é o lugar onde eles chegam. E onde você pode estar.
+
+**Botão:** "Quero cadastrar meu perfil" (`.btn-primary`, ancora para seção de planos)
+
+### Seção 2 — Planos
+Fundo `--color-neutral-100`.
+
+**Título:** Conheça os planos
+
+Dois cards lado a lado (desktop) / empilhados (mobile).
+
+**Card Plano Mensal:**
+- Título: Plano Mensal
+- Preço: R$ 49,90/mês em font-size-2xl, bold, `--color-primary-800`
+- Subtítulo: "Cobrança mensal recorrente no cartão. Cancele quando quiser."
+- Lista de benefícios com ✓ em `--color-success`:
+  - Perfil completo na plataforma
+  - Visível para todos os usuários da sua área e estado
+  - Painel com visualizações do seu perfil
+  - Atualização de dados a qualquer momento
+- Botão: "Cadastrar agora" (`.btn-secondary`)
+
+**Card Plano Anual** (destaque — borda `--color-accent-500` 2px):
+- Badge topo: "Mais vantajoso" em `.badge` com fundo `--color-accent-100` e texto `--color-accent-600`
+- Título: Plano Anual
+- Preço: R$ 39,90/mês em font-size-2xl, bold, `--color-primary-800`
+- Subtítulo: "Cobrado anualmente. Equivale a 2 meses grátis."
+- Lista de benefícios com ✓ em `--color-success`:
+  - Tudo do plano mensal
+  - Destaque maior nos resultados de busca
+  - Selo de perfil verificado
+- Botão: "Cadastrar agora" (`.btn-primary`)
+
+Texto abaixo dos cards (font-size-sm, neutral-500):
+"*Pagamento via cartão de crédito. Cancelamento disponível a qualquer momento. Consulte os termos de uso para mais detalhes."
+
+### Seção 3 — O que você recebe
+Fundo `--color-primary-50`.
+
+**Título:** O que muda quando seu perfil está na plataforma
+
+Grid de 2x2 (desktop) / 1 coluna (mobile). Cada item tem ícone, título bold, texto neutral-700.
+
+Item 1 — Visibilidade para quem já quer contratar
+O usuário que chega à Minha Causa Justa já identificou que tem um problema jurídico. Ele não está navegando por acaso — está procurando um profissional. Você aparece no momento certo.
+
+Item 2 — Perfil completo, do seu jeito
+Foto, especialidades, áreas de atuação, estados atendidos, descrição do seu trabalho e forma de contato. Tudo o que o cliente precisa saber antes de falar com você.
+
+Item 3 — Números reais no seu painel
+Veja quantas pessoas visualizaram seu perfil, em quais áreas e em qual período. Sem achismo — você acompanha o retorno do seu investimento.
+
+Item 4 — Sem intermediário, sem comissão
+O contato é direto entre você e o cliente. A Minha Causa Justa não fica no meio da negociação, não cobra por contato e não leva percentual de honorários.
+
+### Seção 4 — Para quem é esse cadastro
+Fundo `--color-neutral-100`.
+
+**Título:** Esse perfil foi pensado para você se...
+
+Lista com ícone de check em `--color-success`:
+- Você atua em causas populares: INSS, trabalhista, família, previdência, consumidor ou inventários
+- Está construindo sua carteira de clientes e precisa de visibilidade
+- Atende pessoas físicas, não grandes empresas
+- Quer aparecer para clientes na sua cidade ou estado
+- Está inscrito na OAB e atua de forma regular
+
+**Texto abaixo da lista:**
+Não importa se você formou em faculdade pública ou particular, se tem cinco anos de carreira ou quinze, se trabalha sozinho ou em parceria com um colega. O que importa é que você atende gente real, com problemas reais — e quer que essas pessoas te encontrem.
+
+### Seção 5 — FAQ
+Fundo `--color-primary-50`.
+
+**Título:** Dúvidas frequentes
+
+Accordion simples: clica na pergunta, abre a resposta. Usa JavaScript puro.
+
+Perguntas e respostas:
+
+P: Como funciona o cadastro?
+R: Você preenche seu perfil com foto, especialidades, área de atuação, estados onde atende e suas informações de contato. Depois de confirmado o pagamento, seu perfil entra no ar em até 24 horas.
+
+P: Quantos clientes vou receber?
+R: Não trabalhamos com promessa de número de contatos — nenhuma plataforma honesta faz isso. O que garantimos é que seu perfil ficará visível para todos os usuários que buscarem advogados na sua área e estado. O volume depende do tráfego da plataforma, que cresce a cada mês.
+
+P: Preciso fechar contrato com a plataforma?
+R: Não. A assinatura é mensal e sem fidelidade. Você cancela quando quiser, sem burocracia e sem multa.
+
+P: O contato com o cliente passa pela plataforma?
+R: Não. O usuário vê suas informações de contato diretamente no perfil e fala com você pelo canal que preferir — WhatsApp, telefone ou e-mail. A plataforma não intermedia nem acompanha essa conversa.
+
+P: A plataforma cobra alguma comissão sobre os honorários?
+R: Não. Você paga apenas a mensalidade do perfil. O que você negocia e recebe dos seus clientes é inteiramente seu.
+
+P: Posso atualizar meu perfil depois de publicado?
+R: Sim, a qualquer momento. Você tem acesso ao painel para editar foto, descrição, especialidades e dados de contato sem custo adicional.
+
+P: Como cancelo minha assinatura?
+R: Pelo próprio painel, em qualquer momento. O perfil fica no ar até o fim do período já pago e é desativado automaticamente após o cancelamento.
+
+### Seção 6 — Dicas de perfil
+Fundo `--color-neutral-100`.
+
+**Título:** Um bom perfil faz diferença
+
+Grid de 4 itens (desktop) / 2 colunas (mobile). Cada item tem ícone, título bold, texto neutral-700.
+
+Dica 1 — Foto profissional
+Não precisa ser de estúdio, mas precisa ser nítida, com boa iluminação e fundo neutro. Perfil com foto recebe muito mais atenção do que perfil sem foto.
+
+Dica 2 — Seja específico nas áreas de atuação
+"Advogado trabalhista especializado em demissão sem justa causa e rescisão indireta" comunica muito mais do que "direito do trabalho". Quanto mais específico, mais o cliente se identifica.
+
+Dica 3 — Escreva como você fala
+O usuário da plataforma não é advogado. No campo "sobre mim", use linguagem simples. Explique o que você resolve, não o que você estudou.
+
+Dica 4 — Informe como prefere ser contactado
+WhatsApp converte mais do que e-mail para esse público. Se você atende pelo WhatsApp, deixe isso claro no perfil.
+
+### Seção 7 — CTA final
+Fundo `--color-primary-800`. Texto branco. Centralizado.
+
+**Título:** Sua próxima cliente pode estar procurando um advogado agora mesmo.
+**Texto:** O cadastro leva menos de 10 minutos. Seu perfil entra no ar em até 24 horas.
+**Botão:** "Cadastrar meu perfil agora" (`.btn-primary`)
+
+---
+
+## Instruções técnicas gerais
+
+- Site responsivo. Breakpoints: mobile < 768px, tablet 768–1024px, desktop > 1024px.
+- Container máximo de 1200px centralizado com padding lateral de 24px.
+- Todas as transições em 0.2s ease.
+- Scroll suave entre seções com `scroll-behavior: smooth`.
+- Menu mobile com hamburguer funcional em JavaScript puro.
+- FAQ accordion funcional em JavaScript puro.
+- Modal simples de contato na página de advogados em JavaScript puro.
+- Não usar nenhuma biblioteca externa além da fonte Inter do Google Fonts.
+- Código limpo, comentado por seção.
+- Favicon simples: quadrado azul `--color-primary-800` com letra "J" branca.

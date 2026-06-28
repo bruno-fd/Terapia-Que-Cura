@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Minha Causa Justa"
+version = "1.0.0"
+id = "artifacts/minha-causa-justa"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21546
+
+[services.development]
+run = "pnpm --filter @workspace/minha-causa-justa run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/minha-causa-justa", "run", "build" ]
+publicDir = "artifacts/minha-causa-justa/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21546"
+BASE_PATH = "/"
