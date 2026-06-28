@@ -10,7 +10,7 @@ export function Footer() {
           <div>
             <h3 className="font-bold text-lg mb-4 text-primary-100">Institucional</h3>
             <ul className="space-y-3">
-              <li><Link href="/" className="text-sm text-neutral-300 hover:text-white transition-colors">Quem somos</Link></li>
+              <li><Link href="/quem-somos" className="text-sm text-neutral-300 hover:text-white transition-colors">Quem somos</Link></li>
               <li><Link href="/termos-de-uso" className="text-sm text-neutral-300 hover:text-white transition-colors">Termos de uso</Link></li>
               <li><Link href="/politica-de-privacidade" className="text-sm text-neutral-300 hover:text-white transition-colors">Política de privacidade</Link></li>
             </ul>

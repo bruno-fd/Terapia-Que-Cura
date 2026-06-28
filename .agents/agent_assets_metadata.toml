@@ -36,3 +36,9 @@ id = "_d-m4-TbIqSlEcqC7KPgA"
 uri = "file://artifacts/minha-causa-justa/src/assets/advogada-perfil.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "is6wi4wsrx7VoDXYRV_le"
+uri = "file://attached_assets/generated_images/quem-somos-foto.png"
+type = "image"
+title = "quem-somos-friendly-portrait"
