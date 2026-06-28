@@ -19,7 +19,7 @@ export default function Cadastro() {
     {
       icon: TrendingUp,
       title: "Visibilidade para quem já quer contratar",
-      desc: "O usuário que chega à Minha Causa Justa já identificou que tem um problema jurídico. Ele não está navegando por acaso — está procurando um profissional. Você aparece no momento certo."
+      desc: "O usuário que chega à Minha Causa Justa já identificou que tem um problema jurídico. Ele não está navegando por acaso, está procurando um profissional. Você aparece no momento certo."
     },
     {
       icon: UserCircle,
@@ -29,7 +29,7 @@ export default function Cadastro() {
     {
       icon: BarChart3,
       title: "Números reais no seu painel",
-      desc: "Veja quantas pessoas visualizaram seu perfil, em quais áreas e em qual período. Sem achismo — você acompanha o retorno do seu investimento."
+      desc: "Veja quantas pessoas visualizaram seu perfil, em quais áreas e em qual período. Sem achismo, você acompanha o retorno do seu investimento."
     },
     {
       icon: Handshake,
@@ -53,7 +53,7 @@ export default function Cadastro() {
     },
     {
       q: "Quantos clientes vou receber?",
-      a: "Não trabalhamos com promessa de número de contatos — nenhuma plataforma honesta faz isso. O que garantimos é que seu perfil ficará visível para todos os usuários que buscarem advogados na sua área e estado. O volume depende do tráfego da plataforma, que cresce a cada mês."
+      a: "Não trabalhamos com promessa de número de contatos. Nenhuma plataforma honesta faz isso. O que garantimos é que seu perfil ficará visível para todos os usuários que buscarem advogados na sua área e estado. O volume depende do tráfego da plataforma, que cresce a cada mês."
     },
     {
       q: "Preciso fechar contrato com a plataforma?",
@@ -61,7 +61,7 @@ export default function Cadastro() {
     },
     {
       q: "O contato com o cliente passa pela plataforma?",
-      a: "Não. O usuário vê suas informações de contato diretamente no perfil e fala com você pelo canal que preferir — WhatsApp, telefone ou e-mail. A plataforma não intermedia nem acompanha essa conversa."
+      a: "Não. O usuário vê suas informações de contato diretamente no perfil e fala com você pelo canal que preferir: WhatsApp, telefone ou e-mail. A plataforma não intermedia nem acompanha essa conversa."
     },
     {
       q: "A plataforma cobra alguma comissão sobre os honorários?",
@@ -95,7 +95,7 @@ export default function Cadastro() {
     },
     {
       icon: Phone,
-      title: "Informe como prefere ser contactado",
+      title: "Informe como prefere ser contatado",
       desc: "WhatsApp converte mais do que e-mail para esse público. Se você atende pelo WhatsApp, deixe isso claro no perfil."
     }
   ];
@@ -120,7 +120,7 @@ export default function Cadastro() {
 
                 <div className="space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
                   <p>
-                    Todo dia, brasileiros pesquisam na internet o que fazer quando o INSS nega um benefício, quando o plano de saúde recusa uma cirurgia, quando a pensão não chega. Eles estão com um problema real, já decidiram que precisam de ajuda — e estão procurando alguém de confiança para falar.
+                    Todo dia, brasileiros pesquisam na internet o que fazer quando o INSS nega um benefício, quando o plano de saúde recusa uma cirurgia, quando a pensão não chega. Eles estão com um problema real, já decidiram que precisam de ajuda e estão procurando alguém de confiança para falar.
                   </p>
                   <p className="font-semibold text-primary-800 text-xl pt-2">
                     A Minha Causa Justa é o lugar onde eles chegam. E onde você pode estar.
@@ -304,7 +304,7 @@ export default function Cadastro() {
                 </ul>
 
                 <p className="text-neutral-600 leading-relaxed pt-6 border-t border-neutral-200">
-                  Não importa se você formou em faculdade pública ou particular, se tem cinco anos de carreira ou quinze, se trabalha sozinho ou em parceria com um colega. O que importa é que você atende gente real, com problemas reais — e quer que essas pessoas te encontrem.
+                  Não importa se você formou em faculdade pública ou particular, se tem cinco anos de carreira ou quinze, se trabalha sozinho ou em parceria com um colega. O que importa é que você atende gente real, com problemas reais e quer que essas pessoas te encontrem.
                 </p>
               </div>
             </div>

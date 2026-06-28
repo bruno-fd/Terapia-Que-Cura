@@ -47,11 +47,11 @@ export default function Home() {
   ];
 
   const problemas = [
-    "INSS — benefício negado ou cortado",
+    "INSS: benefício negado ou cortado",
     "Auxílio Doença",
     "Aposentadoria",
     "BPC/LOAS",
-    "Plano de saúde — reajuste abusivo ou negativa de cobertura",
+    "Plano de saúde: reajuste abusivo ou negativa de cobertura",
     "Pensão alimentícia",
     "Pensão por morte",
     "Inventário e herança",
@@ -71,18 +71,18 @@ export default function Home() {
               <div className="w-full lg:w-1/2">
                 <h1 className="text-4xl md:text-5xl lg:text-[56px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
                   Você tem direitos.<br />
-                  <span className="text-primary-500">A gente te ajuda a encontrar quem pode garantir eles.</span>
+                  <span className="text-primary-500">A gente te ajuda a encontrar quem pode garanti-los.</span>
                 </h1>
                 
                 <div className="space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
                   <p>
-                    Tem horas que a vida bate de frente com a gente. O INSS nega um benefício que você precisa, o plano de saúde recusa um tratamento, o patrão não paga o que deve, a pensão não chega. E aí vem aquela sensação de que o sistema foi feito pra te cansar — pra você desistir antes de lutar.
+                    Tem horas que a vida bate de frente com a gente. O INSS nega um benefício que você precisa, o plano de saúde recusa um tratamento, o patrão não paga o que deve, a pensão não chega. E aí vem aquela sensação de que o sistema foi feito para te cansar, para você desistir antes de lutar.
                   </p>
                   <p>
                     Mas a verdade é que você provavelmente tem direito a muito mais do que imagina. O que falta, na maioria das vezes, não é sorte. É saber por onde começar e ter ao seu lado alguém que entende do assunto.
                   </p>
                   <p>
-                    A Minha Causa Justa existe pra isso: mostrar que existe um caminho, e conectar você com advogados que trabalham com situações como a sua todo dia.
+                    A Minha Causa Justa existe para isso: mostrar que existe um caminho, e conectar você com advogados que trabalham com situações como a sua todo dia.
                   </p>
                   <p className="font-semibold text-primary-800 text-xl pt-2">
                     Você não precisa entender de lei. Precisa dar o primeiro passo.
@@ -151,11 +151,11 @@ export default function Home() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { icon: HeartCrack, title: "INSS negou meu benefício", desc: "Seu pedido foi recusado ou cortado sem explicação.", filter: "INSS — benefício negado ou cortado", bg: "bg-blue-50" },
+                { icon: HeartCrack, title: "INSS negou meu benefício", desc: "Seu pedido foi recusado ou cortado sem explicação.", filter: "INSS: benefício negado ou cortado", bg: "bg-blue-50" },
                 { icon: Activity, title: "Preciso do Auxílio Doença", desc: "Está afastado do trabalho e o INSS não reconhece sua situação.", filter: "Auxílio Doença", bg: "bg-indigo-50" },
                 { icon: BriefcaseBusiness, title: "Quero me aposentar", desc: "Não sabe se já tem direito ou como dar entrada.", filter: "Aposentadoria", bg: "bg-cyan-50" },
-                { icon: Accessibility, title: "BPC/LOAS — benefício para quem precisa", desc: "Pessoa com deficiência ou idoso sem renda que foi negado.", filter: "BPC/LOAS", bg: "bg-teal-50" },
-                { icon: TrendingUp, title: "Plano de saúde aumentou absurdamente", desc: "Reajuste abusivo ou negativa de cobertura indevida.", filter: "Plano de saúde — reajuste abusivo ou negativa de cobertura", bg: "bg-orange-50" },
+                { icon: Accessibility, title: "BPC/LOAS: benefício para quem precisa", desc: "Pessoa com deficiência ou idoso sem renda que foi negado.", filter: "BPC/LOAS", bg: "bg-teal-50" },
+                { icon: TrendingUp, title: "Plano de saúde aumentou absurdamente", desc: "Reajuste abusivo ou negativa de cobertura indevida.", filter: "Plano de saúde: reajuste abusivo ou negativa de cobertura", bg: "bg-orange-50" },
                 { icon: Baby, title: "Pensão alimentícia", desc: "Precisa cobrar ou revisar o valor que o pai ou a mãe paga.", filter: "Pensão alimentícia", bg: "bg-pink-50" },
                 { icon: Flower2, title: "Pensão por morte", desc: "Perdeu alguém e não sabe como garantir o benefício.", filter: "Pensão por morte", bg: "bg-purple-50" },
                 { icon: FileText, title: "Inventário e herança", desc: "Familiar faleceu e a família não sabe como dividir os bens.", filter: "Inventário e herança", bg: "bg-emerald-50" }
@@ -211,7 +211,7 @@ export default function Home() {
 
                 <div className="space-y-8">
                   {[
-                    { step: "1", title: "Conta pra gente o que está acontecendo", desc: "Escolha o problema que mais se parece com a sua situação." },
+                    { step: "1", title: "Conta para a gente o que está acontecendo", desc: "Escolha o problema que mais se parece com a sua situação." },
                     { step: "2", title: "Veja advogados disponíveis", desc: "Perfis com especialidade, localização e informações de contato." },
                     { step: "3", title: "Entre em contato diretamente", desc: "Você fala com o advogado pelo canal que preferir. Sem intermediários." }
                   ].map((item, idx) => (
@@ -238,7 +238,7 @@ export default function Home() {
               <div className="w-full lg:w-1/2 z-10">
                 <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Feito para quem precisa de resposta, não de complicação</h2>
                 <p className="text-lg text-neutral-600 leading-relaxed mb-10">
-                  A maioria das pessoas que precisam de um advogado nunca teve um. Não sabe por onde começar, não sabe a quem recorrer, não sabe se existe alguém que resolva exatamente o que ela está passando. A Minha Causa Justa foi pensada pra esse momento — quando você precisa encontrar a pessoa certa, sem perder tempo nem cair em mãos erradas.
+                  A maioria das pessoas que precisam de um advogado nunca teve um. Não sabe por onde começar, não sabe a quem recorrer, não sabe se existe alguém que resolva exatamente o que ela está passando. A Minha Causa Justa foi pensada para esse momento, quando você precisa encontrar a pessoa certa, sem perder tempo nem cair em mãos erradas.
                 </p>
                 
                 <div className="space-y-8">
@@ -258,7 +258,7 @@ export default function Home() {
                     </div>
                     <div>
                       <h3 className="font-bold text-lg text-primary-900 mb-2">Advogados de verdade, para situações reais</h3>
-                      <p className="text-neutral-600 leading-relaxed">Profissionais inscritos na OAB que trabalham com as causas do dia a dia — não com grandes empresas.</p>
+                      <p className="text-neutral-600 leading-relaxed">Profissionais inscritos na OAB que trabalham com as causas do dia a dia, não com grandes empresas.</p>
                     </div>
                   </div>
                   
@@ -297,7 +297,7 @@ export default function Home() {
               <div className="max-w-2xl">
                 <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Entenda seus direitos antes de qualquer coisa</h2>
                 <p className="text-lg text-neutral-600 leading-relaxed">
-                  Escrevemos sobre direitos do jeito que a gente gostaria de ter aprendido: sem complicação, sem letra miúda, sem precisar ter feito faculdade de direito pra entender.
+                  Escrevemos sobre direitos do jeito que a gente gostaria de ter aprendido: sem complicação, sem letra miúda, sem precisar ter feito faculdade de direito para entender.
                 </p>
               </div>
               <Button asChild variant="outline" className="rounded-full shrink-0 hidden md:inline-flex h-12 px-8 text-base border-primary-200 text-primary-700 hover:bg-primary-50">

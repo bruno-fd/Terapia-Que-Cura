@@ -130,11 +130,11 @@ export default function Advogados() {
         l.secondaryArea.toLowerCase().includes(prob.toLowerCase().split(' ')[0]) ||
         l.badges.some(b => prob.toLowerCase().includes(b.toLowerCase())) ||
         prob.toLowerCase().includes(l.primaryArea.toLowerCase()) ||
-        (prob === "INSS — benefício negado ou cortado" && l.badges.includes("INSS")) ||
+        (prob === "INSS: benefício negado ou cortado" && l.badges.includes("INSS")) ||
         (prob === "Auxílio Doença" && l.badges.includes("Auxílio Doença")) ||
         (prob === "Aposentadoria" && l.badges.includes("Aposentadoria")) ||
         (prob === "BPC/LOAS" && l.badges.includes("BPC/LOAS")) ||
-        (prob === "Plano de saúde — reajuste abusivo ou negativa de cobertura" && l.badges.includes("Plano de Saúde")) ||
+        (prob === "Plano de saúde: reajuste abusivo ou negativa de cobertura" && l.badges.includes("Plano de Saúde")) ||
         (prob === "Pensão alimentícia" && l.badges.includes("Pensão Alimentícia")) ||
         (prob === "Pensão por morte" && l.badges.includes("Pensão por Morte")) ||
         (prob === "Inventário e herança" && l.badges.includes("Inventário")) ||
@@ -167,11 +167,11 @@ export default function Advogados() {
   ];
 
   const problemas = [
-    "INSS — benefício negado ou cortado",
+    "INSS: benefício negado ou cortado",
     "Auxílio Doença",
     "Aposentadoria",
     "BPC/LOAS",
-    "Plano de saúde — reajuste abusivo ou negativa de cobertura",
+    "Plano de saúde: reajuste abusivo ou negativa de cobertura",
     "Pensão alimentícia",
     "Pensão por morte",
     "Inventário e herança",
