@@ -23,9 +23,6 @@ export function Navbar() {
           <Link href="/advogados" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location === '/advogados' ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-encontrar-advogado">
             Encontrar Advogado
           </Link>
-          <Link href="/" className="text-sm font-medium text-neutral-700 transition-colors hover:text-primary-600" data-testid="link-areas-atuacao">
-            Áreas de Atuação
-          </Link>
           <Link href="/blog" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location.startsWith('/blog') ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-blog">
             Blog
           </Link>
@@ -53,9 +50,6 @@ export function Navbar() {
           <div className="flex flex-col px-6 py-4 space-y-4">
             <Link href="/advogados" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-encontrar-advogado">
               Encontrar Advogado
-            </Link>
-            <Link href="/" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-areas-atuacao">
-              Áreas de Atuação
             </Link>
             <Link href="/blog" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-blog">
               Blog
