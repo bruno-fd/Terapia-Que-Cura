@@ -26,12 +26,14 @@ export function Navbar() {
           <Link href="/blog" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location.startsWith('/blog') ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-blog">
             Blog
           </Link>
-          <Link href="/login" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location === '/login' ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-entrar">
-            Entrar
-          </Link>
           <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary-50">
             <Link href="/cadastro" data-testid="button-sou-advogado">
               Sou Advogado
+            </Link>
+          </Button>
+          <Button asChild className="bg-primary text-white hover:bg-primary-700">
+            <Link href="/login" data-testid="button-entrar">
+              Área do advogado
             </Link>
           </Button>
         </nav>
@@ -57,12 +59,14 @@ export function Navbar() {
             <Link href="/blog" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-blog">
               Blog
             </Link>
-            <Link href="/login" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-entrar">
-              Entrar
-            </Link>
             <Button asChild variant="outline" className="w-full mt-4 border-primary text-primary hover:bg-primary-50 justify-center">
               <Link href="/cadastro" onClick={closeMenu} data-testid="mobile-button-sou-advogado">
                 Sou Advogado
+              </Link>
+            </Button>
+            <Button asChild className="w-full bg-primary text-white hover:bg-primary-700 justify-center">
+              <Link href="/login" onClick={closeMenu} data-testid="mobile-button-entrar">
+                Área do advogado
               </Link>
             </Button>
           </div>
