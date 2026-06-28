@@ -29,9 +29,6 @@ export function Navbar() {
           <Link href="/blog" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location.startsWith('/blog') ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-blog">
             Blog
           </Link>
-          <Link href="/cadastro" className="text-sm font-medium text-neutral-700 transition-colors hover:text-primary-600" data-testid="link-sou-advogado-text">
-            Sou Advogado
-          </Link>
           <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary-50">
             <Link href="/cadastro" data-testid="button-sou-advogado">
               Sou Advogado

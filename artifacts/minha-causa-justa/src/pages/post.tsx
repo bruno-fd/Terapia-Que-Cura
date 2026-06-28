@@ -100,7 +100,7 @@ export default function Post() {
             </article>
 
             {/* Sidebar */}
-            <BlogSidebar activeCategory={post.category} />
+            <BlogSidebar activeCategory={post.category} stickyCta />
           </div>
         </div>
       </main>
