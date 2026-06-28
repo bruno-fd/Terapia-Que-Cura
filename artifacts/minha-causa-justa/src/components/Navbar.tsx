@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,8 +14,8 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-border/40 shadow-sm transition-all duration-200">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-[1200px]">
-        <Link href="/" className="font-bold text-xl text-[#1A3F73] hover:opacity-90 transition-opacity" onClick={closeMenu} data-testid="link-logo">
-          Minha Causa Justa
+        <Link href="/" className="flex items-center hover:opacity-90 transition-opacity" onClick={closeMenu} data-testid="link-logo">
+          <img src={logoUrl} alt="Minha Causa Justa" className="h-11 w-auto" />
         </Link>
 
         {/* Desktop Nav */}
