@@ -30,15 +30,18 @@ _Populate as you build — non-obvious choices a reader couldn't infer from the 
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+"Minha Causa Justa" is a Brazilian lawyer-directory web app (artifact slug `minha-causa-justa`, previewPath `/`). Public side: home, find-a-lawyer, lawyer registration, blog, institutional pages. Lawyer area (simulated localStorage auth): `/login` plus a dashboard with `/painel/perfil` (profile editing), `/painel/metricas` (performance metrics), and `/painel/assinatura` (subscription management).
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- All user-facing copy must be in Brazilian Portuguese.
+- STRICT: never use em dashes (travessões "—") in user-facing text. Use commas, colons, or an en dash instead. Em dashes are allowed only inside code comments.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Theme tokens live in `artifacts/minha-causa-justa/src/index.css`. `primary-50..900`, `accent-100..700`, and `neutral-*` map to Tailwind utilities, but the semantic colors `success`/`warning`/`error` are CSS vars NOT exposed as Tailwind classes. Use arbitrary hex instead: success `#1E7D4F`, warning `#B97D00`, error `#C0392B`.
+- Tailwind's `shadow-sm` is transparent here. For cards use `shadow-[0_8px_30px_rgb(0,0,0,0.04)]` plus `border border-neutral-200`.
+- Verify with `pnpm --filter @workspace/minha-causa-justa run typecheck` (not `build`, which needs workflow-provided `PORT`/`BASE_PATH`).
 
 ## Pointers
 

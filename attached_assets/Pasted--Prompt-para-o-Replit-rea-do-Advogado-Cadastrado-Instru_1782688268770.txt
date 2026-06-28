@@ -1,0 +1,482 @@
+# Prompt para o Replit — Área do Advogado Cadastrado
+
+---
+
+## Instrução geral
+
+Crie as seguintes páginas para a área logada do advogado no site Minha Causa Justa:
+
+- `login.html` — página de login
+- `painel-perfil.html` — edição do perfil do advogado
+- `painel-metricas.html` — desempenho do perfil
+- `painel-assinatura.html` — gestão da assinatura
+
+Use o mesmo `style.css` e `main.js` já existentes. Adicione apenas os estilos necessários para o painel diretamente no `style.css`, sem sobrescrever nada do design system existente. Toda a lógica de estado (login simulado, salvar dados, status da assinatura) deve ser feita em JavaScript puro, sem bibliotecas externas.
+
+---
+
+## Design System (já definido no projeto — seguir rigorosamente)
+
+Fonte: Inter. Cor primária: `--color-primary-500` (#2B75CC). Azul escuro: `--color-primary-800`. Acento/CTA: `--color-accent-500` (#E86100). Fundo: `--color-neutral-100`. Cards/superfícies: `--color-neutral-0`. Sucesso: `--color-success` (#1E7D4F). Erro: `--color-error` (#C0392B). Aviso: `--color-warning` (#B97D00).
+
+---
+
+## Estrutura de layout — Área logada
+
+### NAV do painel (substituir a nav principal)
+Fundo `--color-primary-900`. Texto branco.
+- Logo "Minha Causa Justa" à esquerda em branco
+- Texto central discreto: "Área do Advogado" em `--color-neutral-300`, font-size-sm
+- À direita: nome do advogado logado + botão "Sair" em texto branco, hover sublinhado
+
+### Menu lateral (sidebar esquerda — desktop)
+Largura fixa 220px. Fundo `--color-neutral-0`. Sombra `--shadow-sm`. Border-right `--border-color`.
+
+Itens do menu:
+- 👤 Meu Perfil → `painel-perfil.html`
+- 📊 Desempenho → `painel-metricas.html`
+- 💳 Minha Assinatura → `painel-assinatura.html`
+- 🔗 Ver meu perfil público → `advogados.html` (abre em nova aba)
+- — (linha divisória)
+- 🚪 Sair → `login.html`
+
+Item ativo com fundo `--color-primary-50` e borda esquerda 3px `--color-primary-500`. Hover em `--color-primary-50`.
+
+Em mobile: menu lateral vira menu hamburguer no topo, abre overlay lateral.
+
+### Área de conteúdo principal
+Ocupa o restante da largura. Padding `--space-7`. Fundo `--color-neutral-100`.
+
+---
+
+## Página 1 — login.html
+
+### Layout
+Página centralizada, sem menu lateral. Fundo `--color-neutral-100`. Card central com largura máxima 440px, `--color-neutral-0`, `--shadow-md`, `--radius-xl`, padding `--space-8`.
+
+### Conteúdo do card
+Logo "Minha Causa Justa" centralizada no topo do card.
+
+Título: "Acesse sua conta" — font-size-xl, bold, `--color-primary-800`, centralizado.
+
+Subtítulo: "Área exclusiva para advogados cadastrados." — font-size-sm, `--color-neutral-500`, centralizado.
+
+**Formulário:**
+
+Campo e-mail:
+- Label: "E-mail"
+- Input type="email", placeholder: "seu@email.com.br"
+- Classe `.input`
+
+Campo senha:
+- Label: "Senha"
+- Input type="password", placeholder: "Sua senha"
+- Ícone de olho à direita para toggle mostrar/ocultar senha
+- Classe `.input`
+
+Botão "Entrar" — `.btn-primary`, largura 100%, margin-top `--space-4`.
+
+Link abaixo do botão: "Esqueci minha senha" — `--color-primary-500`, font-size-sm, centralizado.
+
+**Comportamento de login simulado:**
+Qualquer e-mail + senha → redireciona para `painel-perfil.html`.
+Mostrar loading de 1 segundo antes do redirecionamento.
+Se campos vazios → exibir mensagem de erro inline: "Preencha todos os campos."
+
+**Linha divisória + texto** abaixo:
+"Ainda não tem cadastro?" + link "Cadastre seu perfil" → `cadastro.html`
+
+---
+
+## Página 2 — painel-perfil.html
+
+### Cabeçalho da página
+Título: "Meu Perfil" — font-size-2xl, bold, `--color-primary-800`.
+Subtítulo: "As informações abaixo aparecem para quem busca advogados na plataforma." — font-size-sm, `--color-neutral-500`.
+
+### Seção 1 — Foto de perfil
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Título da seção: "Foto de perfil" — font-size-lg, bold, `--color-primary-800`.
+
+Layout horizontal: avatar circular 100px à esquerda + controles à direita.
+
+Avatar circular:
+- Se sem foto: círculo `--color-primary-100` com inicial do nome em `--color-primary-800`, font-size-2xl, bold
+- Se com foto: exibir a imagem carregada em circular com object-fit cover
+
+Controles à direita:
+- Botão "Alterar foto" — `.btn-secondary` pequeno — abre seletor de arquivo (aceita .jpg, .jpeg, .png, .webp, máximo 5MB)
+- Botão "Remover" — texto em `--color-error`, font-size-sm, sem borda
+- Texto de apoio: "JPG, PNG ou WEBP. Máximo 5MB." — font-size-xs, `--color-neutral-500`
+
+Ao selecionar arquivo: preview imediato no avatar sem precisar salvar.
+Se arquivo inválido ou maior que 5MB: mensagem de erro inline.
+
+### Seção 2 — Informações da OAB (somente leitura)
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`. Fundo levemente diferente: `--color-primary-50`.
+
+Título: "Dados cadastrais" — font-size-lg, bold, `--color-primary-800`.
+
+Dois campos exibidos como texto (não editáveis):
+- "Nome completo": Dr. Carlos Eduardo Mendes
+- "OAB": OAB/SP 123.456 — com selo verde ✓ ao lado
+
+Nota discreta abaixo: "Para alterar essas informações, entre em contato com contato@minhacausajusta.com.br" — font-size-xs, `--color-neutral-500`.
+
+### Seção 3 — Sobre mim
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Título: "Sobre mim" — font-size-lg, bold, `--color-primary-800`.
+
+Instrução abaixo do título: "Escreva como você fala. Explique o que você resolve, não onde se formou." — font-size-sm, `--color-neutral-500`.
+
+Textarea com:
+- 6 linhas de altura
+- Limite de 500 caracteres
+- Contador visível no canto inferior direito: "247/500" — atualiza em tempo real
+- Placeholder: "Ex: Atuo há 8 anos com causas previdenciárias e trabalhistas em São Paulo. Meu foco é ajudar trabalhadores que tiveram benefícios negados pelo INSS ou que foram demitidos sem receber o que era devido."
+- Classe `.input`
+- Borda vermelha se ultrapassar o limite
+
+### Seção 4 — Áreas de atuação
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Título: "Áreas de atuação" — font-size-lg, bold, `--color-primary-800`.
+
+Instrução: "Selecione ao menos uma área. Clique para marcar ou desmarcar." — font-size-sm, `--color-neutral-500`.
+
+Badges clicáveis em wrap (quebram linha automaticamente), gap `--space-2`:
+
+INSS · Auxílio Doença · Aposentadoria · BPC/LOAS · Pensão por Morte · Pensão Alimentícia · Inventário e Herança · Plano de Saúde · Trabalhista · Consumidor · Família · Previdenciário
+
+**Estado dos badges:**
+- Ativo: background `--color-primary-500`, texto branco, border `--color-primary-500`
+- Inativo: background `--color-neutral-0`, texto `--color-primary-800`, border `--color-primary-300`
+- Hover inativo: background `--color-primary-50`
+- Padding: 8px 16px, border-radius `--radius-full`, font-size-sm, font-weight-medium, cursor pointer
+
+Iniciar com INSS e Trabalhista já selecionados (demonstração).
+
+Se tentar desmarcar o único selecionado: exibir mensagem "Selecione ao menos uma área." — sem desmarcar.
+
+### Seção 5 — Estados de atendimento
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Título: "Estados onde atende" — font-size-lg, bold, `--color-primary-800`.
+
+Instrução: "Selecione os estados onde você atende presencialmente ou online." — font-size-sm, `--color-neutral-500`.
+
+Mesmo sistema de badges da seção anterior, com todos os 27 estados brasileiros:
+AC · AL · AP · AM · BA · CE · DF · ES · GO · MA · MT · MS · MG · PA · PB · PR · PE · PI · RJ · RN · RS · RO · RR · SC · SP · SE · TO
+
+Iniciar com SP já selecionado (demonstração). Mínimo 1 obrigatório.
+
+### Seção 6 — Links e contato
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Título: "Links e contato" — font-size-lg, bold, `--color-primary-800`.
+
+Cinco campos, cada um com ícone emoji à esquerda dentro do input:
+
+📱 WhatsApp — obrigatório. Placeholder: "(11) 99999-9999". Máscara automática ao digitar. Apenas números aceitos.
+
+📸 Instagram — opcional. Placeholder: "@seuusuario"
+
+💼 LinkedIn — opcional. Placeholder: "linkedin.com/in/seuperfil"
+
+🌐 Website — opcional. Placeholder: "www.seusite.com.br"
+
+🔗 Outro link — opcional. Placeholder: "https://..."
+
+Label de cada campo em font-size-sm, `--color-neutral-700`, bold. Campo obrigatório marcado com asterisco vermelho.
+
+### Botão salvar + preview
+
+Barra fixa no rodapé da tela em mobile (position fixed, bottom 0, largura 100%, fundo branco, sombra acima, padding `--space-4`).
+
+Em desktop: ao final do último card, alinhado à direita.
+
+Dois botões lado a lado:
+1. "Ver prévia do perfil" — `.btn-secondary` — abre modal
+2. "Salvar alterações" — `.btn-primary`
+
+**Modal de prévia do perfil:**
+Overlay escuro. Card centralizado simulando exatamente como o perfil aparece na listagem de advogados — com foto circular, nome, OAB com selo, badges de áreas ativas, sobre mim truncado em 2 linhas, e botão "Ver contato" (não funcional na prévia). Botão fechar no canto superior direito.
+
+**Feedback de salvamento:**
+Após clicar "Salvar alterações": botão mostra "Salvando..." por 1,5 segundos, depois exibe banner verde no topo da área de conteúdo: "✓ Perfil atualizado com sucesso!" que desaparece após 3 segundos. Toda a lógica é simulada em JavaScript — sem backend real.
+
+---
+
+## Página 3 — painel-metricas.html
+
+### Cabeçalho da página
+Título: "Desempenho do Perfil" — font-size-2xl, bold, `--color-primary-800`.
+Subtítulo: "Veja como seu perfil está sendo encontrado na plataforma." — font-size-sm, `--color-neutral-500`.
+
+Seletor de período discreto à direita do cabeçalho (alinhado ao topo):
+Três opções clicáveis em texto: "Este mês | Últimos 3 meses | Total" — opção ativa em `--color-primary-500` bold, inativas em `--color-neutral-500`. Troca os dados exibidos via JavaScript.
+
+---
+
+### Lógica de estado do perfil — CRÍTICO
+
+O painel deve detectar quantos meses o advogado tem de cadastro (simulado via JavaScript) e renderizar estados diferentes:
+
+**Estado A — Primeiro mês (0 a 30 dias de cadastro)**
+Não exibir nenhum número de métrica. Exibir card de boas-vindas no lugar dos cards de métricas.
+
+**Estado B — A partir do segundo mês**
+Exibir todos os cards de métricas normalmente.
+
+---
+
+### Estado A — Card de boas-vindas (primeiro mês)
+
+Card único `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-7`. Centralizado. Fundo levemente azul `--color-primary-50`.
+
+Ícone 🚀 grande centralizado (font-size: 48px).
+
+Título: "Seu perfil está sendo indexado" — font-size-xl, bold, `--color-primary-800`, centralizado.
+
+Texto: "Os dados de visualização ficam disponíveis após o primeiro mês. Nesse período, a plataforma está distribuindo seu perfil nas buscas e o Google está indexando suas informações." — `--color-neutral-700`, centralizado.
+
+Barra de progresso abaixo do texto:
+- Label: "Indexação do perfil"
+- Barra preenchida 60% em `--color-primary-500`, fundo `--color-primary-100`, altura 8px, `--radius-full`
+- Texto abaixo: "Seu perfil já está visível. Os primeiros dados chegam em breve." — font-size-sm, `--color-neutral-500`
+
+**Bloco de dicas** abaixo da barra — título "Enquanto isso, otimize seu perfil:" em bold.
+Três dicas em lista com ícone ✓ em `--color-success`:
+- "Perfis com foto recebem 3x mais visualizações"
+- "Advogados com 3 ou mais áreas selecionadas aparecem em mais buscas"
+- "Uma descrição clara no 'Sobre mim' aumenta os cliques em contato"
+
+Cada dica com link discreto "→ Editar perfil" em `--color-primary-500` ao final.
+
+---
+
+### Estado B — Cards de métricas principais
+
+Quatro cards em grid 2x2 (desktop) / 1 coluna (mobile). Cada card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-5`.
+
+**Card 1 — Visualizações do perfil**
+Ícone 👁 em `--color-primary-100` (círculo), `--color-primary-500`.
+Número principal: "47" — font-size-3xl, bold, `--color-primary-800`.
+Label: "Visualizações" — font-size-sm, `--color-neutral-500`.
+Tendência abaixo: "↑ 31% em relação ao mês anterior" — font-size-sm, `--color-success`.
+(Se queda: "↓ 12% em relação ao mês anterior" — `--color-error`.)
+
+**Card 2 — Cliques em contato** *(métrica principal)*
+Ícone 📱 em `--color-accent-100` (círculo), `--color-accent-500`.
+Número principal: "8" — font-size-3xl, bold, `--color-accent-500`.
+Label: "Cliques em contato" — font-size-sm, `--color-neutral-500`.
+Tendência: "↑ 60% em relação ao mês anterior" — font-size-sm, `--color-success`.
+Badge pequeno ao lado do título: "Principal" — fundo `--color-accent-100`, texto `--color-accent-600`, font-size-xs.
+
+**Card 3 — Taxa de conversão**
+Ícone 🎯 em fundo verde claro.
+Número principal: "17%" — font-size-3xl, bold, `--color-success`.
+Label: "Taxa de conversão" — font-size-sm, `--color-neutral-500`.
+Subtexto: "Cliques ÷ visualizações" — font-size-xs, `--color-neutral-500`.
+Tendência: "Média da plataforma: 14%" — font-size-sm, `--color-neutral-500`.
+
+**Card 4 — Acumulado total**
+Ícone 📈 em fundo azul claro.
+Dois números empilhados:
+- "134 visualizações" — font-size-xl, bold, `--color-primary-800`
+- "23 contatos" — font-size-xl, bold, `--color-primary-800`
+Label: "Desde o cadastro" — font-size-sm, `--color-neutral-500`.
+Subtexto: "Membro há 3 meses" — font-size-xs, `--color-neutral-500`.
+
+---
+
+### Card de posição relativa
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`. Largura total.
+
+Título: "Seu perfil na plataforma" — font-size-lg, bold, `--color-primary-800`.
+
+Dois blocos lado a lado (desktop) / empilhados (mobile):
+
+**Bloco esquerdo — Posição por área:**
+Texto: "Em Trabalhista em SP, seu perfil está entre os" — `--color-neutral-700`.
+Número grande: "Top 30%" — font-size-2xl, bold, `--color-success`.
+Subtexto: "dos perfis mais visualizados" — font-size-sm, `--color-neutral-500`.
+
+**Bloco direito — Comparação com média:**
+Barra horizontal comparando o advogado com a média da plataforma.
+Label topo: "Visualizações este mês"
+Barra do advogado: "Você — 47" preenchida em `--color-primary-500`
+Barra da média: "Média — 38" preenchida em `--color-neutral-300`
+Ambas as barras com label de valor ao final. Altura 12px, `--radius-full`.
+
+---
+
+### Gráfico de histórico
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`. Largura total.
+
+Título: "Histórico de visualizações" — font-size-lg, bold, `--color-primary-800`.
+Subtítulo: "Últimos 6 meses" — font-size-sm, `--color-neutral-500`.
+
+Gráfico de barras verticais simples em SVG ou Canvas puro (sem biblioteca):
+- 6 barras, uma por mês
+- Labels de mês abaixo (Jan, Fev, Mar, Abr, Mai, Jun)
+- Valores fictícios: 0, 12, 19, 28, 36, 47
+- Barra do mês atual destacada em `--color-primary-500`, demais em `--color-primary-200`
+- Tooltip ao hover mostrando valor exato
+- Linha tracejada horizontal indicando a média (`--color-neutral-300`)
+
+Nota abaixo do gráfico em font-size-xs, `--color-neutral-500`:
+"O primeiro mês não exibe dados — período de indexação do perfil."
+
+---
+
+### Bloco de dicas contextuais (Estado B)
+
+Card `--color-primary-50`, border `--color-primary-100`, `--radius-lg`, padding `--space-5`. Largura total.
+
+Título: "Como melhorar seu desempenho" — font-size-md, bold, `--color-primary-800`.
+
+Renderizar dicas condicionais baseadas nos dados fictícios:
+
+Se sem foto → mostrar: "📷 Adicione uma foto ao seu perfil — perfis com foto recebem 3x mais visualizações. → Editar perfil"
+
+Se menos de 3 áreas → mostrar: "🏷️ Selecione mais áreas de atuação para aparecer em mais buscas. → Editar perfil"
+
+Se taxa de conversão < 10% → mostrar: "✏️ Reescreva seu 'Sobre mim' focando no que você resolve, não onde se formou. → Editar perfil"
+
+Se tudo ok → mostrar: "✓ Seu perfil está bem configurado. Continue assim!"
+
+Cada dica com link "→ Editar perfil" em `--color-primary-500` que leva para `painel-perfil.html`.
+
+---
+
+### Nota de transparência
+
+Texto simples ao final da página, font-size-xs, `--color-neutral-500`, centralizado:
+"Os dados são atualizados diariamente. Visualizações correspondem a acessos únicos ao seu perfil. Cliques em contato correspondem a cliques no botão de WhatsApp ou e-mail do seu perfil."
+
+---
+
+## Página 4 — painel-assinatura.html
+
+### Cabeçalho da página
+Título: "Minha Assinatura" — font-size-2xl, bold, `--color-primary-800`.
+Subtítulo: "Gerencie seu plano e acompanhe o status da sua assinatura." — font-size-sm, `--color-neutral-500`.
+
+### Card de status da assinatura
+
+Card grande, `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Renderizar três variações via JavaScript (toggle de demonstração com três botões pequenos no topo: "Ativa | Atrasada | Inativa"):
+
+**Status Ativa:**
+- Ícone 🟢 + texto "Assinatura Ativa" em `--color-success`, font-size-lg, bold
+- "Plano Mensal — R$ 49,90/mês"
+- "Próxima cobrança: 28 de julho de 2026"
+- "Membro desde: 1 de junho de 2026"
+- Ações: botão `.btn-secondary` "Mudar de plano" + link em `--color-error` "Cancelar assinatura"
+
+**Status Atrasada:**
+- Ícone 🟡 + texto "Pagamento em atraso" em `--color-warning`, font-size-lg, bold
+- "Seu perfil está suspenso temporariamente desde 15 de junho de 2026."
+- "Atualize seu método de pagamento para reativar automaticamente."
+- Ação: botão `.btn-primary` "Regularizar pagamento"
+
+**Status Inativa:**
+- Ícone 🔴 + texto "Assinatura Inativa" em `--color-error`, font-size-lg, bold
+- "Seu perfil não está visível na plataforma."
+- "Reative sua assinatura para voltar a aparecer nas buscas."
+- Ação: botão `.btn-primary` "Reativar assinatura"
+
+### Modal — Mudar de plano
+
+Abre ao clicar "Mudar de plano". Overlay escuro. Card centralizado, largura máxima 500px.
+
+Título: "Escolha seu plano"
+
+Dois cards de plano lado a lado (empilhados em mobile):
+
+**Plano Mensal:**
+- R$ 49,90/mês
+- "Cancele quando quiser"
+- Lista: ✓ Perfil completo ✓ Visibilidade por área e estado ✓ Painel de visualizações ✓ Atualização a qualquer momento
+- Botão `.btn-secondary` "Selecionar"
+
+**Plano Anual** (destaque com borda `--color-accent-500`):
+- Badge "Mais vantajoso" em `--color-accent-100` texto `--color-accent-600`
+- R$ 39,90/mês — cobrado anualmente
+- "Equivale a 2 meses grátis"
+- Lista: ✓ Tudo do plano mensal ✓ Destaque nos resultados ✓ Selo de perfil verificado
+- Botão `.btn-primary` "Selecionar"
+
+Nota abaixo: "*Pagamento processado pelo Asaas. A Minha Causa Justa não armazena dados do seu cartão."
+
+Botão fechar no canto superior direito.
+
+### Modal — Cancelar assinatura
+
+Abre ao clicar "Cancelar assinatura". Overlay escuro. Card centralizado, largura máxima 440px.
+
+Ícone de alerta ⚠️ centralizado, grande.
+
+Título: "Tem certeza que deseja cancelar?" — bold, `--color-neutral-900`.
+
+Texto: "Ao cancelar, seu perfil será desativado ao final do período já pago e não aparecerá mais nas buscas da plataforma. Essa ação não pode ser desfeita."
+
+Dois botões:
+- "Voltar" — `.btn-secondary`
+- "Confirmar cancelamento" — background `--color-error`, texto branco, mesmo padding do `.btn-primary`
+
+### Card de histórico de cobranças
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Título: "Histórico de cobranças" — font-size-lg, bold, `--color-primary-800`.
+
+Tabela simples com bordas suaves:
+Colunas: Data | Descrição | Valor | Status
+
+6 linhas fictícias de exemplo:
+- 01/06/2026 | Plano Mensal | R$ 49,90 | ✓ Pago (verde)
+- 01/05/2026 | Plano Mensal | R$ 49,90 | ✓ Pago (verde)
+- 01/04/2026 | Plano Mensal | R$ 49,90 | ✓ Pago (verde)
+- 01/03/2026 | Plano Mensal | R$ 49,90 | ✗ Falhou (vermelho)
+- 01/03/2026 | Plano Mensal — Retentativa | R$ 49,90 | ✓ Pago (verde)
+- 01/02/2026 | Plano Mensal | R$ 49,90 | ✓ Pago (verde)
+
+Colunas com alinhamento: Data e Descrição à esquerda, Valor e Status à direita.
+Status com badge colorido pequeno: "Pago" verde, "Falhou" vermelho, "Pendente" amarelo.
+
+Link abaixo: "Ver histórico completo →" em `--color-primary-500`.
+
+### Nota de segurança
+
+Caixa com fundo `--color-primary-50`, border `--color-primary-100`, `--radius-md`, padding `--space-4`.
+
+Texto: "🔒 O gerenciamento de pagamentos é processado de forma segura pelo Asaas, instituição de pagamento autorizada pelo Banco Central. A Minha Causa Justa não armazena dados do seu cartão de crédito." — font-size-sm, `--color-neutral-700`.
+
+---
+
+## Instruções técnicas gerais
+
+- Todo o estado (usuário logado, dados do perfil, status da assinatura, métricas) deve ser simulado em JavaScript puro com dados fictícios hardcoded. Sem backend real nesta etapa.
+- Na página de métricas, simular dois estados via toggle de demonstração no topo: "Primeiro mês" e "3 meses de cadastro". Isso permite visualizar os dois estados da interface sem backend.
+- O toggle de demonstração de status (Ativa | Atrasada | Inativa) na página de assinatura serve apenas para visualizar as variações — em produção será controlado pelo webhook do Asaas.
+- O seletor de período (Este mês | Últimos 3 meses | Total) na página de métricas deve trocar os números fictícios via JavaScript puro.
+- Proteção de rota simulada: se acessar qualquer página do painel sem estar "logado", redirecionar para `login.html`. Simular com localStorage: ao fazer login, gravar `logado=true`; ao sair, limpar e redirecionar.
+- Responsivo obrigatório. Menu lateral vira overlay em mobile (< 768px).
+- Todos os modais fecham ao clicar fora ou no botão X.
+- Scroll suave e foco no primeiro campo com erro ao tentar salvar com campos obrigatórios vazios.
+- O gráfico de barras da página de métricas deve ser feito em SVG puro ou Canvas — sem nenhuma biblioteca externa.
+- Código limpo, organizado e comentado por seção.
+- Não usar nenhuma biblioteca externa além da fonte Inter do Google Fonts já importada.

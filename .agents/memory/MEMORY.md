@@ -1,1 +1,1 @@
-- [Tailwind v4 numbered color tokens](tailwind-v4-color-tokens.md) — numbered utilities (bg-primary-500) render blank/invisible unless the token is registered in the @theme block; :root vars alone are not enough.
+- [Flaky banner tests](flaky-banner-tests.md) — auto-hiding success banners + non-retrying Playwright count() = false failures; prefer persistent UI cleared on next edit.

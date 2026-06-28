@@ -12,6 +12,10 @@ import PoliticaDePrivacidade from "@/pages/politica-de-privacidade";
 import QuemSomos from "@/pages/quem-somos";
 import Blog from "@/pages/blog";
 import Post from "@/pages/post";
+import Login from "@/pages/login";
+import PainelPerfil from "@/pages/painel-perfil";
+import PainelMetricas from "@/pages/painel-metricas";
+import PainelAssinatura from "@/pages/painel-assinatura";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,10 @@ function Router() {
       <Route path="/quem-somos" component={QuemSomos} />
       <Route path="/blog/:slug" component={Post} />
       <Route path="/blog" component={Blog} />
+      <Route path="/login" component={Login} />
+      <Route path="/painel/perfil" component={PainelPerfil} />
+      <Route path="/painel/metricas" component={PainelMetricas} />
+      <Route path="/painel/assinatura" component={PainelAssinatura} />
       <Route component={NotFound} />
     </Switch>
   );

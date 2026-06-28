@@ -1,0 +1,410 @@
+import { useState } from "react";
+import { Link } from "wouter";
+import { Eye, Phone, Target, TrendingUp, ArrowUp, Rocket, Check } from "lucide-react";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { getProfile } from "@/lib/dashboard";
+
+type DemoState = "primeiro" | "tres";
+type Period = "mes" | "trimestre" | "total";
+
+// Dados fictícios por período (Estado B)
+const PERIOD_DATA: Record<Period, { views: number; viewsTrend: number; contacts: number; contactsTrend: number }> = {
+  mes: { views: 47, viewsTrend: 31, contacts: 8, contactsTrend: 60 },
+  trimestre: { views: 95, viewsTrend: 22, contacts: 17, contactsTrend: 41 },
+  total: { views: 134, viewsTrend: 0, contacts: 23, contactsTrend: 0 },
+};
+
+const CHART = [
+  { mes: "Jan", valor: 0 },
+  { mes: "Fev", valor: 12 },
+  { mes: "Mar", valor: 19 },
+  { mes: "Abr", valor: 28 },
+  { mes: "Mai", valor: 36 },
+  { mes: "Jun", valor: 47 },
+];
+
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`bg-white rounded-2xl border border-neutral-200 p-6 ${className}`}>{children}</div>;
+}
+
+export default function PainelMetricas() {
+  const [demo, setDemo] = useState<DemoState>("tres");
+  const [period, setPeriod] = useState<Period>("mes");
+  const profile = getProfile();
+
+  const data = PERIOD_DATA[period];
+  const conversion = data.views > 0 ? Math.round((data.contacts / data.views) * 100) : 0;
+
+  return (
+    <DashboardLayout active="metricas">
+      {/* Toggle de demonstração */}
+      <div className="mb-6 flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-neutral-500">Demonstração:</span>
+        <button
+          onClick={() => setDemo("primeiro")}
+          className={`px-3 py-1 rounded-full border transition-colors ${
+            demo === "primeiro"
+              ? "bg-primary-500 text-white border-primary-500"
+              : "bg-white text-neutral-600 border-neutral-300 hover:bg-primary-50"
+          }`}
+          data-testid="demo-primeiro-mes"
+        >
+          Primeiro mês
+        </button>
+        <button
+          onClick={() => setDemo("tres")}
+          className={`px-3 py-1 rounded-full border transition-colors ${
+            demo === "tres"
+              ? "bg-primary-500 text-white border-primary-500"
+              : "bg-white text-neutral-600 border-neutral-300 hover:bg-primary-50"
+          }`}
+          data-testid="demo-tres-meses"
+        >
+          3 meses de cadastro
+        </button>
+      </div>
+
+      {/* Cabeçalho */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primary-800">Desempenho do Perfil</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Veja como seu perfil está sendo encontrado na plataforma.
+          </p>
+        </div>
+        {demo === "tres" && (
+          <div className="flex items-center gap-3 text-sm shrink-0">
+            {([
+              ["mes", "Este mês"],
+              ["trimestre", "Últimos 3 meses"],
+              ["total", "Total"],
+            ] as [Period, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setPeriod(key)}
+                className={`transition-colors ${
+                  period === key ? "text-primary-500 font-bold" : "text-neutral-500 hover:text-primary-500"
+                }`}
+                data-testid={`period-${key}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {demo === "primeiro" ? (
+        <WelcomeState hasPhoto={!!profile.photo} />
+      ) : (
+        <MetricsState data={data} conversion={conversion} profile={profile} />
+      )}
+    </DashboardLayout>
+  );
+}
+
+// Estado A — primeiro mês
+function WelcomeState({ hasPhoto }: { hasPhoto: boolean }) {
+  void hasPhoto;
+  return (
+    <Card className="bg-primary-50 border-primary-100 text-center max-w-[680px] mx-auto p-8">
+      <div className="text-5xl mb-2">
+        <Rocket className="h-12 w-12 mx-auto text-primary-500" />
+      </div>
+      <h2 className="text-xl font-bold text-primary-800">Seu perfil está sendo indexado</h2>
+      <p className="mt-2 text-neutral-700">
+        Os dados de visualização ficam disponíveis após o primeiro mês. Nesse período, a plataforma está
+        distribuindo seu perfil nas buscas e o Google está indexando suas informações.
+      </p>
+
+      <div className="mt-6 text-left">
+        <p className="text-sm font-medium text-neutral-700 mb-1.5">Indexação do perfil</p>
+        <div className="h-2 rounded-full bg-primary-100 overflow-hidden">
+          <div className="h-full bg-primary-500 rounded-full" style={{ width: "60%" }} />
+        </div>
+        <p className="mt-2 text-sm text-neutral-500">
+          Seu perfil já está visível. Os primeiros dados chegam em breve.
+        </p>
+      </div>
+
+      <div className="mt-6 text-left">
+        <p className="font-bold text-primary-800 mb-3">Enquanto isso, otimize seu perfil:</p>
+        <ul className="space-y-3">
+          {[
+            "Perfis com foto recebem 3x mais visualizações",
+            "Advogados com 3 ou mais áreas selecionadas aparecem em mais buscas",
+            "Uma descrição clara no 'Sobre mim' aumenta os cliques em contato",
+          ].map((tip) => (
+            <li key={tip} className="flex items-start gap-2 text-sm text-neutral-700">
+              <Check className="h-4 w-4 mt-0.5 shrink-0 text-[#1E7D4F]" />
+              <span>
+                {tip}{" "}
+                <Link href="/painel/perfil" className="text-primary-500 hover:text-primary-600 whitespace-nowrap">
+                  → Editar perfil
+                </Link>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
+// Estado B — métricas
+function MetricsState({
+  data,
+  conversion,
+  profile,
+}: {
+  data: typeof PERIOD_DATA[Period];
+  conversion: number;
+  profile: ReturnType<typeof getProfile>;
+}) {
+  const tips: string[] = [];
+  if (!profile.photo)
+    tips.push("📷 Adicione uma foto ao seu perfil, perfis com foto recebem 3x mais visualizações.");
+  if (profile.areas.length < 3)
+    tips.push("🏷️ Selecione mais áreas de atuação para aparecer em mais buscas.");
+  if (conversion < 10)
+    tips.push("✏️ Reescreva seu 'Sobre mim' focando no que você resolve, não onde se formou.");
+
+  return (
+    <div className="space-y-6">
+      {/* Cards principais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <MetricCard
+          icon={<Eye className="h-5 w-5" />}
+          iconBg="bg-primary-100"
+          iconColor="text-primary-500"
+          value={String(data.views)}
+          valueColor="text-primary-800"
+          label="Visualizações"
+          trend={data.viewsTrend ? `↑ ${data.viewsTrend}% em relação ao mês anterior` : "Acumulado do período"}
+          trendColor={data.viewsTrend ? "text-[#1E7D4F]" : "text-neutral-500"}
+        />
+        <MetricCard
+          icon={<Phone className="h-5 w-5" />}
+          iconBg="bg-accent-100"
+          iconColor="text-accent-500"
+          value={String(data.contacts)}
+          valueColor="text-accent-500"
+          label="Cliques em contato"
+          trend={data.contactsTrend ? `↑ ${data.contactsTrend}% em relação ao mês anterior` : "Acumulado do período"}
+          trendColor={data.contactsTrend ? "text-[#1E7D4F]" : "text-neutral-500"}
+          badge="Principal"
+        />
+        <MetricCard
+          icon={<Target className="h-5 w-5" />}
+          iconBg="bg-[#1E7D4F]/15"
+          iconColor="text-[#1E7D4F]"
+          value={`${conversion}%`}
+          valueColor="text-[#1E7D4F]"
+          label="Taxa de conversão"
+          sub="Cliques ÷ visualizações"
+          trend="Média da plataforma: 14%"
+          trendColor="text-neutral-500"
+        />
+        <MetricCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          iconBg="bg-primary-100"
+          iconColor="text-primary-500"
+          stacked={["134 visualizações", "23 contatos"]}
+          label="Desde o cadastro"
+          sub="Membro há 3 meses"
+        />
+      </div>
+
+      {/* Posição relativa */}
+      <Card>
+        <h2 className="text-lg font-bold text-primary-800 mb-4">Seu perfil na plataforma</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <p className="text-neutral-700">Em Trabalhista em SP, seu perfil está entre os</p>
+            <p className="text-2xl font-bold text-[#1E7D4F] mt-1">Top 30%</p>
+            <p className="text-sm text-neutral-500">dos perfis mais visualizados</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-neutral-700 mb-3">Visualizações este mês</p>
+            <CompareBar label="Você" value={47} max={47} color="bg-primary-500" />
+            <div className="h-3" />
+            <CompareBar label="Média" value={38} max={47} color="bg-neutral-300" />
+          </div>
+        </div>
+      </Card>
+
+      {/* Gráfico de histórico */}
+      <Card>
+        <h2 className="text-lg font-bold text-primary-800">Histórico de visualizações</h2>
+        <p className="text-sm text-neutral-500 mb-4">Últimos 6 meses</p>
+        <HistoryChart />
+        <p className="mt-4 text-xs text-neutral-500">
+          O primeiro mês não exibe dados, período de indexação do perfil.
+        </p>
+      </Card>
+
+      {/* Dicas contextuais */}
+      <Card className="bg-primary-50 border-primary-100">
+        <h2 className="text-base font-bold text-primary-800 mb-3">Como melhorar seu desempenho</h2>
+        {tips.length > 0 ? (
+          <ul className="space-y-2">
+            {tips.map((tip) => (
+              <li key={tip} className="text-sm text-neutral-700">
+                {tip}{" "}
+                <Link href="/painel/perfil" className="text-primary-500 hover:text-primary-600 whitespace-nowrap">
+                  → Editar perfil
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-neutral-700 flex items-center gap-2">
+            <Check className="h-4 w-4 text-[#1E7D4F]" /> Seu perfil está bem configurado. Continue assim!
+          </p>
+        )}
+      </Card>
+
+      {/* Nota de transparência */}
+      <p className="text-xs text-neutral-500 text-center max-w-[680px] mx-auto">
+        Os dados são atualizados diariamente. Visualizações correspondem a acessos únicos ao seu perfil.
+        Cliques em contato correspondem a cliques no botão de WhatsApp ou e-mail do seu perfil.
+      </p>
+    </div>
+  );
+}
+
+interface MetricCardProps {
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  value?: string;
+  valueColor?: string;
+  stacked?: string[];
+  label: string;
+  sub?: string;
+  trend?: string;
+  trendColor?: string;
+  badge?: string;
+}
+
+function MetricCard({
+  icon,
+  iconBg,
+  iconColor,
+  value,
+  valueColor,
+  stacked,
+  label,
+  sub,
+  trend,
+  trendColor,
+  badge,
+}: MetricCardProps) {
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between">
+        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${iconBg} ${iconColor}`}>
+          {icon}
+        </div>
+        {badge && (
+          <span className="text-xs bg-accent-100 text-accent-600 rounded-full px-2 py-0.5 font-medium">
+            {badge}
+          </span>
+        )}
+      </div>
+      {stacked ? (
+        <div className="mt-3 space-y-0.5">
+          {stacked.map((s) => (
+            <p key={s} className="text-xl font-bold text-primary-800">{s}</p>
+          ))}
+        </div>
+      ) : (
+        <p className={`mt-3 text-3xl font-bold ${valueColor}`}>{value}</p>
+      )}
+      <p className="mt-1 text-sm text-neutral-500">{label}</p>
+      {sub && <p className="text-xs text-neutral-500">{sub}</p>}
+      {trend && <p className={`mt-2 text-sm ${trendColor}`}>{trend}</p>}
+    </Card>
+  );
+}
+
+function CompareBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = Math.round((value / max) * 100);
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm text-neutral-600 mb-1">
+        <span>{label}</span>
+        <span className="font-medium">{value}</span>
+      </div>
+      <div className="h-3 rounded-full bg-neutral-100 overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function HistoryChart() {
+  const [hover, setHover] = useState<number | null>(null);
+  const width = 520;
+  const height = 200;
+  const padBottom = 28;
+  const padTop = 16;
+  const max = Math.max(...CHART.map((d) => d.valor), 1);
+  const avg = CHART.reduce((s, d) => s + d.valor, 0) / CHART.length;
+  const barW = 40;
+  const gap = (width - barW * CHART.length) / (CHART.length + 1);
+  const chartH = height - padBottom - padTop;
+  const avgY = padTop + chartH - (avg / max) * chartH;
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full min-w-[420px]"
+        role="img"
+        aria-label="Gráfico de visualizações dos últimos 6 meses"
+      >
+        {/* Linha de média */}
+        <line
+          x1={0}
+          y1={avgY}
+          x2={width}
+          y2={avgY}
+          stroke="var(--neutral-300)"
+          strokeWidth={1}
+          strokeDasharray="4 4"
+        />
+        <text x={width} y={avgY - 4} textAnchor="end" className="fill-neutral-500" fontSize={10}>
+          Média {Math.round(avg)}
+        </text>
+
+        {CHART.map((d, i) => {
+          const x = gap + i * (barW + gap);
+          const barH = (d.valor / max) * chartH;
+          const y = padTop + chartH - barH;
+          const isCurrent = i === CHART.length - 1;
+          return (
+            <g key={d.mes} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
+              <rect
+                x={x}
+                y={d.valor === 0 ? padTop + chartH - 2 : y}
+                width={barW}
+                height={d.valor === 0 ? 2 : barH}
+                rx={4}
+                className={isCurrent ? "fill-primary-500" : "fill-primary-200"}
+              />
+              {hover === i && d.valor > 0 && (
+                <text x={x + barW / 2} y={y - 6} textAnchor="middle" className="fill-primary-800 font-bold" fontSize={12}>
+                  {d.valor}
+                </text>
+              )}
+              <text x={x + barW / 2} y={height - 8} textAnchor="middle" className="fill-neutral-500" fontSize={11}>
+                {d.mes}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
