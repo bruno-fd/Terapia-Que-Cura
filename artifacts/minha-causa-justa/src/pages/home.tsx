@@ -67,7 +67,7 @@ export default function Home() {
         {/* Section 1 — Hero */}
         <section className="bg-white py-12 md:py-24 overflow-hidden">
           <div className="container mx-auto px-6 max-w-[1200px]">
-            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
               <div className="w-full lg:w-1/2">
                 <h1 className="text-4xl md:text-5xl lg:text-[56px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
                   Você tem direitos.<br />
@@ -191,7 +191,7 @@ export default function Home() {
         {/* Section 3 — Simples assim */}
         <section className="bg-white py-20 md:py-32">
           <div className="container mx-auto px-6 max-w-[1200px]">
-            <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-16 lg:gap-24">
               <div className="w-full lg:w-1/2 order-2 lg:order-1 relative">
                 <div className="absolute -inset-4 bg-primary-50 rounded-[40px] transform rotate-2 z-0"></div>
                 <div className="relative h-[500px] w-full rounded-[30px] overflow-hidden shadow-lg z-10">
@@ -204,7 +204,7 @@ export default function Home() {
               </div>
               
               <div className="w-full lg:w-1/2 order-1 lg:order-2">
-                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Simples assim</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Como funciona</h2>
                 <p className="text-lg text-neutral-600 leading-relaxed mb-12">
                   Nunca contratou um advogado? Não tem problema. Aqui não tem formulário complicado, não tem compromisso e ninguém vai te ligar tentando vender nada. É você no seu ritmo, entendendo as opções e decidindo com calma.
                 </p>
