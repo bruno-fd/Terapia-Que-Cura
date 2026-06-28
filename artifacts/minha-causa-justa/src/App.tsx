@@ -6,6 +6,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Advogados from "@/pages/advogados";
 import Cadastro from "@/pages/cadastro";
+import TermosDeUso from "@/pages/termos-de-uso";
+import PoliticaDePrivacidade from "@/pages/politica-de-privacidade";
 
 const queryClient = new QueryClient();
 
@@ -15,6 +17,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/advogados" component={Advogados} />
       <Route path="/cadastro" component={Cadastro} />
+      <Route path="/termos-de-uso" component={TermosDeUso} />
+      <Route path="/politica-de-privacidade" component={PoliticaDePrivacidade} />
       <Route component={NotFound} />
     </Switch>
   );
