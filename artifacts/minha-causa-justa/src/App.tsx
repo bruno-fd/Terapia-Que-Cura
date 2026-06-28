@@ -10,6 +10,8 @@ import Cadastro from "@/pages/cadastro";
 import TermosDeUso from "@/pages/termos-de-uso";
 import PoliticaDePrivacidade from "@/pages/politica-de-privacidade";
 import QuemSomos from "@/pages/quem-somos";
+import Blog from "@/pages/blog";
+import Post from "@/pages/post";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ function Router() {
       <Route path="/termos-de-uso" component={TermosDeUso} />
       <Route path="/politica-de-privacidade" component={PoliticaDePrivacidade} />
       <Route path="/quem-somos" component={QuemSomos} />
+      <Route path="/blog/:slug" component={Post} />
+      <Route path="/blog" component={Blog} />
       <Route component={NotFound} />
     </Switch>
   );

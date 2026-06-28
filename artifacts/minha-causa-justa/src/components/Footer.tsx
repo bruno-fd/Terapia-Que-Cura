@@ -22,7 +22,7 @@ export function Footer() {
             <ul className="space-y-3">
               <li><Link href="/advogados" className="text-sm text-neutral-300 hover:text-white transition-colors">Encontrar advogado</Link></li>
               <li><Link href="/" className="text-sm text-neutral-300 hover:text-white transition-colors">Áreas de atuação</Link></li>
-              <li><Link href="/" className="text-sm text-neutral-300 hover:text-white transition-colors">Blog</Link></li>
+              <li><Link href="/blog" className="text-sm text-neutral-300 hover:text-white transition-colors">Blog</Link></li>
             </ul>
           </div>
 

@@ -26,7 +26,7 @@ export function Navbar() {
           <Link href="/" className="text-sm font-medium text-neutral-700 transition-colors hover:text-primary-600" data-testid="link-areas-atuacao">
             Áreas de Atuação
           </Link>
-          <Link href="/" className="text-sm font-medium text-neutral-700 transition-colors hover:text-primary-600" data-testid="link-blog">
+          <Link href="/blog" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location.startsWith('/blog') ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-blog">
             Blog
           </Link>
           <Link href="/cadastro" className="text-sm font-medium text-neutral-700 transition-colors hover:text-primary-600" data-testid="link-sou-advogado-text">
@@ -60,7 +60,7 @@ export function Navbar() {
             <Link href="/" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-areas-atuacao">
               Áreas de Atuação
             </Link>
-            <Link href="/" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-blog">
+            <Link href="/blog" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-blog">
               Blog
             </Link>
             <Button asChild variant="outline" className="w-full mt-4 border-primary text-primary hover:bg-primary-50 justify-center">
