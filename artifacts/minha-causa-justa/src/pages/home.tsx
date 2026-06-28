@@ -90,7 +90,7 @@ export default function Home() {
                 </div>
 
                 <div className="bg-primary-50 p-6 rounded-[32px] border border-primary-100 shadow-sm relative z-10">
-                  <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex flex-col md:flex-row lg:flex-col xl:flex-row gap-4">
                     <div className="flex-1">
                       <Select value={problema} onValueChange={setProblema}>
                         <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-problema">
@@ -103,7 +103,7 @@ export default function Home() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="w-full md:w-48">
+                    <div className="w-full md:w-48 lg:w-full xl:w-48">
                       <Select value={estado} onValueChange={setEstado}>
                         <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-estado">
                           <SelectValue placeholder="Seu estado" />
@@ -117,7 +117,7 @@ export default function Home() {
                     </div>
                     <Button 
                       onClick={handleSearch} 
-                      className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
+                      className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full md:w-auto lg:w-full xl:w-auto"
                       data-testid="button-buscar-advogado"
                     >
                       Encontrar advogado
