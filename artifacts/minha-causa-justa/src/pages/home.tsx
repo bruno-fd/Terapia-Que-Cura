@@ -189,7 +189,7 @@ export default function Home() {
         </section>
 
         {/* Section 3 — Simples assim */}
-        <section className="bg-white py-20 md:py-32">
+        <section className="bg-white py-20 md:py-32 overflow-hidden">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-16 lg:gap-24">
               <div className="w-full lg:w-1/2 order-2 lg:order-1 relative">
