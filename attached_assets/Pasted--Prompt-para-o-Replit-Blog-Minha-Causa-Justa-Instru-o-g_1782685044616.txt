@@ -1,0 +1,158 @@
+# Prompt para o Replit — Blog Minha Causa Justa
+
+---
+
+## Instrução geral
+
+Crie uma página de blog chamada `blog.html` e uma página de post individual chamada `post.html` para o site Minha Causa Justa. O blog deve usar o mesmo `style.css` e `main.js` já existentes no projeto, respeitando integralmente o design system definido anteriormente.
+
+O blog deve ser simples, limpo, organizado e bonito. Sem sistemas de posts relacionados, sem comentários, sem complexidade desnecessária.
+
+---
+
+## Design System (já definido no projeto)
+
+Usar exatamente as mesmas variáveis CSS, fontes, cores e componentes do projeto principal. Não criar novos estilos que conflitem com o sistema existente. Fonte: Inter. Cor primária: `--color-primary-500` (#2B75CC). Acento: `--color-accent-500` (#E86100). Fundo: `--color-neutral-100`. Cards: `--color-neutral-0`.
+
+---
+
+## Página 1 — blog.html (listagem de posts)
+
+### NAV
+Idêntica ao restante do site:
+- Logo "Minha Causa Justa" à esquerda
+- Links: Encontrar Advogado · Áreas de Atuação · Blog · Sou Advogado
+- Botão "Sou Advogado" (`.btn-secondary`) à direita
+- Menu hamburguer em mobile
+
+### Layout geral
+Duas colunas: conteúdo principal à esquerda (70%) e sidebar à direita (30%). Em mobile, empilhadas — sidebar vai para baixo do conteúdo.
+
+### Coluna principal — lista de posts
+
+**Título da página:**
+`<h1>` — "Blog" em `--color-primary-800`, font-size-2xl, bold.
+
+Subtítulo em `--color-neutral-500`, font-size-md:
+"Informações sobre direitos do cidadão, escritas de forma simples e direta."
+
+---
+
+Cada post na listagem é um card `.card-advogado` com:
+- Tag de categoria em `.badge` no topo (ex: INSS, Trabalhista, Família)
+- Título do post em bold, font-size-xl, `--color-neutral-900`, linkável para `post.html`
+- Trecho introdutório do post em `--color-neutral-700`, font-size-md, máximo 2 linhas
+- Data de publicação em `--color-neutral-500`, font-size-sm
+- Link "Ler mais →" em `--color-primary-500`, font-size-sm, sem sublinhado, hover com sublinhado
+
+Cards separados por espaçamento generoso (`--space-6`). Sem imagens nos cards — apenas texto.
+
+Gere 6 cards fictícios com os seguintes títulos e categorias:
+
+1. [INSS] — INSS negou seu benefício? Veja o que diz a lei e quais são seus direitos
+2. [Trabalhista] — Fui demitido sem justa causa: o que tenho direito a receber?
+3. [Família] — Pensão alimentícia: como funciona e quem tem direito
+4. [Previdenciário] — Aposentadoria por tempo de contribuição: quem pode pedir e como calcular
+5. [Saúde] — Plano de saúde negou cobertura? Entenda quando isso é ilegal
+6. [Família] — Inventário e herança: o que acontece com os bens depois que alguém falece
+
+**Paginação simples** abaixo dos cards:
+← Anterior | Página 1 de 3 | Próxima →
+Em `--color-neutral-500`, com as setas em `--color-primary-500`.
+
+### Sidebar direita
+
+**Bloco 1 — Categorias**
+Título: "Categorias" em bold, font-size-lg, `--color-primary-800`.
+Lista de categorias clicáveis, cada uma em uma linha:
+- INSS
+- Trabalhista
+- Família
+- Previdenciário
+- Saúde
+- Consumidor
+- Inventário e Herança
+
+Cada categoria é um link em `--color-neutral-700` que filtra os posts. Hover em `--color-primary-500`. Separadas por linha divisória suave (`--color-neutral-300`).
+
+**Bloco 2 — Botão fixo de navegação**
+Abaixo das categorias, separado por espaçamento (`--space-6`).
+Fundo `--color-primary-50`, border-radius `--radius-lg`, padding `--space-5`.
+
+Texto em `--color-neutral-700`, font-size-md:
+"Precisa de orientação jurídica?"
+
+Botão abaixo do texto:
+"Encontrar um advogado" — classe `.btn-primary`, largura 100%, leva para `advogados.html`.
+
+IMPORTANTE: O botão NÃO deve mencionar categoria, problema específico ou criar urgência. Apenas "Encontrar um advogado" — texto genérico e neutro.
+
+### Rodapé
+Idêntico ao restante do site.
+
+---
+
+## Página 2 — post.html (post individual)
+
+### NAV
+Idêntica ao restante do site.
+
+### Layout geral
+Mesma estrutura de duas colunas do blog.html: conteúdo principal à esquerda (70%) e sidebar à direita (30%).
+
+### Coluna principal — conteúdo do post
+
+**Breadcrumb** no topo, font-size-sm, `--color-neutral-500`:
+Blog › [Categoria] › [Título do post]
+Links em `--color-primary-500`.
+
+**Tag de categoria** em `.badge` logo abaixo do breadcrumb.
+
+**Título do post:**
+`<h1>` em `--color-primary-900`, font-size-3xl (desktop) / font-size-2xl (mobile), bold, line-height-tight.
+
+**Meta do post** em uma linha, font-size-sm, `--color-neutral-500`:
+"Publicado em [data] · Leitura de aproximadamente [X] minutos"
+
+**Linha divisória** (`--color-neutral-300`, 1px) separando o cabeçalho do conteúdo.
+
+**Corpo do post:**
+Texto corrido em `--color-neutral-700`, font-size-md, line-height-loose.
+Subtítulos internos em `<h2>` `--color-primary-800`, font-size-xl, bold, com espaçamento generoso.
+Sem imagens. Sem elementos decorativos. Apenas texto bem espaçado.
+
+Gere um post fictício completo com o título:
+"INSS negou seu benefício? Veja o que diz a lei e quais são seus direitos"
+
+O post deve ter aproximadamente 400 palavras, dividido em 3 subtítulos. Linguagem simples, informativa, sem juridiquês. NÃO usar frases que recomendem ao leitor entrar com ação judicial, contratar advogado ou tomar qualquer decisão processual. Apenas explicar o que a lei prevê em linguagem acessível.
+
+**Linha divisória** ao final do post.
+
+**Nota de rodapé do post** em `--color-neutral-500`, font-size-sm, itálico:
+"Este conteúdo tem caráter exclusivamente informativo e educativo. Não constitui aconselhamento jurídico. Para orientação sobre sua situação específica, consulte um profissional do direito."
+
+### Sidebar direita — idêntica ao blog.html
+
+Mesmos dois blocos:
+
+**Bloco 1 — Categorias**
+Igual ao blog.html. Categoria atual destacada em `--color-primary-500` bold.
+
+**Bloco 2 — Botão fixo de navegação**
+Idêntico ao blog.html. Fundo `--color-primary-50`, texto neutro, botão "Encontrar um advogado" levando para `advogados.html`.
+
+IMPORTANTE: O botão NÃO deve fazer referência ao tema do post, à categoria ou ao problema descrito no conteúdo. Deve ser sempre o mesmo texto genérico em todas as páginas.
+
+### Rodapé
+Idêntico ao restante do site.
+
+---
+
+## Instruções técnicas
+
+- Usar o mesmo `style.css` e `main.js` do projeto. Não criar arquivos CSS ou JS separados para o blog.
+- Adicionar apenas os estilos necessários para o layout de duas colunas do blog diretamente no `style.css` existente, sem sobrescrever nada.
+- Layout responsivo: em telas menores que 768px, a sidebar vai abaixo do conteúdo principal.
+- Todos os links de categoria devem funcionar como filtros visuais simples em JavaScript puro — ao clicar numa categoria, apenas os cards daquela categoria ficam visíveis.
+- O botão "Encontrar um advogado" na sidebar deve ser sempre o mesmo em todas as páginas — nunca dinâmico, nunca personalizado por categoria ou por conteúdo do post.
+- Código limpo e comentado por seção.
