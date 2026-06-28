@@ -1,0 +1,1 @@
+- [Tailwind v4 numbered color tokens](tailwind-v4-color-tokens.md) — numbered utilities (bg-primary-500) render blank/invisible unless the token is registered in the @theme block; :root vars alone are not enough.
