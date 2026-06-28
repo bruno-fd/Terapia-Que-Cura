@@ -476,7 +476,7 @@ export default function Advogados() {
           <div className="flex flex-col gap-3">
             <Button
               className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white text-lg h-12 rounded-full"
-              onClick={() => window.open(`https://wa.me/55${contactLawyer?.phone.replace(/\D/g, '')}`, '_blank')}
+              onClick={() => window.open(`https://wa.me/55${contactLawyer?.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Olá, encontrei seu perfil no Minha Causa Justa e preciso de ajuda jurídica')}`, '_blank')}
               data-testid="button-chamar-whatsapp"
             >
               <MessageCircle className="w-5 h-5 mr-2" /> Chamar no WhatsApp

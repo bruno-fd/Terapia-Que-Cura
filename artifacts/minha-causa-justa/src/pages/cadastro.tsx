@@ -49,7 +49,7 @@ export default function Cadastro() {
   const faqs = [
     {
       q: "Como funciona o cadastro?",
-      a: "Você preenche seu perfil com foto, especialidades, área de atuação, estados onde atende e suas informações de contato. Depois de confirmado o pagamento, seu perfil entra no ar em até 24 horas."
+      a: "Você preenche seu perfil com foto, especialidades, área de atuação, estados onde atende e suas informações de contato. Depois de confirmado o pagamento, seu perfil entra no ar imediatamente."
     },
     {
       q: "Quantos clientes vou receber?",
@@ -276,7 +276,7 @@ export default function Cadastro() {
         <section className="bg-[#F5F4F2] py-20 md:py-28 overflow-hidden">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
-              <div className="w-full lg:w-1/2 order-2 lg:order-1 relative">
+              <div className="w-full lg:w-1/2 order-2 lg:order-1 relative lg:-mt-12">
                 <div className="relative h-[520px] w-full rounded-t-[260px] rounded-b-[40px] overflow-hidden shadow-2xl border-[12px] border-white z-10">
                   <img
                     src={advogadaPerfil}
@@ -384,7 +384,7 @@ export default function Cadastro() {
                   Sua próxima cliente pode estar procurando um advogado agora mesmo.
                 </h2>
                 <p className="text-xl md:text-2xl text-primary-100 mb-12 font-light">
-                  O cadastro leva menos de 10 minutos. Seu perfil entra no ar em até 24 horas.
+                  O cadastro leva menos de 10 minutos. Seu perfil entra no ar imediatamente.
                 </p>
                 <Button
                   onClick={scrollToPlans}
