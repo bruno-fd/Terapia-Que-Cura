@@ -5,19 +5,41 @@ import { logger } from "./logger";
 // A URL base e a chave variam por ambiente:
 //   - Sandbox:   https://sandbox.asaas.com/api/v3  (chave $aact_hmlg_...)
 //   - Produção:  https://api.asaas.com/v3          (chave $aact_prod_...)
-// Definimos a base por ASAAS_BASE_URL (padrão sandbox) e a chave por
-// ASAAS_API_KEY (segredo). Nunca logamos a chave.
+// A base vem de ASAAS_BASE_URL (definida por ambiente: dev=sandbox,
+// prod=produção). A chave do Asaas é diferente entre sandbox e produção, e
+// segredos no Replit são globais (não separados por ambiente), então mantemos
+// duas secrets e escolhemos pela URL base:
+//   - Produção  -> ASAAS_API_KEY_PROD
+//   - Sandbox   -> ASAAS_API_KEY
+// Nunca logamos a chave.
 // ---------------------------------------------------------------------------
 
 const ASAAS_BASE_URL =
   process.env["ASAAS_BASE_URL"] ?? "https://sandbox.asaas.com/api/v3";
 
+// true quando apontamos para a API de produção do Asaas.
+const IS_PRODUCTION_ASAAS = /(^|\/\/)api\.asaas\.com/i.test(ASAAS_BASE_URL);
+
 function getApiKey(): string {
-  const key = process.env["ASAAS_API_KEY"];
+  const key = IS_PRODUCTION_ASAAS
+    ? process.env["ASAAS_API_KEY_PROD"]
+    : process.env["ASAAS_API_KEY"];
   if (!key) {
-    throw new Error("ASAAS_API_KEY não configurada.");
+    throw new Error(
+      IS_PRODUCTION_ASAAS
+        ? "ASAAS_API_KEY_PROD não configurada (chave de produção do Asaas)."
+        : "ASAAS_API_KEY não configurada.",
+    );
   }
   return key;
+}
+
+// Indica se a chave do Asaas para o ambiente atual está configurada. Usado para
+// decidir, sem lançar exceção, se o registro do webhook deve rodar.
+export function isAsaasConfigured(): boolean {
+  return IS_PRODUCTION_ASAAS
+    ? Boolean(process.env["ASAAS_API_KEY_PROD"])
+    : Boolean(process.env["ASAAS_API_KEY"]);
 }
 
 export class AsaasError extends Error {

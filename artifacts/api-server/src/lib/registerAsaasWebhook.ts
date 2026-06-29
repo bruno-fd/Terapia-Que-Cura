@@ -4,6 +4,7 @@ import {
   createWebhook,
   updateWebhook,
   getMyAccount,
+  isAsaasConfigured,
   AsaasError,
   type AsaasWebhook,
 } from "./asaas";
@@ -53,8 +54,10 @@ async function resolveEmail(): Promise<string | undefined> {
 // Registra (ou atualiza) o webhook da Asaas de forma idempotente, identificando
 // o registro existente pela URL. Falhas são logadas, nunca derrubam o servidor.
 export async function registerAsaasWebhook(): Promise<void> {
-  if (!process.env["ASAAS_API_KEY"]) {
-    logger.info("ASAAS_API_KEY ausente; registro do webhook Asaas ignorado.");
+  if (!isAsaasConfigured()) {
+    logger.info(
+      "Chave Asaas ausente para o ambiente atual; registro do webhook ignorado.",
+    );
     return;
   }
 
