@@ -155,7 +155,7 @@ export function CityAutocomplete({
         <ul
           id={`${testId}-listbox`}
           role="listbox"
-          className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
+          className="scroll-visible absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
           data-testid={`${testId}-listbox`}
         >
           {sugestoes.map((cidade, index) => (
