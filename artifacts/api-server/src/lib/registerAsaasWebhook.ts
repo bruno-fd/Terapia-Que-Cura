@@ -94,16 +94,19 @@ export async function registerAsaasWebhook(): Promise<void> {
       return;
     }
 
-    // Só re-sincroniza um token quando a Asaas devolve um valor divergente; a
-    // listagem costuma omitir o authToken, então não forçamos update à toa.
-    const tokenMismatch = Boolean(
-      authToken && match.authToken && match.authToken !== authToken,
+    // Re-sincroniza o token sempre que ele estiver configurado mas o registro
+    // não apresentar um valor (a listagem costuma omitir o authToken, então
+    // isso pode disparar um update por startup, que é idempotente e barato) ou
+    // quando a Asaas devolver um valor divergente. Isso evita que um webhook
+    // criado antes do token ficar permanentemente sem autenticação.
+    const tokenNeedsSync = Boolean(
+      authToken && (!match.authToken || match.authToken !== authToken),
     );
     const needsUpdate =
       !match.enabled ||
       match.interrupted ||
       !eventsMatch(match.events ?? [], WEBHOOK_EVENTS) ||
-      tokenMismatch;
+      tokenNeedsSync;
 
     if (needsUpdate && match.id) {
       await updateWebhook(match.id, desired);
