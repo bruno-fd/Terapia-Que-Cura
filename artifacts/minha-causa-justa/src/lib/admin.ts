@@ -82,6 +82,26 @@ export function createPost(
   });
 }
 
+export interface UpdatePostInput {
+  category?: string;
+  title?: string;
+  subtitle?: string;
+  excerpt?: string;
+  bodyHtml?: string;
+  oabClosing?: string;
+  published?: boolean;
+}
+
+export function updatePost(
+  id: number,
+  input: UpdatePostInput,
+): Promise<ApiBlogPost> {
+  return adminFetch(`/admin/blog/posts/${id}`, {
+    method: "PATCH",
+    body: input,
+  });
+}
+
 export function listAdminPosts(): Promise<ApiBlogPost[]> {
   return adminFetch("/admin/blog/posts");
 }

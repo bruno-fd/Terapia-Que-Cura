@@ -1,3 +1,4 @@
 - [Flaky banner tests](flaky-banner-tests.md) — auto-hiding success banners + non-retrying Playwright count() = false failures; prefer persistent UI cleared on next edit.
 - [IBGE city feature](ibge-city-feature.md) — cities load on-demand from IBGE API (in-memory cache); city values must always carry their UF since names repeat across states.
 - [Blog category integrity](blog-category-integrity.md) — site categories single-sourced in data/categories.ts (slug-based URLs); server VALID_CATEGORIES is a hand-synced copy; category changes also need DB UPDATEs.
+- [Blog richtext + drafts](blog-richtext-publishing.md) — AI posts are drafts until admin publishes; react-quill-new (not react-quill) on React 19; sanitize bodyHtml server-side with sanitize-html; "publication date" = publishedAt not createdAt.

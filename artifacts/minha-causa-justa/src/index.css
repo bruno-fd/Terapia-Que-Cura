@@ -418,3 +418,22 @@ html {
     inset: -1px;
   }
 }
+
+/* Editor richtext (react-quill-new) usado no painel /admin */
+.rich-text-editor .ql-toolbar {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  border-color: var(--color-neutral-300, #d4d4d4);
+  background: #fff;
+}
+.rich-text-editor .ql-container {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  border-color: var(--color-neutral-300, #d4d4d4);
+  font-family: inherit;
+  font-size: 1rem;
+}
+.rich-text-editor .ql-editor {
+  min-height: 280px;
+  line-height: 1.75;
+}

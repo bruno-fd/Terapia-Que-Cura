@@ -34,8 +34,10 @@ export const ListPublishedPostsResponseItem = zod.object({
   "heading": zod.string().nullish(),
   "paragraphs": zod.array(zod.string())
 })),
+  "bodyHtml": zod.string(),
   "oabClosing": zod.string(),
   "published": zod.boolean(),
+  "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListPublishedPostsResponse = zod.array(ListPublishedPostsResponseItem)
@@ -72,15 +74,17 @@ export const ListAdminPostsResponseItem = zod.object({
   "heading": zod.string().nullish(),
   "paragraphs": zod.array(zod.string())
 })),
+  "bodyHtml": zod.string(),
   "oabClosing": zod.string(),
   "published": zod.boolean(),
+  "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListAdminPostsResponse = zod.array(ListAdminPostsResponseItem)
 
 
 /**
- * @summary Generate and publish a blog post
+ * @summary Generate a draft blog post (not published)
  */
 
 
@@ -104,8 +108,52 @@ export const CreateBlogPostResponse = zod.object({
   "heading": zod.string().nullish(),
   "paragraphs": zod.array(zod.string())
 })),
+  "bodyHtml": zod.string(),
   "oabClosing": zod.string(),
   "published": zod.boolean(),
+  "publishedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a post (edit content, publish or unpublish)
+ */
+export const UpdateBlogPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const UpdateBlogPostBody = zod.object({
+  "category": zod.string().min(1).optional(),
+  "title": zod.string().min(1).optional(),
+  "subtitle": zod.string().optional(),
+  "excerpt": zod.string().optional(),
+  "bodyHtml": zod.string().optional(),
+  "oabClosing": zod.string().optional(),
+  "published": zod.boolean().optional()
+})
+
+export const UpdateBlogPostResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "subtitle": zod.string(),
+  "excerpt": zod.string(),
+  "keywords": zod.array(zod.string()),
+  "readingMinutes": zod.number(),
+  "body": zod.array(zod.object({
+  "heading": zod.string().nullish(),
+  "paragraphs": zod.array(zod.string())
+})),
+  "bodyHtml": zod.string(),
+  "oabClosing": zod.string(),
+  "published": zod.boolean(),
+  "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 

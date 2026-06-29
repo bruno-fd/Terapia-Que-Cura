@@ -1,5 +1,6 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import type { BlogPostSection } from "@workspace/db";
+import sanitize from "sanitize-html";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -94,6 +95,89 @@ export function computeReadingMinutes(
       words += p.split(/\s+/).filter(Boolean).length;
     }
   }
+  return Math.max(1, Math.round(words / 200));
+}
+
+// ------------------------------------------------------------------
+// Conversões entre seções e HTML (usadas pelo editor richtext do admin)
+// ------------------------------------------------------------------
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Monta o HTML inicial de um post a partir das seções geradas pela IA.
+export function sectionsToHtml(body: BlogPostSection[]): string {
+  const parts: string[] = [];
+  for (const section of body) {
+    if (section.heading) {
+      parts.push(`<h2>${escapeHtml(section.heading)}</h2>`);
+    }
+    for (const p of section.paragraphs) {
+      parts.push(`<p>${escapeHtml(p)}</p>`);
+    }
+  }
+  return parts.join("\n");
+}
+
+// Sanitização do HTML vindo do editor richtext. Allowlist estrita
+// (sanitize-html), cobrindo apenas as tags que o editor pode produzir.
+// Renderizamos via dangerouslySetInnerHTML no front, então isso é a
+// barreira contra XSS armazenado.
+export function sanitizeHtml(html: string): string {
+  return sanitize(html, {
+    allowedTags: [
+      "h2",
+      "h3",
+      "p",
+      "br",
+      "strong",
+      "b",
+      "em",
+      "i",
+      "u",
+      "s",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+      "a",
+    ],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+    },
+    // Apenas protocolos seguros para links
+    allowedSchemes: ["http", "https", "mailto"],
+    allowedSchemesAppliedToAttributes: ["href"],
+    disallowedTagsMode: "discard",
+    transformTags: {
+      // Garante que links externos não vazem o referrer e abram com segurança
+      a: sanitize.simpleTransform("a", {
+        rel: "noopener noreferrer nofollow",
+      }),
+    },
+  }).trim();
+}
+
+// Extrai o texto puro de um HTML para contagem de palavras.
+export function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, " ")
+    .replace(/<\/(p|div|h[1-6]|li|ul|ol|blockquote)>/gi, " ")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function computeReadingMinutesFromText(text: string): number {
+  const words = text.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
 

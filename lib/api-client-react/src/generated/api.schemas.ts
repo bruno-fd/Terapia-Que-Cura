@@ -29,8 +29,10 @@ export interface BlogPost {
   keywords: string[];
   readingMinutes: number;
   body: BlogPostSection[];
+  bodyHtml: string;
   oabClosing: string;
   published: boolean;
+  publishedAt?: string | null;
   createdAt: string;
 }
 
@@ -48,5 +50,17 @@ export interface BlogPostInput {
   category: string;
   /** @minLength 1 */
   theme: string;
+}
+
+export interface UpdateBlogPostInput {
+  /** @minLength 1 */
+  category?: string;
+  /** @minLength 1 */
+  title?: string;
+  subtitle?: string;
+  excerpt?: string;
+  bodyHtml?: string;
+  oabClosing?: string;
+  published?: boolean;
 }
 

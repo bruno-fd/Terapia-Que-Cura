@@ -15,12 +15,19 @@ import {
   CreateBlogPostBody,
   CreateBlogPostResponse,
   DeleteBlogPostParams,
+  UpdateBlogPostParams,
+  UpdateBlogPostBody,
+  UpdateBlogPostResponse,
 } from "@workspace/api-zod";
 import {
   generateIdeas,
   generatePost,
   slugify,
   computeReadingMinutes,
+  sectionsToHtml,
+  sanitizeHtml,
+  htmlToPlainText,
+  computeReadingMinutesFromText,
 } from "../lib/blog-generator";
 
 const ADMIN_PASSWORD = "123456";
@@ -160,12 +167,80 @@ router.post("/admin/blog/posts", async (req, res): Promise<void> => {
       keywords: generated.keywords,
       readingMinutes,
       body: generated.body,
+      bodyHtml: sectionsToHtml(generated.body),
       oabClosing: generated.oabClosing,
-      published: true,
+      // Rascunho: o post só vai ao ar quando o admin clicar em "Publicar".
+      published: false,
     })
     .returning();
 
   res.status(201).json(CreateBlogPostResponse.parse(created));
+});
+
+// Atualiza um post: edição de conteúdo (richtext) e publicação/despublicação
+router.patch("/admin/blog/posts/:id", async (req, res): Promise<void> => {
+  const params = UpdateBlogPostParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = UpdateBlogPostBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const input = parsed.data;
+
+  if (input.category !== undefined && !VALID_CATEGORIES.has(input.category)) {
+    res.status(400).json({ error: "Macrocategoria inválida." });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(blogPostsTable)
+    .where(eq(blogPostsTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Post não encontrado." });
+    return;
+  }
+
+  const updates: Partial<typeof blogPostsTable.$inferInsert> = {};
+  if (input.category !== undefined) updates.category = input.category;
+  if (input.title !== undefined) updates.title = input.title;
+  if (input.subtitle !== undefined) updates.subtitle = input.subtitle;
+  if (input.excerpt !== undefined) updates.excerpt = input.excerpt;
+  if (input.oabClosing !== undefined) updates.oabClosing = input.oabClosing;
+  if (input.published !== undefined) {
+    updates.published = input.published;
+    // Registra a data da primeira publicação (filtro por data de publicação).
+    if (input.published && existing.publishedAt === null) {
+      updates.publishedAt = new Date();
+    }
+  }
+
+  if (input.bodyHtml !== undefined) {
+    const cleanHtml = sanitizeHtml(input.bodyHtml);
+    updates.bodyHtml = cleanHtml;
+    const oab =
+      input.oabClosing !== undefined ? input.oabClosing : existing.oabClosing;
+    const text = `${htmlToPlainText(cleanHtml)} ${oab}`;
+    updates.readingMinutes = computeReadingMinutesFromText(text);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.json(UpdateBlogPostResponse.parse(existing));
+    return;
+  }
+
+  const [updated] = await db
+    .update(blogPostsTable)
+    .set(updates)
+    .where(eq(blogPostsTable.id, params.data.id))
+    .returning();
+
+  res.json(UpdateBlogPostResponse.parse(updated));
 });
 
 // Remove um post gerado

@@ -69,49 +69,6 @@ export default function Home() {
                     Você não precisa entender de lei. Precisa dar o primeiro passo.
                   </p>
                 </div>
-
-                <div className="bg-primary-50 p-6 rounded-[32px] border border-primary-100 shadow-sm relative z-10">
-                  <div className="flex flex-col gap-3">
-                    <Select value={categoria} onValueChange={setCategoria}>
-                      <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-problema">
-                        <SelectValue placeholder="Qual é o seu problema?" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {opcoesCategoria.map(p => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <div className="sm:flex-1 min-w-0">
-                        <StateAutocomplete
-                          value={estado}
-                          onSelect={handleEstadoChange}
-                          placeholder="Estado"
-                          inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5 pr-10"
-                          testId="select-estado"
-                        />
-                      </div>
-                      <div className="sm:flex-1 min-w-0">
-                        <CityAutocomplete
-                          uf={estado}
-                          onSelect={(nome) => setCidade(`${nome}, ${estado}`)}
-                          clearOnSelect={false}
-                          placeholder="Sua cidade..."
-                          inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
-                          testId="select-cidade"
-                        />
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={handleSearch} 
-                      className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full"
-                      data-testid="button-buscar-advogado"
-                    >
-                      Encontrar advogado
-                    </Button>
-                  </div>
-                </div>
               </div>
 
               <div className="w-full lg:w-1/2 relative">
@@ -125,6 +82,50 @@ export default function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-900/40 to-transparent"></div>
                 </div>
+              </div>
+            </div>
+
+            {/* Barra de busca horizontal full-width */}
+            <div className="bg-primary-50 p-4 md:p-5 rounded-[32px] border border-primary-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10 mt-12 lg:mt-16">
+              <div className="flex flex-col lg:flex-row gap-3 lg:items-stretch">
+                <div className="lg:flex-1 min-w-0">
+                  <Select value={categoria} onValueChange={setCategoria}>
+                    <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-problema">
+                      <SelectValue placeholder="Qual é o seu problema?" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {opcoesCategoria.map(p => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="lg:flex-1 min-w-0">
+                  <StateAutocomplete
+                    value={estado}
+                    onSelect={handleEstadoChange}
+                    placeholder="Estado"
+                    inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5 pr-10"
+                    testId="select-estado"
+                  />
+                </div>
+                <div className="lg:flex-1 min-w-0">
+                  <CityAutocomplete
+                    uf={estado}
+                    onSelect={(nome) => setCidade(`${nome}, ${estado}`)}
+                    clearOnSelect={false}
+                    placeholder="Sua cidade..."
+                    inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
+                    testId="select-cidade"
+                  />
+                </div>
+                <Button 
+                  onClick={handleSearch} 
+                  className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full lg:w-auto lg:shrink-0"
+                  data-testid="button-buscar-advogado"
+                >
+                  Encontrar advogado
+                </Button>
               </div>
             </div>
           </div>

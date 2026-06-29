@@ -25,7 +25,8 @@ import type {
   BlogIdeasResult,
   BlogPost,
   BlogPostInput,
-  HealthStatus
+  HealthStatus,
+  UpdateBlogPostInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -367,7 +368,7 @@ export const getCreateBlogPostUrl = () => {
 }
 
 /**
- * @summary Generate and publish a blog post
+ * @summary Generate a draft blog post (not published)
  */
 export const createBlogPost = async (blogPostInput: BlogPostInput, options?: RequestInit): Promise<BlogPost> => {
 
@@ -415,7 +416,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateBlogPostMutationError = ErrorType<ApiErrorResponse>
 
     /**
- * @summary Generate and publish a blog post
+ * @summary Generate a draft blog post (not published)
  */
 export const useCreateBlogPost = <TError = ErrorType<ApiErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBlogPost>>, TError,{data: BodyType<BlogPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -426,6 +427,77 @@ export const useCreateBlogPost = <TError = ErrorType<ApiErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateBlogPostMutationOptions(options));
+    }
+
+export const getUpdateBlogPostUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/blog/posts/${id}`
+}
+
+/**
+ * @summary Update a post (edit content, publish or unpublish)
+ */
+export const updateBlogPost = async (id: number,
+    updateBlogPostInput: UpdateBlogPostInput, options?: RequestInit): Promise<BlogPost> => {
+
+  return customFetch<BlogPost>(getUpdateBlogPostUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateBlogPostInput)
+  }
+);}
+
+
+
+
+export const getUpdateBlogPostMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBlogPost>>, TError,{id: number;data: BodyType<UpdateBlogPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBlogPost>>, TError,{id: number;data: BodyType<UpdateBlogPostInput>}, TContext> => {
+
+const mutationKey = ['updateBlogPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBlogPost>>, {id: number;data: BodyType<UpdateBlogPostInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateBlogPost(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBlogPostMutationResult = NonNullable<Awaited<ReturnType<typeof updateBlogPost>>>
+    export type UpdateBlogPostMutationBody = BodyType<UpdateBlogPostInput>
+    export type UpdateBlogPostMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Update a post (edit content, publish or unpublish)
+ */
+export const useUpdateBlogPost = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBlogPost>>, TError,{id: number;data: BodyType<UpdateBlogPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateBlogPost>>,
+        TError,
+        {id: number;data: BodyType<UpdateBlogPostInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateBlogPostMutationOptions(options));
     }
 
 export const getDeleteBlogPostUrl = (id: number,) => {

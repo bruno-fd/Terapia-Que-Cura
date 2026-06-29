@@ -110,25 +110,32 @@ export default function Post() {
               <hr className="my-8 border-neutral-200" />
 
               {/* Corpo do post */}
-              <div className="space-y-6">
-                {post.body.map((section, index) => (
-                  <section key={index}>
-                    {section.heading && (
-                      <h2 className="text-xl font-bold text-primary-800 mt-10 mb-4">
-                        {section.heading}
-                      </h2>
-                    )}
-                    {section.paragraphs.map((paragraph, pIndex) => (
-                      <p
-                        key={pIndex}
-                        className="text-neutral-700 leading-loose mb-4"
-                      >
-                        {paragraph}
-                      </p>
-                    ))}
-                  </section>
-                ))}
-              </div>
+              {post.bodyHtml ? (
+                <div
+                  className="prose prose-neutral max-w-none prose-headings:text-primary-800 prose-headings:font-bold prose-h2:text-xl prose-h2:mt-10 prose-h2:mb-4 prose-p:text-neutral-700 prose-p:leading-loose prose-a:text-primary-600 prose-strong:text-neutral-800"
+                  dangerouslySetInnerHTML={{ __html: post.bodyHtml }}
+                />
+              ) : (
+                <div className="space-y-6">
+                  {post.body.map((section, index) => (
+                    <section key={index}>
+                      {section.heading && (
+                        <h2 className="text-xl font-bold text-primary-800 mt-10 mb-4">
+                          {section.heading}
+                        </h2>
+                      )}
+                      {section.paragraphs.map((paragraph, pIndex) => (
+                        <p
+                          key={pIndex}
+                          className="text-neutral-700 leading-loose mb-4"
+                        >
+                          {paragraph}
+                        </p>
+                      ))}
+                    </section>
+                  ))}
+                </div>
+              )}
 
               {/* Encerramento padrão OAB (posts gerados) */}
               {post.oabClosing && (

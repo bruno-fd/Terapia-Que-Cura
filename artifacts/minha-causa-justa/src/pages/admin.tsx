@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,9 +11,10 @@ import {
   Loader2,
   Lightbulb,
   PenLine,
-  Copy,
-  Check,
-  RefreshCw,
+  Pencil,
+  Send,
+  Save,
+  X,
   Trash2,
   ChevronDown,
   LogOut,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { BLOG_CATEGORIES } from "@/data/blog";
 import {
   getAdminPassword,
@@ -29,11 +31,24 @@ import {
   generateIdeas as apiGenerateIdeas,
   createPost as apiCreatePost,
   listAdminPosts as apiListAdminPosts,
+  updatePost as apiUpdatePost,
   deletePost as apiDeletePost,
 } from "@/lib/admin";
 
 const ADMIN_PASSWORD = "123456";
 const ERROR_COLOR = "#C0392B";
+const SUCCESS_COLOR = "#1E7D4F";
+const WARNING_COLOR = "#B97D00";
+
+function formatDatePtBr(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
 
 // ============================================================
 // Gate de senha
@@ -180,7 +195,214 @@ function RulesPanel() {
 }
 
 // ============================================================
-// Painel principal do gerador
+// Editor de um post (rascunho recém-gerado ou post existente)
+// ============================================================
+function PostEditor({
+  post,
+  saving,
+  onSave,
+  onClose,
+}: {
+  post: ApiBlogPost;
+  saving: boolean;
+  onSave: (
+    input: {
+      title: string;
+      subtitle: string;
+      excerpt: string;
+      category: string;
+      bodyHtml: string;
+    },
+    publishedOverride?: boolean,
+  ) => void;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState(post.title);
+  const [subtitle, setSubtitle] = useState(post.subtitle);
+  const [excerpt, setExcerpt] = useState(post.excerpt);
+  const [category, setCategory] = useState(post.category);
+  const [bodyHtml, setBodyHtml] = useState(post.bodyHtml || "");
+
+  // Reinicializa o formulário quando outro post é aberto no editor.
+  useEffect(() => {
+    setTitle(post.title);
+    setSubtitle(post.subtitle);
+    setExcerpt(post.excerpt);
+    setCategory(post.category);
+    setBodyHtml(post.bodyHtml || "");
+  }, [post.id]);
+
+  const collect = () => ({
+    title: title.trim(),
+    subtitle: subtitle.trim(),
+    excerpt: excerpt.trim(),
+    category,
+    bodyHtml,
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
+        <div className="flex items-center gap-3">
+          <Badge
+            className="border-transparent text-white"
+            style={{
+              backgroundColor: post.published ? SUCCESS_COLOR : WARNING_COLOR,
+            }}
+          >
+            {post.published ? "Publicado" : "Rascunho"}
+          </Badge>
+          <span className="text-sm text-neutral-500">
+            Leitura de aproximadamente {post.readingMinutes} minutos
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          {post.published && (
+            <Link
+              href={`/blog/${post.slug}`}
+              className="text-sm text-primary-600 hover:underline inline-flex items-center gap-1"
+            >
+              Ver no site <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm text-neutral-500 hover:text-neutral-700 inline-flex items-center gap-1"
+            data-testid="button-fechar-editor"
+          >
+            <X className="h-4 w-4" /> Fechar
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-bold text-neutral-700 mb-1.5">
+            Título
+          </label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full h-11 px-4 rounded-lg border border-neutral-300 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            data-testid="input-editor-titulo"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-neutral-700 mb-1.5">
+            Subtítulo
+          </label>
+          <input
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+            className="w-full h-11 px-4 rounded-lg border border-neutral-300 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            data-testid="input-editor-subtitulo"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-bold text-neutral-700 mb-1.5">
+              Categoria
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full h-11 px-3 rounded-lg border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              data-testid="select-editor-categoria"
+            >
+              {BLOG_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-neutral-700 mb-1.5">
+              Resumo (aparece no card da listagem)
+            </label>
+            <input
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              className="w-full h-11 px-4 rounded-lg border border-neutral-300 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              data-testid="input-editor-resumo"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-neutral-700 mb-1.5">
+            Conteúdo
+          </label>
+          <RichTextEditor value={bodyHtml} onChange={setBodyHtml} />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3 mt-6">
+        {post.published ? (
+          <>
+            <Button
+              type="button"
+              onClick={() => onSave(collect())}
+              disabled={saving}
+              className="h-11 rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
+              data-testid="button-salvar"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Salvar alterações
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onSave(collect(), false)}
+              disabled={saving}
+              className="h-11 rounded-lg border-neutral-300 disabled:opacity-50"
+              data-testid="button-despublicar"
+            >
+              <EyeOff className="h-4 w-4 mr-2" /> Despublicar
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              type="button"
+              onClick={() => onSave(collect(), true)}
+              disabled={saving}
+              className="h-11 rounded-lg bg-accent-600 hover:bg-accent-700 text-white disabled:opacity-50"
+              data-testid="button-publicar"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Publicar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onSave(collect())}
+              disabled={saving}
+              className="h-11 rounded-lg border-neutral-300 disabled:opacity-50"
+              data-testid="button-salvar-rascunho"
+            >
+              <Save className="h-4 w-4 mr-2" /> Salvar rascunho
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Painel principal do gerador + editor
 // ============================================================
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const queryClient = useQueryClient();
@@ -190,15 +412,19 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   const [ideas, setIdeas] = useState<string[]>([]);
   const [loadingIdeas, setLoadingIdeas] = useState(false);
-
-  const [post, setPost] = useState<ApiBlogPost | null>(null);
   const [loadingPost, setLoadingPost] = useState(false);
-
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
 
   const [adminPosts, setAdminPosts] = useState<ApiBlogPost[]>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const [editing, setEditing] = useState<ApiBlogPost | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Filtros da lista de posts
+  const [filterCategory, setFilterCategory] = useState<string>("");
+  const [filterFrom, setFilterFrom] = useState<string>("");
+  const [filterTo, setFilterTo] = useState<string>("");
 
   const refreshAdminPosts = async () => {
     try {
@@ -212,6 +438,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     void refreshAdminPosts();
   }, []);
+
+  const invalidatePublic = () => {
+    queryClient.invalidateQueries({
+      queryKey: getListPublishedPostsQueryKey(),
+    });
+  };
 
   const handleGenerateIdeas = async () => {
     if (!category) {
@@ -233,7 +465,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   const handleWritePost = async () => {
     if (!category) {
-      setError("Selecione uma macrocategoria para o post ser publicado no local correto.");
+      setError(
+        "Selecione uma macrocategoria para o post ficar no local correto.",
+      );
       return;
     }
     if (!theme.trim()) {
@@ -242,14 +476,11 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     }
     setError("");
     setLoadingPost(true);
-    setCopied(false);
     try {
+      // Cria um rascunho: o post não vai ao ar até o admin clicar em Publicar.
       const created = await apiCreatePost(category, theme.trim());
-      setPost(created);
-      queryClient.invalidateQueries({
-        queryKey: getListPublishedPostsQueryKey(),
-      });
-      void refreshAdminPosts();
+      setEditing(created);
+      await refreshAdminPosts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar o post.");
     } finally {
@@ -257,34 +488,33 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  const handleCopy = async () => {
-    if (!post) return;
-    const lines: string[] = [];
-    lines.push(post.title);
-    if (post.subtitle) lines.push(post.subtitle);
-    lines.push("");
-    for (const section of post.body) {
-      if (section.heading) {
-        lines.push(section.heading);
-      }
-      for (const p of section.paragraphs) {
-        lines.push(p);
-      }
-      lines.push("");
-    }
-    if (post.oabClosing) {
-      lines.push(post.oabClosing);
-      lines.push("");
-    }
-    lines.push(
-      "Este conteúdo tem caráter exclusivamente informativo e educativo. Não constitui aconselhamento jurídico.",
-    );
+  const handleSave = async (
+    input: {
+      title: string;
+      subtitle: string;
+      excerpt: string;
+      category: string;
+      bodyHtml: string;
+    },
+    publishedOverride?: boolean,
+  ) => {
+    if (!editing) return;
+    setError("");
+    setSaving(true);
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setError("Não foi possível copiar o texto.");
+      const updated = await apiUpdatePost(editing.id, {
+        ...input,
+        ...(publishedOverride !== undefined
+          ? { published: publishedOverride }
+          : {}),
+      });
+      setEditing(updated);
+      await refreshAdminPosts();
+      invalidatePublic();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar o post.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -292,10 +522,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     setDeletingId(id);
     try {
       await apiDeletePost(id);
-      if (post?.id === id) setPost(null);
-      queryClient.invalidateQueries({
-        queryKey: getListPublishedPostsQueryKey(),
-      });
+      if (editing?.id === id) setEditing(null);
+      invalidatePublic();
       await refreshAdminPosts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao excluir o post.");
@@ -303,6 +531,29 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setDeletingId(null);
     }
   };
+
+  const filteredPosts = useMemo(() => {
+    return adminPosts.filter((p) => {
+      if (filterCategory && p.category !== filterCategory) return false;
+      // O filtro de data usa a data de publicação. Rascunhos (sem
+      // publishedAt) ficam de fora quando um intervalo de datas é aplicado.
+      if (filterFrom || filterTo) {
+        if (!p.publishedAt) return false;
+        const published = new Date(p.publishedAt);
+        if (filterFrom) {
+          const from = new Date(`${filterFrom}T00:00:00`);
+          if (published < from) return false;
+        }
+        if (filterTo) {
+          const to = new Date(`${filterTo}T23:59:59`);
+          if (published > to) return false;
+        }
+      }
+      return true;
+    });
+  }, [adminPosts, filterCategory, filterFrom, filterTo]);
+
+  const hasFilters = filterCategory || filterFrom || filterTo;
 
   return (
     <div className="min-h-screen bg-[#F5F4F2]">
@@ -410,7 +661,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             <div className="bg-white rounded-2xl border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
               <h2 className="font-bold text-primary-800 mb-1">Tema do post</h2>
               <p className="text-sm text-neutral-500 mb-4">
-                Escolha uma ideia acima ou escreva um tema livre.
+                Escolha uma ideia acima ou escreva um tema livre. O post é criado
+                como rascunho para você revisar antes de publicar.
               </p>
               <textarea
                 value={theme}
@@ -431,11 +683,11 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                 {loadingPost ? (
                   <>
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Escrevendo
-                    post...
+                    rascunho...
                   </>
                 ) : (
                   <>
-                    <PenLine className="h-5 w-5 mr-2" /> Escrever post
+                    <PenLine className="h-5 w-5 mr-2" /> Gerar rascunho
                   </>
                 )}
               </Button>
@@ -450,15 +702,15 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             <RulesPanel />
           </div>
 
-          {/* Painel de saída */}
+          {/* Painel de saída: editor + gestão */}
           <div className="flex-1 w-full min-w-0 space-y-6">
             <div className="bg-white rounded-2xl border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8">
-              {!post && !loadingPost && (
+              {!editing && !loadingPost && (
                 <div className="text-center text-neutral-500 py-16">
                   <PenLine className="h-10 w-10 mx-auto mb-4 text-neutral-300" />
                   <p>
-                    O post gerado aparece aqui e é publicado automaticamente na
-                    categoria escolhida.
+                    Gere um rascunho ou selecione um post da lista para editar.
+                    Nada vai ao ar até você clicar em Publicar.
                   </p>
                 </div>
               )}
@@ -466,162 +718,153 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {loadingPost && (
                 <div className="text-center text-neutral-500 py-16">
                   <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin text-primary-500" />
-                  <p>Gerando o post seguindo as regras editoriais e da OAB...</p>
+                  <p>Gerando o rascunho seguindo as regras editoriais e da OAB...</p>
                 </div>
               )}
 
-              {post && !loadingPost && (
-                <article>
-                  <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-                    <Badge className="bg-primary-50 text-primary-700 border-transparent">
-                      {post.category}
-                    </Badge>
-                    <span className="text-sm text-neutral-500">
-                      Leitura de aproximadamente {post.readingMinutes} minutos
-                    </span>
-                  </div>
-
-                  <p className="text-sm text-[#1E7D4F] mb-4">
-                    Post publicado no blog.{" "}
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="underline inline-flex items-center gap-1"
-                    >
-                      Ver no site <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
-                  </p>
-
-                  <h1 className="text-2xl md:text-3xl font-bold text-primary-900 leading-tight mb-3">
-                    {post.title}
-                  </h1>
-                  {post.subtitle && (
-                    <p className="text-lg text-neutral-600 leading-relaxed mb-4">
-                      {post.subtitle}
-                    </p>
-                  )}
-
-                  {post.keywords.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {post.keywords.map((kw) => (
-                        <span
-                          key={kw}
-                          className="text-xs text-neutral-600 bg-neutral-100 border border-neutral-200 rounded-full px-3 py-1"
-                        >
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <hr className="my-6 border-neutral-200" />
-
-                  <div className="space-y-5">
-                    {post.body.map((section, index) => (
-                      <section key={index}>
-                        {section.heading && (
-                          <h2 className="text-xl font-bold text-primary-800 mt-8 mb-3">
-                            {section.heading}
-                          </h2>
-                        )}
-                        {section.paragraphs.map((p, pIndex) => (
-                          <p
-                            key={pIndex}
-                            className="text-neutral-700 leading-loose mb-4"
-                          >
-                            {p}
-                          </p>
-                        ))}
-                      </section>
-                    ))}
-                  </div>
-
-                  {post.oabClosing && (
-                    <div className="mt-8 rounded-2xl bg-primary-50 border border-primary-100 p-6">
-                      <p className="text-neutral-700 leading-loose">
-                        {post.oabClosing}
-                      </p>
-                    </div>
-                  )}
-
-                  <p className="text-sm text-neutral-500 italic mt-6">
-                    Este conteúdo tem caráter exclusivamente informativo e
-                    educativo. Não constitui aconselhamento jurídico.
-                  </p>
-
-                  <div className="flex flex-wrap gap-3 mt-8">
-                    <Button
-                      type="button"
-                      onClick={handleCopy}
-                      variant="outline"
-                      className="h-11 rounded-lg border-neutral-300"
-                      data-testid="button-copiar"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" /> Copiado
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-2" /> Copiar texto
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleWritePost}
-                      disabled={loadingPost}
-                      className="h-11 rounded-lg bg-primary-600 hover:bg-primary-700 text-white"
-                      data-testid="button-nova-versao"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" /> Gerar nova versão
-                    </Button>
-                  </div>
-                </article>
+              {editing && !loadingPost && (
+                <PostEditor
+                  key={editing.id}
+                  post={editing}
+                  saving={saving}
+                  onSave={handleSave}
+                  onClose={() => setEditing(null)}
+                />
               )}
             </div>
 
-            {/* Gestão de posts gerados */}
-            {adminPosts.length > 0 && (
-              <div className="bg-white rounded-2xl border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
-                <h2 className="font-bold text-primary-800 mb-4">
-                  Posts publicados ({adminPosts.length})
+            {/* Gestão de posts */}
+            <div className="bg-white rounded-2xl border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                <h2 className="font-bold text-primary-800">
+                  Posts ({filteredPosts.length}
+                  {hasFilters ? ` de ${adminPosts.length}` : ""})
                 </h2>
+              </div>
+
+              {/* Filtros */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-600 mb-1">
+                    Categoria
+                  </label>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    data-testid="select-filtro-categoria"
+                  >
+                    <option value="">Todas</option>
+                    {BLOG_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-600 mb-1">
+                    Publicado de
+                  </label>
+                  <input
+                    type="date"
+                    value={filterFrom}
+                    onChange={(e) => setFilterFrom(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    data-testid="input-filtro-de"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-600 mb-1">
+                    Publicado até
+                  </label>
+                  <input
+                    type="date"
+                    value={filterTo}
+                    onChange={(e) => setFilterTo(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    data-testid="input-filtro-ate"
+                  />
+                </div>
+              </div>
+
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterCategory("");
+                    setFilterFrom("");
+                    setFilterTo("");
+                  }}
+                  className="text-xs text-primary-600 hover:underline mb-3"
+                >
+                  Limpar filtros
+                </button>
+              )}
+
+              {filteredPosts.length === 0 ? (
+                <p className="text-sm text-neutral-500 py-6 text-center">
+                  Nenhum post encontrado com os filtros atuais.
+                </p>
+              ) : (
                 <ul className="divide-y divide-neutral-200">
-                  {adminPosts.map((p) => (
+                  {filteredPosts.map((p) => (
                     <li
                       key={p.id}
                       className="py-3 flex items-center justify-between gap-4"
                     >
                       <div className="min-w-0">
-                        <Link
-                          href={`/blog/${p.slug}`}
-                          className="text-sm font-medium text-neutral-800 hover:text-primary-700 line-clamp-1"
-                        >
-                          {p.title}
-                        </Link>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge
+                            className="border-transparent text-white text-[11px]"
+                            style={{
+                              backgroundColor: p.published
+                                ? SUCCESS_COLOR
+                                : WARNING_COLOR,
+                            }}
+                          >
+                            {p.published ? "Publicado" : "Rascunho"}
+                          </Badge>
+                          <span className="text-sm font-medium text-neutral-800 line-clamp-1">
+                            {p.title}
+                          </span>
+                        </div>
                         <span className="text-xs text-neutral-500">
-                          {p.category}
+                          {p.category} &middot;{" "}
+                          {p.publishedAt
+                            ? `Publicado em ${formatDatePtBr(p.publishedAt)}`
+                            : `Criado em ${formatDatePtBr(p.createdAt)}`}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(p.id)}
-                        disabled={deletingId === p.id}
-                        className="text-neutral-400 hover:text-[#C0392B] disabled:opacity-50 shrink-0"
-                        aria-label="Excluir post"
-                        data-testid={`button-excluir-${p.id}`}
-                      >
-                        {deletingId === p.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setEditing(p)}
+                          className="text-sm text-primary-600 hover:text-primary-800 inline-flex items-center gap-1"
+                          data-testid={`button-editar-${p.id}`}
+                        >
+                          <Pencil className="h-4 w-4" /> Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p.id)}
+                          disabled={deletingId === p.id}
+                          className="text-neutral-400 hover:text-[#C0392B] disabled:opacity-50"
+                          aria-label="Excluir post"
+                          data-testid={`button-excluir-${p.id}`}
+                        >
+                          {deletingId === p.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </main>
@@ -633,7 +876,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 // Página /admin
 // ============================================================
 export default function Admin() {
-  const [authed, setAuthed] = useState(() => getAdminPassword() === ADMIN_PASSWORD);
+  const [authed, setAuthed] = useState(
+    () => getAdminPassword() === ADMIN_PASSWORD,
+  );
 
   const handleLogout = () => {
     clearAdminPassword();

@@ -31,7 +31,9 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Architecture decisions
 
-- Blog posts are DB-backed (Drizzle, `blogPostsTable`). Generated posts are published immediately and merged ahead of the static `BLOG_POSTS`, deduped by slug (generated wins).
+- Blog posts are DB-backed (Drizzle, `blogPostsTable`). AI generation creates a DRAFT (`published:false`); the post only goes public when the admin clicks "Publicar" (PATCH `/admin/blog/posts/{id}`, operationId `updateBlogPost`). Published DB posts are merged ahead of the static `BLOG_POSTS`, deduped by slug (generated wins).
+- Post content has two representations: the original structured `body` (sections) and `bodyHtml` (richtext produced/edited in the admin via `react-quill-new`). Public `post.tsx` renders `bodyHtml` (Tailwind `prose` + `dangerouslySetInnerHTML`) when present, else falls back to `body` sections. `bodyHtml` is sanitized server-side on write with `sanitize-html` (strict allowlist), the single XSS barrier.
+- `publishedAt` (nullable timestamp) records the first publish; null while draft. Admin list date filter and public post date use `publishedAt` (falling back to `createdAt`). Set server-side on the false to true publish transition.
 - Site legal categories (12 of them) have a single source of truth: `artifacts/minha-causa-justa/src/data/categories.ts` (`CATEGORIAS` array of `{nome, slug, emoji, descricao}`, plus `CATEGORIA_NOMES`, type `CategoriaNome`, and helpers `categoriaPorSlug`/`slugDaCategoria`). `BLOG_CATEGORIES` and the dashboard `AREAS` both derive from it. URLs filter by slug query string (`?categoria=<slug>`) everywhere (`/advogados`, `/blog`).
 - Post macrocategory MUST equal a category `nome`. This is enforced server-side: a `VALID_CATEGORIES` whitelist in `routes/blog.ts` rejects anything else with 400. The server cannot import the frontend artifact, so `VALID_CATEGORIES` is a hand-maintained copy that MUST stay in sync with `categories.ts` (`nome` field).
 - Admin auth is a simulated gate: hardcoded password `123456`, checked client-side and via the `x-admin-password` header on `/api/admin/*` routes. Not real auth, by design.
@@ -39,7 +41,7 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Product
 
-"Minha Causa Justa" is a Brazilian lawyer-directory web app (artifact slug `minha-causa-justa`, previewPath `/`). Public side: home, find-a-lawyer, lawyer registration, blog, institutional pages. Lawyer area (simulated localStorage auth): `/login` plus a dashboard with `/painel/perfil` (profile editing), `/painel/metricas` (performance metrics), and `/painel/assinatura` (subscription management). Admin area (simulated gate, password `123456`): `/admin` with an AI-assisted blog-post generator (pick a macrocategory matching `BLOG_CATEGORIES`, generate 10 idea titles or a free theme, write a full OAB-compliant post that auto-publishes into the matching public blog category).
+"Minha Causa Justa" is a Brazilian lawyer-directory web app (artifact slug `minha-causa-justa`, previewPath `/`). Public side: home, find-a-lawyer, lawyer registration, blog, institutional pages. Lawyer area (simulated localStorage auth): `/login` plus a dashboard with `/painel/perfil` (profile editing), `/painel/metricas` (performance metrics), and `/painel/assinatura` (subscription management). Admin area (simulated gate, password `123456`): `/admin` with an AI-assisted blog-post generator (pick a macrocategory matching `BLOG_CATEGORIES`, generate 10 idea titles or a free theme, write a full OAB-compliant post). Generated posts are DRAFTS opened in a richtext editor (`PostEditor` + `RichTextEditor`); admin edits title/subtitle/category/excerpt/body then clicks "Publicar". A management list below filters posts by category and publication-date range, with "Editar" reopening any post in the editor.
 
 ## User preferences
 

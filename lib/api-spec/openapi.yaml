@@ -96,7 +96,7 @@ paths:
     post:
       operationId: createBlogPost
       tags: [admin-blog]
-      summary: Generate and publish a blog post
+      summary: Generate a draft blog post (not published)
       requestBody:
         required: true
         content:
@@ -105,7 +105,7 @@ paths:
               $ref: "#/components/schemas/BlogPostInput"
       responses:
         "201":
-          description: Created post
+          description: Created draft post
           content:
             application/json:
               schema:
@@ -123,6 +123,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
   /admin/blog/posts/{id}:
+    patch:
+      operationId: updateBlogPost
+      tags: [admin-blog]
+      summary: Update a post (edit content, publish or unpublish)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBlogPostInput"
+      responses:
+        "200":
+          description: Updated post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogPost"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
     delete:
       operationId: deleteBlogPost
       tags: [admin-blog]
@@ -200,10 +241,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BlogPostSection"
+        bodyHtml:
+          type: string
         oabClosing:
           type: string
         published:
           type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -217,6 +264,7 @@ components:
         - keywords
         - readingMinutes
         - body
+        - bodyHtml
         - oabClosing
         - published
         - createdAt
@@ -249,3 +297,23 @@ components:
       required:
         - category
         - theme
+    UpdateBlogPostInput:
+      type: object
+      properties:
+        category:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+        subtitle:
+          type: string
+        excerpt:
+          type: string
+        bodyHtml:
+          type: string
+        oabClosing:
+          type: string
+        published:
+          type: boolean
+      additionalProperties: false

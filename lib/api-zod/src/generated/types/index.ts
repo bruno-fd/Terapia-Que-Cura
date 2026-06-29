@@ -13,3 +13,4 @@ export * from './blogPost';
 export * from './blogPostInput';
 export * from './blogPostSection';
 export * from './healthStatus';
+export * from './updateBlogPostInput';

@@ -23,6 +23,9 @@ export interface BlogPost {
   date: string;
   readingMinutes: number;
   body: PostSection[];
+  // Conteúdo richtext (HTML), presente em posts gerados/editados no painel /admin.
+  // Quando presente, tem precedência sobre `body` na renderização.
+  bodyHtml?: string;
   // Campos preenchidos apenas em posts gerados pelo painel /admin
   subtitle?: string;
   keywords?: string[];
