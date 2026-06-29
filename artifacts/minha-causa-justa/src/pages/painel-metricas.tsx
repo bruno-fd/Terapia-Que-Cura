@@ -14,8 +14,8 @@ const PERIOD_DATA: Record<Period, { views: number; viewsTrend: number; contacts:
   total: { views: 134, viewsTrend: 0, contacts: 23, contactsTrend: 0 },
 };
 
-const CHART = [
-  { mes: "Jan", valor: 0 },
+const CHART: { mes: string; valor: number; indexing?: boolean }[] = [
+  { mes: "Jan", valor: 0, indexing: true },
   { mes: "Fev", valor: 12 },
   { mes: "Mar", valor: 19 },
   { mes: "Abr", valor: 28 },
@@ -165,7 +165,7 @@ function MetricsState({
   if (!profile.photo)
     tips.push("📷 Adicione uma foto ao seu perfil, perfis com foto recebem 3x mais visualizações.");
   if (profile.areas.length < 3)
-    tips.push("🏷️ Selecione mais áreas de atuação para aparecer em mais buscas.");
+    tips.push("✅ Selecione mais áreas de atuação para aparecer em mais buscas.");
   if (conversion < 10)
     tips.push("✏️ Reescreva seu 'Sobre mim' focando no que você resolve, não onde se formou.");
 
@@ -174,25 +174,27 @@ function MetricsState({
       {/* Cards principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <MetricCard
-          icon={<Eye className="h-5 w-5" />}
-          iconBg="bg-primary-100"
-          iconColor="text-primary-500"
-          value={String(data.views)}
-          valueColor="text-primary-800"
-          label="Visualizações"
-          trend={data.viewsTrend ? `↑ ${data.viewsTrend}% em relação ao mês anterior` : "Acumulado do período"}
-          trendColor={data.viewsTrend ? "text-[#1E7D4F]" : "text-neutral-500"}
-        />
-        <MetricCard
           icon={<Phone className="h-5 w-5" />}
-          iconBg="bg-accent-100"
-          iconColor="text-accent-500"
+          iconBg="bg-accent-500"
+          iconColor="text-white"
           value={String(data.contacts)}
           valueColor="text-accent-500"
+          valueSize="text-4xl"
           label="Cliques em contato"
           trend={data.contactsTrend ? `↑ ${data.contactsTrend}% em relação ao mês anterior` : "Acumulado do período"}
           trendColor={data.contactsTrend ? "text-[#1E7D4F]" : "text-neutral-500"}
           badge="Principal"
+          cardClassName="bg-accent-100"
+        />
+        <MetricCard
+          icon={<Eye className="h-5 w-5" />}
+          iconBg="bg-primary-100"
+          iconColor="text-primary-500"
+          value={String(data.views)}
+          valueColor="text-primary-500"
+          label="Visualizações"
+          trend={data.viewsTrend ? `↑ ${data.viewsTrend}% em relação ao mês anterior` : "Acumulado do período"}
+          trendColor={data.viewsTrend ? "text-[#1E7D4F]" : "text-neutral-500"}
         />
         <MetricCard
           icon={<Target className="h-5 w-5" />}
@@ -220,9 +222,9 @@ function MetricsState({
         <h2 className="text-lg font-bold text-primary-800 mb-4">Seu perfil na plataforma</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-neutral-700">Em Trabalhista em SP, seu perfil está entre os</p>
-            <p className="text-2xl font-bold text-[#1E7D4F] mt-1">Top 30%</p>
-            <p className="text-sm text-neutral-500">dos perfis mais visualizados</p>
+            <p className="text-sm text-neutral-500">Você está entre os</p>
+            <p className="text-2xl font-bold text-[#1E7D4F] mt-0.5">Top 30%</p>
+            <p className="text-sm text-neutral-500">perfis mais visualizados em Trabalhista no SP</p>
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-700 mb-3">Visualizações este mês</p>
@@ -236,11 +238,8 @@ function MetricsState({
       {/* Gráfico de histórico */}
       <Card>
         <h2 className="text-lg font-bold text-primary-800">Histórico de visualizações</h2>
-        <p className="text-sm text-neutral-500 mb-4">Últimos 6 meses</p>
+        <p className="text-sm text-neutral-500 mb-4">De fevereiro a junho</p>
         <HistoryChart />
-        <p className="mt-4 text-xs text-neutral-500">
-          O primeiro mês não exibe dados, período de indexação do perfil.
-        </p>
       </Card>
 
       {/* Dicas contextuais */}
@@ -259,7 +258,7 @@ function MetricsState({
           </ul>
         ) : (
           <p className="text-sm text-neutral-700 flex items-center gap-2">
-            <Check className="h-4 w-4 text-[#1E7D4F]" /> Seu perfil está bem configurado. Continue assim!
+            <span aria-hidden className="text-base">🏆</span> Seu perfil está bem configurado. Continue assim!
           </p>
         )}
       </Card>
@@ -279,12 +278,14 @@ interface MetricCardProps {
   iconColor: string;
   value?: string;
   valueColor?: string;
+  valueSize?: string;
   stacked?: string[];
   label: string;
   sub?: string;
   trend?: string;
   trendColor?: string;
   badge?: string;
+  cardClassName?: string;
 }
 
 function MetricCard({
@@ -293,37 +294,40 @@ function MetricCard({
   iconColor,
   value,
   valueColor,
+  valueSize = "text-3xl",
   stacked,
   label,
   sub,
   trend,
   trendColor,
   badge,
+  cardClassName = "",
 }: MetricCardProps) {
+  const numberSpacing = trend ? "mt-1" : "mt-3";
   return (
-    <Card className="p-5">
+    <Card className={`p-5 ${cardClassName}`}>
       <div className="flex items-start justify-between">
         <div className={`h-10 w-10 rounded-full flex items-center justify-center ${iconBg} ${iconColor}`}>
           {icon}
         </div>
         {badge && (
-          <span className="text-xs bg-accent-100 text-accent-600 rounded-full px-2 py-0.5 font-medium">
+          <span className="text-xs bg-accent-500 text-white rounded-full px-2.5 py-0.5 font-bold">
             {badge}
           </span>
         )}
       </div>
+      {trend && <p className={`mt-3 text-sm font-medium ${trendColor}`}>{trend}</p>}
       {stacked ? (
-        <div className="mt-3 space-y-0.5">
+        <div className={`${numberSpacing} space-y-0.5`}>
           {stacked.map((s) => (
             <p key={s} className="text-xl font-bold text-primary-800">{s}</p>
           ))}
         </div>
       ) : (
-        <p className={`mt-3 text-3xl font-bold ${valueColor}`}>{value}</p>
+        <p className={`${numberSpacing} ${valueSize} font-bold ${valueColor}`}>{value}</p>
       )}
       <p className="mt-1 text-sm text-neutral-500">{label}</p>
       {sub && <p className="text-xs text-neutral-500">{sub}</p>}
-      {trend && <p className={`mt-2 text-sm ${trendColor}`}>{trend}</p>}
     </Card>
   );
 }
@@ -345,16 +349,19 @@ function CompareBar({ label, value, max, color }: { label: string; value: number
 
 function HistoryChart() {
   const [hover, setHover] = useState<number | null>(null);
+  const [infoHover, setInfoHover] = useState(false);
   const width = 520;
   const height = 200;
   const padBottom = 28;
   const padTop = 16;
-  const max = Math.max(...CHART.map((d) => d.valor), 1);
-  const avg = CHART.reduce((s, d) => s + d.valor, 0) / CHART.length;
+  const dataVals = CHART.filter((d) => !d.indexing).map((d) => d.valor);
+  const max = Math.max(...dataVals, 1);
+  const avg = dataVals.reduce((s, v) => s + v, 0) / dataVals.length;
   const barW = 40;
   const gap = (width - barW * CHART.length) / (CHART.length + 1);
   const chartH = height - padBottom - padTop;
   const avgY = padTop + chartH - (avg / max) * chartH;
+  const janCx = gap + barW / 2;
 
   return (
     <div className="w-full overflow-x-auto">
@@ -362,7 +369,7 @@ function HistoryChart() {
         viewBox={`0 0 ${width} ${height}`}
         className="w-full min-w-[420px]"
         role="img"
-        aria-label="Gráfico de visualizações dos últimos 6 meses"
+        aria-label="Gráfico de visualizações dos últimos meses"
       >
         {/* Linha de média */}
         <line
@@ -380,6 +387,33 @@ function HistoryChart() {
 
         {CHART.map((d, i) => {
           const x = gap + i * (barW + gap);
+          const cx = x + barW / 2;
+
+          if (d.indexing) {
+            return (
+              <g
+                key={d.mes}
+                style={{ cursor: "help" }}
+                onMouseEnter={() => setInfoHover(true)}
+                onMouseLeave={() => setInfoHover(false)}
+              >
+                {/* Espaço indicativo: linha vertical tracejada */}
+                <line
+                  x1={cx}
+                  y1={padTop}
+                  x2={cx}
+                  y2={padTop + chartH}
+                  stroke="var(--neutral-300)"
+                  strokeWidth={1}
+                  strokeDasharray="3 4"
+                />
+                <text x={cx} y={height - 8} textAnchor="middle" className="fill-neutral-400" fontSize={11}>
+                  {d.mes} ⓘ
+                </text>
+              </g>
+            );
+          }
+
           const barH = (d.valor / max) * chartH;
           const y = padTop + chartH - barH;
           const isCurrent = i === CHART.length - 1;
@@ -387,23 +421,53 @@ function HistoryChart() {
             <g key={d.mes} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
               <rect
                 x={x}
-                y={d.valor === 0 ? padTop + chartH - 2 : y}
+                y={y}
                 width={barW}
-                height={d.valor === 0 ? 2 : barH}
+                height={barH}
                 rx={4}
                 className={isCurrent ? "fill-primary-500" : "fill-primary-200"}
               />
-              {hover === i && d.valor > 0 && (
-                <text x={x + barW / 2} y={y - 6} textAnchor="middle" className="fill-primary-800 font-bold" fontSize={12}>
+              {hover === i && (
+                <text x={cx} y={y - 6} textAnchor="middle" className="fill-primary-800 font-bold" fontSize={12}>
                   {d.valor}
                 </text>
               )}
-              <text x={x + barW / 2} y={height - 8} textAnchor="middle" className="fill-neutral-500" fontSize={11}>
+              <text x={cx} y={height - 8} textAnchor="middle" className="fill-neutral-500" fontSize={11}>
                 {d.mes}
               </text>
             </g>
           );
         })}
+
+        {/* Tooltip do indicador de indexação */}
+        {infoHover && (
+          <g>
+            <rect
+              x={Math.min(Math.max(janCx - 16, 4), width - 254)}
+              y={padTop}
+              width={250}
+              height={44}
+              rx={6}
+              className="fill-primary-800"
+            />
+            <text
+              x={Math.min(Math.max(janCx - 16, 4), width - 254) + 12}
+              y={padTop + 18}
+              fontSize={11}
+              className="fill-white"
+            >
+              Período de indexação:
+            </text>
+            <text
+              x={Math.min(Math.max(janCx - 16, 4), width - 254) + 12}
+              y={padTop + 33}
+              fontSize={11}
+              className="fill-white"
+            >
+              dados não disponíveis no primeiro mês.
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   );
