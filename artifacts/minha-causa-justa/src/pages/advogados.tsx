@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -113,12 +113,40 @@ const MOCK_LAWYERS = [
 
 type Lawyer = typeof MOCK_LAWYERS[0];
 
+// Gerador de números pseudoaleatórios determinístico (mulberry32).
+// Para a mesma semente, sempre produz a mesma sequência.
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Alternância justa: embaralha a lista de profissionais (Fisher-Yates) usando
+// uma semente. A ordem deixa de seguir a data de cadastro, de modo que todos
+// tenham a mesma chance de aparecer no topo, e não apenas quem chegou primeiro.
+function shuffleFair<T>(list: T[], seed: number): T[] {
+  const rand = mulberry32(seed);
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export default function Advogados() {
   const [, setLocation] = useLocation();
   const [problema, setProblema] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
-  const [filteredLawyers, setFilteredLawyers] = useState(MOCK_LAWYERS);
+  // Ordem sorteada de forma justa, definida uma vez por visita (estável durante a navegação).
+  const [rotationSeed] = useState(() => Date.now());
+  const rotatedLawyers = useMemo(() => shuffleFair(MOCK_LAWYERS, rotationSeed), [rotationSeed]);
+  const [filteredLawyers, setFilteredLawyers] = useState<Lawyer[]>(rotatedLawyers);
 
   const [contactLawyer, setContactLawyer] = useState<Lawyer | null>(null);
   const [detailLawyer, setDetailLawyer] = useState<Lawyer | null>(null);
@@ -139,7 +167,7 @@ export default function Advogados() {
   }, []);
 
   const applyFilters = (prob: string, est: string, cid: string) => {
-    let filtered = MOCK_LAWYERS;
+    let filtered: Lawyer[] = rotatedLawyers;
     if (prob) {
       // Very simple filter matching text
       filtered = filtered.filter(l =>
@@ -343,7 +371,11 @@ export default function Advogados() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <>
+                <p className="text-sm text-neutral-500 mb-6" data-testid="text-ordem-alternada">
+                  A ordem dos profissionais é alternada a cada visita para dar a mesma visibilidade a todos.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredLawyers.map((lawyer) => (
                   <div key={lawyer.id} className="bg-white p-6 md:p-8 rounded-[28px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow flex flex-col h-full" data-testid={`lawyer-card-${lawyer.id}`}>
                     <div className="flex gap-4 mb-5">
@@ -399,7 +431,8 @@ export default function Advogados() {
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              </>
             )}
           </div>
         </section>
