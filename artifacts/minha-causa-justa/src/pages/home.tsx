@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
-import { ESTADOS_UF } from "@/lib/ibge";
+import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { 
   ArrowRight, 
   Shield, 
@@ -107,16 +107,13 @@ export default function Home() {
                     </Select>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <div className="sm:flex-1 min-w-0">
-                        <Select value={estado} onValueChange={handleEstadoChange}>
-                          <SelectTrigger className="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-estado">
-                            <SelectValue placeholder="Estado" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            {ESTADOS_UF.map(e => (
-                              <SelectItem key={e.uf} value={e.uf}>{e.uf} - {e.nome}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <StateAutocomplete
+                          value={estado}
+                          onSelect={handleEstadoChange}
+                          placeholder="Estado"
+                          inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5 pr-10"
+                          testId="select-estado"
+                        />
                       </div>
                       <div className="sm:flex-1 min-w-0">
                         <CityAutocomplete

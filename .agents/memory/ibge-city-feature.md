@@ -10,3 +10,7 @@ description: How city data is modeled/loaded across the lawyer profile and searc
 ## Rule: a city value must always carry its UF
 **Why:** Brazilian city names repeat across states (e.g. multiple "Bom Jesus"). The search filter matches lawyer cities by exact `"Nome, UF"` string, so a bare city name silently fails to match.
 **How to apply:** `CityAutocomplete.onSelect` yields only the bare `nome`. The caller must re-attach the selected UF before storing/filtering (search does `setCidade(\`${nome}, ${estado}\`)`). The painel stores structured `{ nome, uf }`. Any new consumer of city data must pair name + UF, never the name alone.
+
+## Rule: the estado field is a typeable autocomplete that stores bare UF
+**Why:** User wanted to type+autocomplete the state, not just pick from a Select. But the stored estado must stay a bare UF because `CityAutocomplete` takes `uf={estado}` and the search URL/filter expect a UF.
+**How to apply:** Use `src/components/StateAutocomplete.tsx` (controlled by `value`=UF, calls `onSelect(uf)`). It is the site-wide state picker (home, advogados, painel-perfil). It displays "UF - Nome" but only ever emits the UF. It has no clear/empty option (parity with the old Select) and restores the selected label on blur, so a half-typed entry never desyncs from `value`. Restore-on-blur is via the Input `onBlur` (covers keyboard tab-away); option clicks use `onMouseDown`+`preventDefault` so they fire before blur.

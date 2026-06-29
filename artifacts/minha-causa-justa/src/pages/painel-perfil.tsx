@@ -3,10 +3,9 @@ import { Check, Loader2, Instagram, Linkedin, Globe, Link2, Phone, X, MapPin } f
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
-import { ESTADOS_UF } from "@/lib/ibge";
 import {
   AREAS,
   LAWYER_NAME,
@@ -282,18 +281,13 @@ export default function PainelPerfil() {
 
           {/* Passo 1: estado */}
           <div className="mt-4">
-            <Select value={selectedUf} onValueChange={setSelectedUf}>
-              <SelectTrigger className="w-full bg-white" data-testid="select-estado-painel">
-                <SelectValue placeholder="Selecione um estado..." />
-              </SelectTrigger>
-              <SelectContent>
-                {ESTADOS_UF.map((e) => (
-                  <SelectItem key={e.uf} value={e.uf}>
-                    {e.uf} - {e.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <StateAutocomplete
+              value={selectedUf}
+              onSelect={setSelectedUf}
+              placeholder="Selecione um estado..."
+              inputClassName="w-full bg-white pr-10"
+              testId="select-estado-painel"
+            />
           </div>
 
           {/* Passo 2: autocomplete de cidades */}

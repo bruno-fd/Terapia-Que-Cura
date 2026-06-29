@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle } from "lucide-react";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
-import { ESTADOS_UF } from "@/lib/ibge";
+import { StateAutocomplete } from "@/components/StateAutocomplete";
 
 // Mock Data
 const MOCK_LAWYERS = [
@@ -296,16 +296,13 @@ export default function Advogados() {
                   </Select>
                 </div>
                 <div className="w-full md:w-48">
-                  <Select value={estado} onValueChange={handleEstadoChange}>
-                    <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="filter-select-estado">
-                      <SelectValue placeholder="Estado" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {ESTADOS_UF.map(e => (
-                        <SelectItem key={e.uf} value={e.uf}>{e.uf} - {e.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <StateAutocomplete
+                    value={estado}
+                    onSelect={handleEstadoChange}
+                    placeholder="Estado"
+                    inputClassName="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5 pr-10"
+                    testId="filter-select-estado"
+                  />
                 </div>
                 <div className="w-full md:w-56">
                   <CityAutocomplete
