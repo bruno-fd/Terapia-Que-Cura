@@ -25,7 +25,9 @@ import type {
   BlogIdeasResult,
   BlogPost,
   BlogPostInput,
+  CreateSubscriptionInput,
   HealthStatus,
+  SubscriptionState,
   UpdateBlogPostInput
 } from './api.schemas';
 
@@ -568,5 +570,222 @@ export const useDeleteBlogPost = <TError = ErrorType<ApiErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteBlogPostMutationOptions(options));
+    }
+
+export const getGetAssinaturaUrl = () => {
+
+
+
+
+  return `/api/assinatura`
+}
+
+/**
+ * @summary Get the current subscription state for the lawyer
+ */
+export const getAssinatura = async ( options?: RequestInit): Promise<SubscriptionState> => {
+
+  return customFetch<SubscriptionState>(getGetAssinaturaUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAssinaturaQueryKey = () => {
+    return [
+    `/api/assinatura`
+    ] as const;
+    }
+
+
+export const getGetAssinaturaQueryOptions = <TData = Awaited<ReturnType<typeof getAssinatura>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssinatura>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssinaturaQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssinatura>>> = ({ signal }) => getAssinatura({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssinatura>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssinaturaQueryResult = NonNullable<Awaited<ReturnType<typeof getAssinatura>>>
+export type GetAssinaturaQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current subscription state for the lawyer
+ */
+
+export function useGetAssinatura<TData = Awaited<ReturnType<typeof getAssinatura>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssinatura>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssinaturaQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAssinaturaUrl = () => {
+
+
+
+
+  return `/api/assinatura`
+}
+
+/**
+ * @summary Create a subscription for the lawyer via Asaas
+ */
+export const createAssinatura = async (createSubscriptionInput: CreateSubscriptionInput, options?: RequestInit): Promise<SubscriptionState> => {
+
+  return customFetch<SubscriptionState>(getCreateAssinaturaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createSubscriptionInput)
+  }
+);}
+
+
+
+
+export const getCreateAssinaturaMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssinatura>>, TError,{data: BodyType<CreateSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAssinatura>>, TError,{data: BodyType<CreateSubscriptionInput>}, TContext> => {
+
+const mutationKey = ['createAssinatura'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAssinatura>>, {data: BodyType<CreateSubscriptionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAssinatura(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAssinaturaMutationResult = NonNullable<Awaited<ReturnType<typeof createAssinatura>>>
+    export type CreateAssinaturaMutationBody = BodyType<CreateSubscriptionInput>
+    export type CreateAssinaturaMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Create a subscription for the lawyer via Asaas
+ */
+export const useCreateAssinatura = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssinatura>>, TError,{data: BodyType<CreateSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAssinatura>>,
+        TError,
+        {data: BodyType<CreateSubscriptionInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAssinaturaMutationOptions(options));
+    }
+
+export const getCancelAssinaturaUrl = () => {
+
+
+
+
+  return `/api/assinatura/cancelar`
+}
+
+/**
+ * @summary Cancel the lawyer's subscription
+ */
+export const cancelAssinatura = async ( options?: RequestInit): Promise<SubscriptionState> => {
+
+  return customFetch<SubscriptionState>(getCancelAssinaturaUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCancelAssinaturaMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,void, TContext> => {
+
+const mutationKey = ['cancelAssinatura'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelAssinatura>>, void> = () => {
+
+
+          return  cancelAssinatura(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelAssinaturaMutationResult = NonNullable<Awaited<ReturnType<typeof cancelAssinatura>>>
+
+    export type CancelAssinaturaMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Cancel the lawyer's subscription
+ */
+export const useCancelAssinatura = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelAssinatura>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCancelAssinaturaMutationOptions(options));
     }
 

@@ -21,3 +21,8 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.development]
+ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3"

@@ -64,3 +64,70 @@ export interface UpdateBlogPostInput {
   published?: boolean;
 }
 
+export type SubscriptionPaymentStatus = typeof SubscriptionPaymentStatus[keyof typeof SubscriptionPaymentStatus];
+
+
+export const SubscriptionPaymentStatus = {
+  Pago: 'Pago',
+  Pendente: 'Pendente',
+  Falhou: 'Falhou',
+} as const;
+
+export interface SubscriptionPayment {
+  id: string;
+  date?: string | null;
+  description: string;
+  value: number;
+  status: SubscriptionPaymentStatus;
+  invoiceUrl?: string | null;
+}
+
+export type SubscriptionStateStatus = typeof SubscriptionStateStatus[keyof typeof SubscriptionStateStatus] | null;
+
+
+export const SubscriptionStateStatus = {
+  pendente: 'pendente',
+  ativa: 'ativa',
+  atrasada: 'atrasada',
+  inativa: 'inativa',
+} as const;
+
+export type SubscriptionStatePlan = typeof SubscriptionStatePlan[keyof typeof SubscriptionStatePlan] | null;
+
+
+export const SubscriptionStatePlan = {
+  mensal: 'mensal',
+  anual: 'anual',
+} as const;
+
+export interface SubscriptionState {
+  hasSubscription: boolean;
+  status?: SubscriptionStateStatus;
+  plan?: SubscriptionStatePlan;
+  value?: number | null;
+  cycle?: string | null;
+  customerName?: string | null;
+  nextDueDate?: string | null;
+  invoiceUrl?: string | null;
+  payments: SubscriptionPayment[];
+}
+
+export type CreateSubscriptionInputPlano = typeof CreateSubscriptionInputPlano[keyof typeof CreateSubscriptionInputPlano];
+
+
+export const CreateSubscriptionInputPlano = {
+  mensal: 'mensal',
+  anual: 'anual',
+} as const;
+
+export interface CreateSubscriptionInput {
+  plano: CreateSubscriptionInputPlano;
+  /** @minLength 1 */
+  nome: string;
+  /** @minLength 1 */
+  cpfCnpj: string;
+  /** @minLength 1 */
+  email: string;
+  telefone?: string;
+}
+

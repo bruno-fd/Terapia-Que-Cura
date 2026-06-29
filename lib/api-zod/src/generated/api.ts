@@ -168,3 +168,85 @@ export const DeleteBlogPostParams = zod.object({
 export const DeleteBlogPostResponse = zod.void()
 
 
+/**
+ * @summary Get the current subscription state for the lawyer
+ */
+export const GetAssinaturaResponse = zod.object({
+  "hasSubscription": zod.boolean(),
+  "status": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "plan": zod.enum(['mensal', 'anual']).nullish(),
+  "value": zod.number().nullish(),
+  "cycle": zod.string().nullish(),
+  "customerName": zod.string().nullish(),
+  "nextDueDate": zod.string().nullish(),
+  "invoiceUrl": zod.string().nullish(),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "date": zod.string().nullish(),
+  "description": zod.string(),
+  "value": zod.number(),
+  "status": zod.enum(['Pago', 'Pendente', 'Falhou']),
+  "invoiceUrl": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Create a subscription for the lawyer via Asaas
+ */
+
+
+
+
+
+export const CreateAssinaturaBody = zod.object({
+  "plano": zod.enum(['mensal', 'anual']),
+  "nome": zod.string().min(1),
+  "cpfCnpj": zod.string().min(1),
+  "email": zod.string().min(1),
+  "telefone": zod.string().optional()
+})
+
+export const CreateAssinaturaResponse = zod.object({
+  "hasSubscription": zod.boolean(),
+  "status": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "plan": zod.enum(['mensal', 'anual']).nullish(),
+  "value": zod.number().nullish(),
+  "cycle": zod.string().nullish(),
+  "customerName": zod.string().nullish(),
+  "nextDueDate": zod.string().nullish(),
+  "invoiceUrl": zod.string().nullish(),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "date": zod.string().nullish(),
+  "description": zod.string(),
+  "value": zod.number(),
+  "status": zod.enum(['Pago', 'Pendente', 'Falhou']),
+  "invoiceUrl": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Cancel the lawyer's subscription
+ */
+export const CancelAssinaturaResponse = zod.object({
+  "hasSubscription": zod.boolean(),
+  "status": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "plan": zod.enum(['mensal', 'anual']).nullish(),
+  "value": zod.number().nullish(),
+  "cycle": zod.string().nullish(),
+  "customerName": zod.string().nullish(),
+  "nextDueDate": zod.string().nullish(),
+  "invoiceUrl": zod.string().nullish(),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "date": zod.string().nullish(),
+  "description": zod.string(),
+  "value": zod.number(),
+  "status": zod.enum(['Pago', 'Pendente', 'Falhou']),
+  "invoiceUrl": zod.string().nullish()
+}))
+})
+
+
