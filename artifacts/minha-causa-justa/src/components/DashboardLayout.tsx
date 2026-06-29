@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { User, BarChart3, CreditCard, ExternalLink, LogOut, Menu, X } from "lucide-react";
 import { isLoggedIn, logout, LAWYER_NAME } from "@/lib/dashboard";
+import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
 
 type ActiveItem = "perfil" | "metricas" | "assinatura";
 
@@ -98,29 +99,29 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col font-sans bg-neutral-100">
       {/* NAV do painel */}
-      <header className="sticky top-0 z-50 bg-primary-900 text-white">
+      <header className="sticky top-0 z-50 bg-white border-b border-neutral-200 shadow-sm text-neutral-900">
         <div className="h-16 px-4 md:px-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
-              className="md:hidden p-2 -ml-2 text-white/90 hover:text-white"
+              className="md:hidden p-2 -ml-2 text-neutral-600 hover:text-primary-600"
               onClick={() => setMenuOpen(true)}
               aria-label="Abrir menu"
               data-testid="button-painel-menu"
             >
               <Menu className="h-6 w-6" />
             </button>
-            <Link href="/painel/perfil" className="font-bold text-base md:text-lg tracking-tight text-white" data-testid="link-painel-logo">
-              Minha Causa Justa
+            <Link href="/" className="flex items-center hover:opacity-90 transition-opacity" data-testid="link-painel-logo">
+              <img src={logoUrl} alt="Minha Causa Justa" className="h-11 w-auto" />
             </Link>
           </div>
 
-          <span className="hidden md:block text-sm text-neutral-300">Área do Advogado</span>
+          <span className="hidden md:block text-sm text-neutral-500">Área do Advogado</span>
 
           <div className="flex items-center gap-4">
-            <span className="hidden sm:block text-sm text-white/90 truncate max-w-[200px]">{LAWYER_NAME}</span>
+            <span className="hidden sm:block text-sm text-neutral-700 truncate max-w-[200px]">{LAWYER_NAME}</span>
             <button
               onClick={handleLogout}
-              className="text-sm text-white hover:underline"
+              className="text-sm text-primary-700 font-medium hover:underline"
               data-testid="button-painel-sair"
             >
               Sair
@@ -146,11 +147,13 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
               data-testid="overlay-painel-menu"
             />
             <aside className="absolute top-0 left-0 h-full w-[260px] bg-white shadow-xl flex flex-col">
-              <div className="h-16 px-5 flex items-center justify-between border-b border-neutral-200 bg-primary-900">
-                <span className="font-bold text-white">Minha Causa Justa</span>
+              <div className="h-16 px-5 flex items-center justify-between border-b border-neutral-200 bg-white">
+                <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center hover:opacity-90 transition-opacity" data-testid="link-painel-drawer-logo">
+                  <img src={logoUrl} alt="Minha Causa Justa" className="h-10 w-auto" />
+                </Link>
                 <button
                   onClick={() => setMenuOpen(false)}
-                  className="text-white/90 hover:text-white p-1"
+                  className="text-neutral-600 hover:text-primary-600 p-1"
                   aria-label="Fechar menu"
                   data-testid="button-fechar-painel-menu"
                 >

@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { login } from "@/lib/dashboard";
+import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -30,8 +31,8 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center font-sans bg-neutral-100 px-4 py-12">
       <div className="w-full max-w-[440px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-neutral-200 p-8">
-        <Link href="/" className="block text-center" data-testid="link-login-logo">
-          <span className="text-xl font-bold text-primary-800 tracking-tight">Minha Causa Justa</span>
+        <Link href="/" className="flex justify-center hover:opacity-90 transition-opacity" data-testid="link-login-logo">
+          <img src={logoUrl} alt="Minha Causa Justa" className="h-14 w-auto" />
         </Link>
 
         <h1 className="mt-6 text-xl font-bold text-primary-800 text-center">Acesse sua conta</h1>

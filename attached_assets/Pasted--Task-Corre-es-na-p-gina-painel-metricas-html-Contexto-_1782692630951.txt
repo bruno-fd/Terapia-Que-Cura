@@ -1,0 +1,120 @@
+# Task — Correções na página painel-metricas.html
+
+## Contexto
+
+A página de desempenho foi construída corretamente em estrutura, mas precisa de ajustes estratégicos para reduzir o risco de advogados com perfis novos ou com baixo volume cancelarem a assinatura ao ver os dados. As correções abaixo são ordenadas por prioridade de impacto.
+
+---
+
+## Correção 1 — ALTA PRIORIDADE: Inverter ordem nos cards de métricas
+
+**Problema:** o número grande aparece antes da tendência. O advogado processa "95" ou "12" antes de ver "↑ 22%". Números baixos causam impacto negativo imediato.
+
+**Correção:** em todos os quatro cards de métricas, inverter a ordem vertical dos elementos:
+
+Ordem atual:
+1. Ícone
+2. Número grande (font-size-3xl)
+3. Label
+4. Tendência (↑ X%)
+
+Ordem correta:
+1. Ícone
+2. Tendência (↑ X% em relação ao mês anterior) — font-size-sm, cor semântica
+3. Número grande (font-size-3xl)
+4. Label
+
+A tendência deve aparecer em destaque acima do número, não abaixo. O olho lê de cima para baixo — o crescimento deve ser a primeira informação processada.
+
+---
+
+## Correção 2 — ALTA PRIORIDADE: Tornar "Cliques em contato" o card visualmente dominante
+
+**Problema:** os cards de Visualizações e Cliques em contato têm o mesmo peso visual. O número de visualizações (em azul escuro, primeira posição) domina a leitura. Cliques em contato é a métrica mais valiosa e deve ser a mais destacada.
+
+**Correção:**
+
+Card "Cliques em contato":
+- Mover para a primeira posição no grid (canto superior esquerdo)
+- Aumentar o número principal para font-size maior que os demais cards — usar font-size-3xl bold em `--color-accent-500`
+- Fundo do card levemente diferente: `--color-accent-100` em vez de `--color-neutral-0`
+- Badge "Principal" mais visível: fundo `--color-accent-500`, texto branco, font-size-xs bold
+
+Card "Visualizações do perfil":
+- Mover para a segunda posição (canto superior direito)
+- Manter o mesmo tamanho de fonte atual
+- Cor do número: `--color-primary-500` (não mudar)
+
+Os demais cards (Taxa de conversão e Acumulado total) permanecem nas posições inferiores.
+
+---
+
+## Correção 3 — ALTA PRIORIDADE: Mudar período padrão para "Este mês"
+
+**Problema:** o período padrão ao carregar a página é "Últimos 3 meses". Nos primeiros meses de cadastro, o acumulado de 3 meses é menor do que o mês atual individualmente, e não mostra a tendência de crescimento recente.
+
+**Correção:** alterar o JavaScript para que ao carregar a página, o período ativo seja sempre "Este mês", não "Últimos 3 meses".
+
+O seletor de período deve iniciar com "Este mês" destacado (bold, `--color-primary-500`), e "Últimos 3 meses" e "Total" como opções secundárias.
+
+---
+
+## Correção 4 — MÉDIA PRIORIDADE: Aumentar peso visual do "Top 30%" no card de posição relativa
+
+**Problema:** "Top 30% dos perfis mais visualizados" está em fonte menor que o número de visualizações dos cards acima. O advogado processa a posição relativa como informação secundária.
+
+**Correção:** no card "Seu perfil na plataforma":
+
+- "Top 30%" deve usar font-size-2xl, bold, `--color-success`
+- Adicionar uma linha acima do número, em font-size-sm `--color-neutral-500`: "Você está entre os"
+- Adicionar uma linha abaixo, em font-size-sm `--color-neutral-500`: "perfis mais visualizados em Trabalhista no SP"
+
+Resultado visual:
+```
+Você está entre os
+Top 30%
+perfis mais visualizados em Trabalhista no SP
+```
+
+O número grande deve ser "Top 30%", não "95 visualizações".
+
+---
+
+## Correção 5 — MÉDIA PRIORIDADE: Remover barra de Janeiro do gráfico
+
+**Problema:** a barra de Janeiro está quase invisível (valor muito baixo ou zero). Visualmente comunica que o serviço não funcionou no início, ativando exatamente o risco que queremos evitar. A nota de rodapé explicando o período de indexação é pequena demais para compensar.
+
+**Correção:** não renderizar a barra de Janeiro no gráfico. O gráfico deve começar em Fevereiro.
+
+No lugar da barra de Janeiro, renderizar uma área hachurada ou apenas um espaço vazio com uma linha vertical tracejada e uma label discreta no eixo X: "Jan ⓘ"
+
+Ao passar o mouse sobre o "ⓘ": tooltip explicando "Período de indexação — dados não disponíveis para o primeiro mês."
+
+O gráfico passa a ter 5 barras (Fev a Jun) + 1 espaço indicativo (Jan), em vez de 6 barras onde uma é quase invisível.
+
+---
+
+## Correção 6 — BAIXA PRIORIDADE: Ajustar ícones das dicas contextuais
+
+**Problema:** os ícones das dicas usam emojis técnicos (🖼️, 🏷️) que parecem frios para o público-alvo.
+
+**Correção:** substituir pelos seguintes ícones:
+
+- Dica de foto: 📷 (câmera) → mais intuitivo
+- Dica de áreas de atuação: ✅ (check verde) → transmite "você pode melhorar isso"
+- Dica de "Sobre mim": ✏️ (lápis) → mantém
+- Dica de tudo ok: 🏆 (troféu) → celebração, não apenas check
+
+---
+
+## Verificação final
+
+Após aplicar todas as correções, verificar:
+
+- [ ] Ao carregar a página, o período "Este mês" está ativo por padrão
+- [ ] O card de "Cliques em contato" é o primeiro e mais destacado visualmente
+- [ ] A tendência (↑ X%) aparece acima do número grande em todos os cards
+- [ ] "Top 30%" é o elemento maior no card de posição relativa
+- [ ] O gráfico começa em Fevereiro, com Jan indicado mas sem barra
+- [ ] O estado "Primeiro mês" (toggle de demonstração) continua funcionando corretamente e não exibe nenhum número — apenas o card de boas-vindas com barra de progresso e dicas
+- [ ] Todas as correções são responsivas — verificar em mobile (< 768px)
