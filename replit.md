@@ -22,15 +22,22 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- DB schema source of truth: `lib/db/src/schema/` (blog posts in `blog-posts.ts`, exported via `index.ts`).
+- API contract source of truth: `lib/api-spec/openapi.yaml`; run `pnpm --filter @workspace/api-spec run codegen` to regenerate Zod (`@workspace/api-zod`) and React Query hooks (`@workspace/api-client-react`).
+- Blog generation logic: `artifacts/api-server/src/lib/blog-generator.ts` (Anthropic via Replit proxy); blog routes: `artifacts/api-server/src/routes/blog.ts`.
+- Public blog data merge: `artifacts/minha-causa-justa/src/data/published-posts.ts` (DB posts) + `data/blog.ts` (static posts); pages `blog.tsx` / `post.tsx`.
+- Admin page + client API helper: `artifacts/minha-causa-justa/src/pages/admin.tsx` + `src/lib/admin.ts`.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Blog posts are DB-backed (Drizzle, `blogPostsTable`). Generated posts are published immediately and merged ahead of the static `BLOG_POSTS`, deduped by slug (generated wins).
+- Post macrocategory MUST equal the blog's `BLOG_CATEGORIES`. This is enforced server-side: a `VALID_CATEGORIES` whitelist in `routes/blog.ts` rejects anything else with 400, so generated posts always land in a real blog category.
+- Admin auth is a simulated gate: hardcoded password `123456`, checked client-side and via the `x-admin-password` header on `/api/admin/*` routes. Not real auth, by design.
+- The AI generator strips em dashes before persisting, to honor the strict no-em-dash copy rule.
 
 ## Product
 
-"Minha Causa Justa" is a Brazilian lawyer-directory web app (artifact slug `minha-causa-justa`, previewPath `/`). Public side: home, find-a-lawyer, lawyer registration, blog, institutional pages. Lawyer area (simulated localStorage auth): `/login` plus a dashboard with `/painel/perfil` (profile editing), `/painel/metricas` (performance metrics), and `/painel/assinatura` (subscription management).
+"Minha Causa Justa" is a Brazilian lawyer-directory web app (artifact slug `minha-causa-justa`, previewPath `/`). Public side: home, find-a-lawyer, lawyer registration, blog, institutional pages. Lawyer area (simulated localStorage auth): `/login` plus a dashboard with `/painel/perfil` (profile editing), `/painel/metricas` (performance metrics), and `/painel/assinatura` (subscription management). Admin area (simulated gate, password `123456`): `/admin` with an AI-assisted blog-post generator (pick a macrocategory matching `BLOG_CATEGORIES`, generate 10 idea titles or a free theme, write a full OAB-compliant post that auto-publishes into the matching public blog category).
 
 ## User preferences
 

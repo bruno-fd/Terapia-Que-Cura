@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface BlogPostInput {
+  /** @minLength 1 */
+  category: string;
+  /** @minLength 1 */
+  theme: string;
 }

@@ -5,6 +5,7 @@ import { BlogSidebar } from "@/components/BlogSidebar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import { BLOG_POSTS } from "@/data/blog";
+import { usePublishedPosts } from "@/data/published-posts";
 
 export default function Blog() {
   // Lê a categoria do query param (?categoria=...) para filtrar os cards
@@ -12,9 +13,18 @@ export default function Blog() {
   const params = new URLSearchParams(search);
   const activeCategory = params.get("categoria");
 
+  // Posts gerados no painel /admin aparecem antes dos posts fixos.
+  // Em caso de slug repetido, o post gerado tem precedência.
+  const { posts: generatedPosts } = usePublishedPosts();
+  const generatedSlugs = new Set(generatedPosts.map((p) => p.slug));
+  const allPosts = [
+    ...generatedPosts,
+    ...BLOG_POSTS.filter((p) => !generatedSlugs.has(p.slug)),
+  ];
+
   const posts = activeCategory
-    ? BLOG_POSTS.filter((post) => post.category === activeCategory)
-    : BLOG_POSTS;
+    ? allPosts.filter((post) => post.category === activeCategory)
+    : allPosts;
 
   return (
     <div className="min-h-screen bg-[#F5F4F2]">

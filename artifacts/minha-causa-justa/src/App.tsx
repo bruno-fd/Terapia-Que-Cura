@@ -16,6 +16,7 @@ import Login from "@/pages/login";
 import PainelPerfil from "@/pages/painel-perfil";
 import PainelMetricas from "@/pages/painel-metricas";
 import PainelAssinatura from "@/pages/painel-assinatura";
+import Admin from "@/pages/admin";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/painel/perfil" component={PainelPerfil} />
       <Route path="/painel/metricas" component={PainelMetricas} />
       <Route path="/painel/assinatura" component={PainelAssinatura} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

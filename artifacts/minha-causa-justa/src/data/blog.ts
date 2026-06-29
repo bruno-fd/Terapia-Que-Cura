@@ -28,6 +28,10 @@ export interface BlogPost {
   date: string;
   readingMinutes: number;
   body: PostSection[];
+  // Campos preenchidos apenas em posts gerados pelo painel /admin
+  subtitle?: string;
+  keywords?: string[];
+  oabClosing?: string;
 }
 
 export const BLOG_POSTS: BlogPost[] = [

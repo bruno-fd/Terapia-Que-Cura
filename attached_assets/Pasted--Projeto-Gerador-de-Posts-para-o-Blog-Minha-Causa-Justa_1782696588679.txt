@@ -1,0 +1,201 @@
+# Projeto — Gerador de Posts para o Blog
+## Minha Causa Justa
+
+---
+
+## O que é esse projeto
+
+Uma ferramenta de escrita assistida por IA para produção de posts do blog da Minha Causa Justa. O objetivo é permitir que qualquer pessoa — mesmo sem formação jurídica — gere posts tecnicamente corretos, com linguagem popular, dentro das regras da OAB e otimizados para SEO.
+
+A ferramenta tem dois modos de entrada: seleção de um macrotema com geração de 10 sugestões de títulos, ou digitação direta do tema desejado.
+
+---
+
+## Interface — o que o usuário vê e faz
+
+### Painel de entrada (esquerda)
+
+**Bloco 1 — Macrotemas**
+Sete botões clicáveis, um por macrotema:
+- INSS e Previdência Social
+- Direitos Trabalhistas
+- Plano de Saúde
+- Direito de Família
+- Inventário e Herança
+- Direito do Consumidor
+- BPC/LOAS
+
+Ao clicar em um macrotema, um botão "Gerar 10 ideias de post" fica disponível. Ao clicar nesse botão, a IA retorna 10 títulos de posts relacionados ao macrotema. O usuário clica em um título para selecioná-lo — o título vai automaticamente para o campo de tema.
+
+**Bloco 2 — Tema livre**
+Campo de texto onde o usuário pode digitar qualquer tema diretamente, sem precisar passar pelos macrotemas. Exemplos: "pensão por morte", "auxílio doença negado", "voo cancelado direitos".
+
+**Botão principal — "Escrever post"**
+Disponível em ambos os fluxos. Dispara a geração do post completo.
+
+### Painel de saída (direita)
+
+Exibe o post gerado com:
+- Badge de categoria
+- Tempo estimado de leitura
+- Keywords de SEO identificadas
+- Título H1
+- Subtítulo/chamada
+- Corpo do post com H2s
+- Bloco de encerramento destacado (padrão OAB)
+- Disclaimer em itálico
+
+Dois botões abaixo do post:
+- "Copiar texto" — copia o conteúdo para área de transferência
+- "Gerar nova versão" — regenera o post com o mesmo tema
+
+### Painel de regras (esquerda, colapsável)
+Referência rápida para o escritor com as regras editoriais e restrições da OAB. Fica colapsado por padrão para não poluir a interface.
+
+---
+
+## Regras editoriais — o que o sistema deve seguir
+
+### Estrutura obrigatória de cada post
+
+**Título H1**
+Claro, com a palavra-chave principal, máximo 70 caracteres. Deve nomear a situação ou problema de forma direta.
+
+**Subtítulo/chamada**
+Uma frase que complementa o título e introduz o conteúdo.
+
+**Introdução**
+Dois a três parágrafos contextualizando o problema no cotidiano do leitor. Sem juridiquês. Sem afirmar que o leitor foi lesado.
+
+**Subtítulos H2 (3 a 5)**
+Cada H2 cobre um ângulo do tema: o que diz a lei, quais os direitos, quais os prazos relevantes, o que fazer primeiro, e assim por diante. Cada seção com dois a três parágrafos.
+
+**Encerramento — padrão OAB**
+Parágrafo final informando que, se a situação descrita aconteceu com o leitor, pode ser que seus direitos não tenham sido respeitados, e que existem profissionais especializados nessa área. Ver regras OAB abaixo para o vocabulário exato permitido.
+
+**Disclaimer**
+Frase final em itálico: "Este conteúdo tem caráter exclusivamente informativo e educativo. Não constitui aconselhamento jurídico."
+
+**Tamanho**
+Entre 600 e 900 palavras. Nem raso, nem exaustivo.
+
+---
+
+### Regras de linguagem e estilo
+
+**Linguagem**
+Simples, direta, coloquial mas correta. O público é o adulto brasileiro com baixo letramento jurídico — mas não deve ser tratado como criança. Frases curtas e médias. Parágrafos curtos (três a cinco linhas no máximo).
+
+**Termos jurídicos**
+Todo e qualquer termo jurídico deve ser explicado imediatamente após o uso, em linguagem coloquial. A explicação pode vir entre parênteses ou em frase seguinte curta. Nunca deixar um termo sem explicação.
+
+Exemplo correto:
+"O empregador tem a obrigação de pagar o aviso prévio (o período de um mês que a empresa deve pagar mesmo depois de demitir o funcionário) quando encerra o contrato sem justa causa."
+
+---
+
+### Padrões de escrita PROIBIDOS
+
+Os itens abaixo nunca devem aparecer em nenhum post gerado:
+
+**Travessão**
+Jamais usar travessão em qualquer situação — nem para aposto, nem para pausa, nem para substituir vírgula.
+
+**Padrão de reframing negativo**
+Nunca usar "não é X, é Y", "não porque X, mas porque Y", ou "a questão não é X, a questão é Y". Esses padrões soam artificiais e são reconhecíveis como escrita automática.
+
+**Contagem regressiva dramática**
+Nunca usar o padrão "Não X. Não Y. Apenas Z." Cria falsa tensão antes de um ponto que não precisava de construção.
+
+**Falso espectro**
+Nunca usar "de X a Y" quando X e Y não estão numa escala real com um meio significativo. "Da inovação à transformação" não é um espectro — é uma lista de dois itens disfarçada.
+
+**Suspense falso**
+Nunca fazer perguntas retóricas e respondê-las imediatamente na frase seguinte. "O resultado? Devastador." é um padrão que o leitor já reconhece e que não acrescenta nada.
+
+**Anáfora abusiva**
+Nunca repetir a mesma abertura de frase várias vezes em sequência. "Eles afirmam que X. Eles afirmam que Y. Eles afirmam que Z." é um padrão automático e cansativo.
+
+**Tricolon excessivo**
+Um único tricolon por post, no máximo. Três ou mais tricolons em sequência tornam o texto previsível.
+
+**Fragmentos de ênfase manufaturada**
+Nunca usar frases isoladas curtíssimas como parágrafos únicos para criar efeito dramático. "Ele fez isso. Abertamente. Por anos." é um estilo que não corresponde à escrita humana real.
+
+**Particípio presente vazio no final de frase**
+Nunca encerrar uma frase com "-ndo" que não acrescenta informação: "destacando sua importância", "refletindo tendências mais amplas", "contribuindo para o desenvolvimento de".
+
+---
+
+### Regras da OAB — o que nunca fazer
+
+Essas regras decorrem do Código de Ética e Disciplina da OAB e do Provimento 205/2021. O descumprimento pode expor a plataforma a questionamentos regulatórios.
+
+**Nunca recomendar conduta processual**
+O post não pode dizer ao leitor para "entrar com uma ação", "processar" alguém, "recorrer na justiça", "acionar o INSS", ou qualquer variação que configure recomendação de conduta jurídica. O texto informa o que a lei prevê — a decisão de agir é sempre do leitor.
+
+**Nunca afirmar que o leitor foi lesado**
+O post não pode afirmar como fato que o leitor teve seus direitos violados. Pode informar que determinada prática é ilegal, mas não pode concluir que aquilo aconteceu com o leitor específico.
+
+Vocabulário permitido no encerramento:
+- "Se isso aconteceu com você, pode ser que seus direitos não tenham sido respeitados."
+- "Situações como essa, em muitos casos, têm respaldo na legislação brasileira."
+- "Existem profissionais especializados nessa área que podem avaliar sua situação."
+
+Vocabulário proibido no encerramento:
+- "Você foi lesado."
+- "Entre em contato com um advogado."
+- "Procure um advogado agora."
+- "Você tem direito de processar."
+- "Não deixe isso passar."
+
+**Nunca associar o conteúdo diretamente a um advogado cadastrado**
+O post não pode terminar com link ou menção a um advogado específico. O botão "Encontrar um advogado" que aparece na sidebar do blog é genérico e separado do conteúdo — isso já está correto na estrutura do site.
+
+**Nunca estimular o litígio**
+O tom do post é sempre de esclarecimento e empoderamento informativo. Nunca de indignação que leve o leitor a querer "ir à luta". A diferença é sutil mas importante: informar que um reajuste de plano de saúde pode ser ilegal é permitido; dizer "não aceite isso" ou "exija seus direitos" é estímulo ao litígio.
+
+---
+
+## Saída esperada por post gerado
+
+O sistema deve retornar, para cada post:
+
+- Categoria (ex: INSS, Trabalhista, Família)
+- Título H1
+- Subtítulo/chamada
+- Tempo estimado de leitura
+- Três palavras-chave de SEO
+- Corpo do post completo com a estrutura descrita acima
+- Parágrafo de encerramento no padrão OAB
+- Disclaimer
+
+---
+
+## Opções de implementação
+
+### Opção A — Projeto Claude (recomendada para uso individual)
+Criar um Projeto aqui no Claude com este documento como instrução de sistema. O usuário digita o tema no chat e recebe o post diretamente na conversa. Simples, sem código, sem manutenção.
+
+Vantagem: zero desenvolvimento, disponível imediatamente.
+Desvantagem: sem interface visual, sem botão de macrotemas, sem geração de 10 sugestões de uma vez.
+
+### Opção B — Artefato Claude (recomendada para uso com interface)
+Criar um artefato React ou HTML diretamente no Claude com a interface descrita acima. Usa a API do Claude internamente para gerar os posts. Disponível na conversa, sem deploy externo.
+
+Vantagem: interface completa com macrotemas, sugestões e botão de copiar. Sem servidor, sem custo adicional de infraestrutura.
+Desvantagem: existe apenas dentro da conversa do Claude — não é uma URL acessível externamente.
+
+### Opção C — Replit (recomendada para equipe ou uso externo)
+Criar no Replit uma aplicação web autônoma com a interface completa, usando a API do Claude via chamadas HTTP. Gera uma URL acessível externamente.
+
+Vantagem: URL fixa, acessível por qualquer pessoa com o link, pode ser compartilhada com redatores externos.
+Desvantagem: exige chave de API do Claude configurada no Replit, custo de hospedagem se o Replit ficar fora do plano gratuito.
+
+---
+
+## Recomendação
+
+Para começar a produzir conteúdo agora com zero fricção: **Opção A** (Projeto Claude). Cria o projeto, cola este documento como instrução, e já pode gerar posts.
+
+Quando quiser uma interface visual para passar para um redator ou para uso recorrente mais confortável: **Opção B** (artefato no Claude) ou **Opção C** (Replit).

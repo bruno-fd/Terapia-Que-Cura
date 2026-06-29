@@ -5,14 +5,35 @@ import { BlogSidebar } from "@/components/BlogSidebar";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { getPostBySlug } from "@/data/blog";
+import { usePublishedPosts } from "@/data/published-posts";
 import NotFound from "@/pages/not-found";
 
 export default function Post() {
   const [, params] = useRoute("/blog/:slug");
-  const post = params ? getPostBySlug(params.slug) : undefined;
+  const slug = params?.slug;
 
-  // Slug inexistente cai na página padrão de 404
+  // Resolve o post tanto nos fixos quanto nos gerados no painel /admin
+  const { posts: generatedPosts, isLoading } = usePublishedPosts();
+  const generatedPost = slug
+    ? generatedPosts.find((p) => p.slug === slug)
+    : undefined;
+  const staticPost = slug ? getPostBySlug(slug) : undefined;
+  // Post gerado tem precedência sobre o fixo em caso de slug repetido
+  const post = generatedPost ?? staticPost;
+
+  // Enquanto os posts gerados carregam, evita um 404 prematuro
   if (!post) {
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-[#F5F4F2]">
+          <Navbar />
+          <main className="container mx-auto px-6 max-w-[1200px] py-24 text-center text-neutral-500">
+            Carregando post...
+          </main>
+          <Footer />
+        </div>
+      );
+    }
     return <NotFound />;
   }
 
@@ -57,11 +78,32 @@ export default function Post() {
                 {post.title}
               </h1>
 
+              {/* Subtítulo/chamada (posts gerados) */}
+              {post.subtitle && (
+                <p className="text-lg text-neutral-600 leading-relaxed mb-4">
+                  {post.subtitle}
+                </p>
+              )}
+
               {/* Meta */}
               <p className="text-sm text-neutral-500">
                 Publicado em {post.date} &middot; Leitura de aproximadamente{" "}
                 {post.readingMinutes} minutos
               </p>
+
+              {/* Palavras-chave (posts gerados) */}
+              {post.keywords && post.keywords.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {post.keywords.map((keyword) => (
+                    <span
+                      key={keyword}
+                      className="text-xs text-neutral-600 bg-neutral-100 border border-neutral-200 rounded-full px-3 py-1"
+                    >
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* Divisória */}
               <hr className="my-8 border-neutral-200" />
@@ -86,6 +128,15 @@ export default function Post() {
                   </section>
                 ))}
               </div>
+
+              {/* Encerramento padrão OAB (posts gerados) */}
+              {post.oabClosing && (
+                <div className="mt-10 rounded-2xl bg-primary-50 border border-primary-100 p-6">
+                  <p className="text-neutral-700 leading-loose">
+                    {post.oabClosing}
+                  </p>
+                </div>
+              )}
 
               {/* Divisória final */}
               <hr className="my-8 border-neutral-200" />
