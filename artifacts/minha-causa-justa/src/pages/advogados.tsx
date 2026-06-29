@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle } from "lucide-react";
+import { CityAutocomplete } from "@/components/CityAutocomplete";
+import { ESTADOS_UF } from "@/lib/ibge";
 
 // Mock Data
 const MOCK_LAWYERS = [
@@ -18,6 +20,8 @@ const MOCK_LAWYERS = [
     primaryArea: "Direito Previdenciário",
     secondaryArea: "Direito da Saúde",
     states: "SP, RJ",
+    cities: ["São Paulo, SP", "Campinas, SP", "Rio de Janeiro, RJ"],
+    online: true,
     badges: ["INSS", "Auxílio Doença", "Aposentadoria", "BPC/LOAS"],
     about: "Advogada previdenciária com 12 anos de experiência. Atuo exclusivamente com causas contra o INSS e operadoras de saúde. Acompanho cada cliente do primeiro atendimento até a decisão final, com linguagem clara e sem juridiquês. Acredito que entender o próprio processo é parte de conquistar o direito.",
     phone: "(11) 9 8765-4321",
@@ -32,6 +36,8 @@ const MOCK_LAWYERS = [
     primaryArea: "Direito do Trabalho",
     secondaryArea: "Direito do Consumidor",
     states: "MG, DF, GO",
+    cities: ["Belo Horizonte, MG", "Brasília, DF", "Goiânia, GO"],
+    online: false,
     badges: ["Demissão", "Rescisão", "Direitos Trabalhistas", "Consumidor"],
     about: "Especialista em demissão sem justa causa e rescisão indireta. Mais de 800 causas trabalhistas encerradas. Trabalho para que o trabalhador receba tudo o que tem direito, com agilidade e transparência em cada etapa do processo.",
     phone: "(31) 9 7654-3210",
@@ -46,6 +52,8 @@ const MOCK_LAWYERS = [
     primaryArea: "Direito de Família",
     secondaryArea: "Direito das Sucessões",
     states: "RJ, ES",
+    cities: ["Rio de Janeiro, RJ", "Niterói, RJ", "Vitória, ES"],
+    online: false,
     badges: ["Pensão Alimentícia", "Pensão por Morte", "Inventário", "Herança"],
     about: "Atuo com famílias em momentos difíceis. Linguagem clara, processo transparente, sem surpresas. Cada caso é tratado com o cuidado e a discrição que assuntos de família exigem, sempre buscando a solução menos desgastante para todos os envolvidos.",
     phone: "(21) 9 6543-2109",
@@ -60,6 +68,8 @@ const MOCK_LAWYERS = [
     primaryArea: "Direito Previdenciário",
     secondaryArea: "",
     states: "RS, SC, PR",
+    cities: ["Porto Alegre, RS", "Florianópolis, SC", "Curitiba, PR"],
+    online: true,
     badges: ["INSS", "BPC/LOAS", "Aposentadoria por Invalidez", "Revisão de Benefício"],
     about: "Mais de 1.200 benefícios conquistados para clientes do Sul do Brasil. Primeira consulta gratuita. Atendo presencialmente e online, sempre explicando passo a passo o que pode ser feito no seu caso antes de qualquer decisão.",
     phone: "(51) 9 5432-1098",
@@ -74,6 +84,8 @@ const MOCK_LAWYERS = [
     primaryArea: "Direito da Saúde",
     secondaryArea: "Direito do Consumidor",
     states: "BA, SE, AL",
+    cities: ["Salvador, BA", "Aracaju, SE", "Maceió, AL"],
+    online: true,
     badges: ["Plano de Saúde", "Negativa de Cobertura", "Reajuste Abusivo", "Consumidor"],
     about: "Especializada em obrigar planos de saúde a cumprir o contrato. Resultados em 30 a 60 dias. Atuo com liminares para garantir cirurgias, exames e tratamentos negados, sempre com foco na urgência que a saúde exige.",
     phone: "(71) 9 4321-0987",
@@ -88,6 +100,8 @@ const MOCK_LAWYERS = [
     primaryArea: "Direito de Família",
     secondaryArea: "",
     states: "CE, PI, MA",
+    cities: ["Fortaleza, CE", "Teresina, PI", "São Luís, MA"],
+    online: false,
     badges: ["Pensão Alimentícia", "Divórcio", "Guarda", "Família"],
     about: "Cuido de questões de família com respeito e agilidade. Atendimento humanizado em todos os casos. Acredito que cada família merece ser ouvida com atenção, e trabalho para que o processo seja o mais tranquilo possível para você e para quem você ama.",
     phone: "(85) 9 3210-9876",
@@ -103,6 +117,7 @@ export default function Advogados() {
   const [, setLocation] = useLocation();
   const [problema, setProblema] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
+  const [cidade, setCidade] = useState<string>("");
   const [filteredLawyers, setFilteredLawyers] = useState(MOCK_LAWYERS);
 
   const [contactLawyer, setContactLawyer] = useState<Lawyer | null>(null);
@@ -112,16 +127,18 @@ export default function Advogados() {
     const params = new URLSearchParams(window.location.search);
     const probParam = params.get("problema");
     const estParam = params.get("estado");
+    const cidParam = params.get("cidade");
 
     if (probParam) setProblema(probParam);
     if (estParam) setEstado(estParam);
+    if (cidParam) setCidade(cidParam);
 
-    if (probParam || estParam) {
-      applyFilters(probParam || "", estParam || "");
+    if (probParam || estParam || cidParam) {
+      applyFilters(probParam || "", estParam || "", cidParam || "");
     }
   }, []);
 
-  const applyFilters = (prob: string, est: string) => {
+  const applyFilters = (prob: string, est: string, cid: string) => {
     let filtered = MOCK_LAWYERS;
     if (prob) {
       // Very simple filter matching text
@@ -142,13 +159,16 @@ export default function Advogados() {
       );
     }
     if (est) {
-      filtered = filtered.filter(l => l.states.includes(est));
+      filtered = filtered.filter(l => l.cities.some(c => c.endsWith(`, ${est}`)));
+    }
+    if (cid) {
+      filtered = filtered.filter(l => l.cities.includes(cid));
     }
     setFilteredLawyers(filtered);
   };
 
   const handleSearch = () => {
-    applyFilters(problema, estado);
+    applyFilters(problema, estado, cidade);
 
     // Update URL without reload
     const url = new URL(window.location.href);
@@ -158,13 +178,16 @@ export default function Advogados() {
     if (estado) url.searchParams.set("estado", estado);
     else url.searchParams.delete("estado");
 
+    if (cidade) url.searchParams.set("cidade", cidade);
+    else url.searchParams.delete("cidade");
+
     window.history.pushState({}, '', url);
   };
 
-  const estados = [
-    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
-    "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
-  ];
+  const handleEstadoChange = (uf: string) => {
+    setEstado(uf);
+    setCidade("");
+  };
 
   const problemas = [
     "INSS: benefício negado ou cortado",
@@ -190,6 +213,14 @@ export default function Advogados() {
     } catch {
       return null;
     }
+  };
+
+  const formatLocation = (lawyer: Lawyer) => {
+    const shown = lawyer.cities.slice(0, 2).join(" · ");
+    const extra =
+      lawyer.cities.length > 2 ? ` · +${lawyer.cities.length - 2} cidades` : "";
+    const online = lawyer.online ? " · 🌐 Online" : "";
+    return `${shown}${extra}${online}`;
   };
 
   const SocialLinks = ({ lawyer, size = "sm" }: { lawyer: Lawyer; size?: "sm" | "lg" }) => {
@@ -265,16 +296,26 @@ export default function Advogados() {
                   </Select>
                 </div>
                 <div className="w-full md:w-48">
-                  <Select value={estado} onValueChange={setEstado}>
+                  <Select value={estado} onValueChange={handleEstadoChange}>
                     <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="filter-select-estado">
-                      <SelectValue placeholder="Seu estado" />
+                      <SelectValue placeholder="Estado" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {estados.map(uf => (
-                        <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                      {ESTADOS_UF.map(e => (
+                        <SelectItem key={e.uf} value={e.uf}>{e.uf} - {e.nome}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="w-full md:w-56">
+                  <CityAutocomplete
+                    uf={estado}
+                    onSelect={(nome) => setCidade(`${nome}, ${estado}`)}
+                    clearOnSelect={false}
+                    placeholder="Digite sua cidade..."
+                    inputClassName="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
+                    testId="filter-autocomplete-cidade"
+                  />
                 </div>
                 <Button
                   onClick={handleSearch}
@@ -298,7 +339,7 @@ export default function Advogados() {
                 <Button
                   variant="outline"
                   className="mt-6 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50"
-                  onClick={() => { setProblema(""); setEstado(""); applyFilters("", ""); }}
+                  onClick={() => { setProblema(""); setEstado(""); setCidade(""); applyFilters("", "", ""); }}
                   data-testid="button-limpar-filtros"
                 >
                   Limpar filtros
@@ -324,8 +365,8 @@ export default function Advogados() {
                           {lawyer.primaryArea}
                           {lawyer.secondaryArea && <span> • {lawyer.secondaryArea}</span>}
                         </p>
-                        <p className="text-neutral-500 text-xs mt-1 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> Atende: {lawyer.states}
+                        <p className="text-neutral-500 text-xs mt-1 flex items-center gap-1" data-testid={`lawyer-location-${lawyer.id}`}>
+                          <MapPin className="w-3 h-3 shrink-0" /> {formatLocation(lawyer)}
                         </p>
                       </div>
                     </div>
@@ -414,7 +455,7 @@ export default function Advogados() {
                       {detailLawyer.secondaryArea && <span> • {detailLawyer.secondaryArea}</span>}
                     </p>
                     <p className="text-neutral-500 text-sm mt-1 flex items-center gap-1.5">
-                      <MapPin className="w-4 h-4" /> Atende: {detailLawyer.states}
+                      <MapPin className="w-4 h-4 shrink-0" /> {formatLocation(detailLawyer)}
                     </p>
                   </div>
                 </div>

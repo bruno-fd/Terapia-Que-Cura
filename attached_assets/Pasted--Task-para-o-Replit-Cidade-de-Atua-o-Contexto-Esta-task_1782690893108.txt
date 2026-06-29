@@ -1,0 +1,238 @@
+# Task para o Replit — Cidade de Atuação
+
+## Contexto
+
+Esta task adiciona o campo de **cidade de atuação** em três pontos do site:
+1. Painel do advogado (`painel-perfil.html`) — onde o advogado cadastra suas cidades
+2. Página de busca (`advogados.html`) — onde o usuário filtra por cidade
+3. Card do advogado na listagem — onde a cidade aparece visivelmente
+
+A fonte de dados é a **API pública do IBGE**, gratuita e sem autenticação.
+
+---
+
+## API do IBGE — como usar
+
+### Buscar municípios por estado (UF)
+```
+GET https://servicodados.ibge.gov.br/api/v1/localidades/estados/{UF}/municipios
+```
+Exemplo para SP:
+```
+https://servicodados.ibge.gov.br/api/v1/localidades/estados/SP/municipios
+```
+
+Retorna array JSON. Cada item tem:
+```json
+{
+  "id": 3550308,
+  "nome": "São Paulo",
+  "microrregiao": {
+    "mesorregiao": {
+      "UF": {
+        "sigla": "SP",
+        "nome": "São Paulo"
+      }
+    }
+  }
+}
+```
+
+Usar apenas `nome` e a sigla da UF. Ignorar os demais campos.
+
+### Estratégia de carregamento
+
+Carregar as cidades sob demanda — somente quando o advogado selecionar um estado. Não carregar todos os 5.570 municípios de uma vez.
+
+Cache local em JavaScript: após carregar as cidades de um estado, armazenar em um objeto para não fazer nova requisição se o estado for selecionado novamente na mesma sessão.
+
+```javascript
+const cidadesCache = {};
+
+async function carregarCidades(uf) {
+  if (cidadesCache[uf]) return cidadesCache[uf];
+  const res = await fetch(
+    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`
+  );
+  const data = await res.json();
+  const cidades = data.map(m => m.nome).sort();
+  cidadesCache[uf] = cidades;
+  return cidades;
+}
+```
+
+---
+
+## 1. Painel do advogado — painel-perfil.html
+
+### Substituir a seção de estados
+
+Remover a seção atual de badges de estados (27 estados como badges clicáveis).
+
+Substituir por uma nova seção chamada **"Locais de atendimento"** com o seguinte fluxo:
+
+---
+
+### Seção nova — Locais de atendimento
+
+Card `--color-neutral-0`, `--radius-lg`, `--shadow-sm`, padding `--space-6`.
+
+Título: "Locais de atendimento" — font-size-lg, bold, `--color-primary-800`.
+
+Instrução: "Selecione os estados e as cidades onde você atende. Você pode atender em várias cidades e estados." — font-size-sm, `--color-neutral-500`.
+
+---
+
+#### Passo 1 — Seletor de estado
+
+Select estilizado com a classe `.input`, largura 100%:
+- Placeholder: "Selecione um estado..."
+- Opções: todos os 27 estados em ordem alfabética, com sigla e nome
+  - AC — Acre
+  - AL — Alagoas
+  - AP — Amapá
+  - AM — Amazonas
+  - BA — Bahia
+  - CE — Ceará
+  - DF — Distrito Federal
+  - ES — Espírito Santo
+  - GO — Goiás
+  - MA — Maranhão
+  - MT — Mato Grosso
+  - MS — Mato Grosso do Sul
+  - MG — Minas Gerais
+  - PA — Pará
+  - PB — Paraíba
+  - PR — Paraná
+  - PE — Pernambuco
+  - PI — Piauí
+  - RJ — Rio de Janeiro
+  - RN — Rio Grande do Norte
+  - RS — Rio Grande do Sul
+  - RO — Rondônia
+  - RR — Roraima
+  - SC — Santa Catarina
+  - SP — São Paulo
+  - SE — Sergipe
+  - TO — Tocantins
+
+Ao selecionar um estado: disparar `carregarCidades(uf)` e renderizar o autocomplete de cidades abaixo. Exibir spinner de loading enquanto carrega.
+
+---
+
+#### Passo 2 — Autocomplete de cidades
+
+Aparece abaixo do select de estado, após as cidades carregarem.
+
+Campo de texto com classe `.input`, placeholder: "Digite o nome da cidade..."
+
+Comportamento do autocomplete:
+- A partir do 2º caractere digitado, exibir dropdown com sugestões
+- Filtrar as cidades do estado selecionado que contenham o texto digitado (case-insensitive, sem acento)
+- Máximo 8 sugestões visíveis no dropdown com scroll
+- Dropdown com fundo `--color-neutral-0`, `--shadow-md`, `--radius-md`, border `--border-color`
+- Cada sugestão: padding 10px 16px, hover em `--color-primary-50`, cursor pointer
+- Ao clicar em uma sugestão: adicionar a cidade à lista de cidades selecionadas (ver abaixo) e limpar o campo
+- Ao pressionar Enter com texto que não corresponde a nenhuma cidade: ignorar (não permitir cidade fora da base)
+- Fechar dropdown ao clicar fora
+
+Função de normalização para busca sem acento:
+```javascript
+function normalizar(str) {
+  return str.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+```
+
+---
+
+#### Passo 3 — Lista de cidades selecionadas
+
+Abaixo do autocomplete, exibir as cidades já adicionadas como tags removíveis.
+
+Cada tag:
+- Texto: "São Paulo, SP"
+- Ícone ✕ à direita — ao clicar, remove a cidade da lista
+- Fundo `--color-primary-100`, texto `--color-primary-800`, border `--color-primary-200`
+- border-radius `--radius-full`, padding 6px 12px, font-size-sm
+- Tags em flex-wrap, gap `--space-2`
+
+Regras:
+- Não permitir adicionar a mesma cidade duas vezes
+- Não há limite de cidades — o advogado pode atender onde quiser
+- Ao remover todas as cidades de um estado, o estado também some da lista
+
+---
+
+#### Opção — Atendimento online em todo o Brasil
+
+Checkbox abaixo da lista de tags:
+- Label: "Também atendo online em todo o Brasil"
+- Se marcado: exibir badge especial "🌐 Online — Todo o Brasil" na lista de locais
+- Não remove as cidades físicas — são complementares
+
+---
+
+#### Estado inicial (demonstração)
+
+Pré-popular com duas cidades fictícias:
+- "São Paulo, SP"
+- "Campinas, SP"
+
+---
+
+## 2. Página de busca — advogados.html
+
+### Substituir o filtro de estado
+
+Remover o select de estado atual do hero de busca.
+
+Substituir por dois campos em sequência:
+
+**Campo 1 — Estado:**
+Select `.input` com os 27 estados (mesma lista acima).
+Ao selecionar: carregar cidades via API e habilitar o campo 2.
+
+**Campo 2 — Cidade:**
+Campo de autocomplete (mesma lógica do painel).
+Desabilitado e com placeholder "Selecione um estado primeiro" enquanto nenhum estado foi escolhido.
+Após selecionar estado: habilitado, placeholder "Digite sua cidade..."
+
+Layout dos filtros no hero (desktop): três colunas lado a lado.
+[ Qual é o seu problema? ▾ ] [ Estado ▾ ] [ Cidade... ] [ Buscar ]
+
+Em mobile: empilhados verticalmente.
+
+**Comportamento da busca:**
+- Se só estado selecionado: mostrar todos os advogados daquele estado
+- Se estado + cidade selecionados: mostrar advogados que atendem naquela cidade
+- Filtro por problema continua funcionando em conjunto
+
+---
+
+## 3. Card do advogado na listagem
+
+### Adicionar localização ao card
+
+No card `.card-advogado` existente, adicionar uma linha de localização logo abaixo do nome e OAB.
+
+Formato: 📍 São Paulo, SP · Campinas, SP (máximo 2 cidades exibidas)
+Se tiver mais de 2: "📍 São Paulo, SP · Campinas, SP · +3 cidades"
+
+Se tiver a opção online marcada: adicionar "· 🌐 Online" ao final.
+
+Estilo: font-size-sm, `--color-neutral-500`.
+
+---
+
+## Instruções técnicas
+
+- A API do IBGE é pública, HTTPS, sem autenticação. Usar `fetch` nativo.
+- Sempre tratar erros de rede: se a API falhar, exibir mensagem "Não foi possível carregar as cidades. Tente novamente." com botão de retry.
+- Cache em variável JavaScript (objeto literal) — não usar localStorage para o cache de cidades.
+- A normalização de acentos deve funcionar para buscas como "sao paulo" encontrar "São Paulo".
+- O autocomplete deve funcionar tanto no painel do advogado quanto na busca do usuário — extrair a lógica para uma função reutilizável.
+- Não usar nenhuma biblioteca externa. Tudo em JavaScript puro.
+- O seletor de estado e o autocomplete de cidade devem ser acessíveis via teclado: Tab para navegar, Enter para selecionar, Esc para fechar dropdown.
+- Responsivo obrigatório em todos os pontos.

@@ -29,11 +29,17 @@ export const ESTADOS = [
   "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
 ] as const;
 
+export interface Cidade {
+  nome: string;
+  uf: string;
+}
+
 export interface Profile {
   photo: string | null;
   about: string;
   areas: string[];
-  estados: string[];
+  cidades: Cidade[];
+  atendeOnline: boolean;
   whatsapp: string;
   instagram: string;
   linkedin: string;
@@ -46,7 +52,11 @@ const DEFAULT_PROFILE: Profile = {
   about:
     "Atuo há 8 anos com causas previdenciárias e trabalhistas em São Paulo. Meu foco é ajudar trabalhadores que tiveram benefícios negados pelo INSS ou que foram demitidos sem receber o que era devido.",
   areas: ["INSS", "Trabalhista"],
-  estados: ["SP"],
+  cidades: [
+    { nome: "São Paulo", uf: "SP" },
+    { nome: "Campinas", uf: "SP" },
+  ],
+  atendeOnline: false,
   whatsapp: "",
   instagram: "",
   linkedin: "",

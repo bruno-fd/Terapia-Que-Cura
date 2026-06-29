@@ -1,11 +1,14 @@
 import { useRef, useState } from "react";
-import { Check, Loader2, Instagram, Linkedin, Globe, Link2, Phone } from "lucide-react";
+import { Check, Loader2, Instagram, Linkedin, Globe, Link2, Phone, X, MapPin } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CityAutocomplete } from "@/components/CityAutocomplete";
+import { ESTADOS_UF } from "@/lib/ibge";
 import {
   AREAS,
-  ESTADOS,
   LAWYER_NAME,
   LAWYER_OAB,
   SUPPORT_EMAIL,
@@ -36,7 +39,7 @@ export default function PainelPerfil() {
   const [profile, setProfile] = useState<Profile>(() => getProfile());
   const [photoError, setPhotoError] = useState("");
   const [areaError, setAreaError] = useState("");
-  const [estadoError, setEstadoError] = useState("");
+  const [selectedUf, setSelectedUf] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -80,17 +83,18 @@ export default function PainelPerfil() {
     });
   };
 
-  const toggleEstado = (uf: string) => {
-    const isSelected = profile.estados.includes(uf);
-    if (isSelected && profile.estados.length === 1) {
-      setEstadoError("Selecione ao menos um estado.");
-      return;
-    }
-    setEstadoError("");
+  const addCidade = (nome: string) => {
+    if (!selectedUf) return;
+    const exists = profile.cidades.some(
+      (c) => c.nome === nome && c.uf === selectedUf,
+    );
+    if (exists) return;
+    update({ cidades: [...profile.cidades, { nome, uf: selectedUf }] });
+  };
+
+  const removeCidade = (nome: string, uf: string) => {
     update({
-      estados: isSelected
-        ? profile.estados.filter((e) => e !== uf)
-        : [...profile.estados, uf],
+      cidades: profile.cidades.filter((c) => !(c.nome === nome && c.uf === uf)),
     });
   };
 
@@ -269,28 +273,82 @@ export default function PainelPerfil() {
           )}
         </Card>
 
-        {/* Seção 5 — Estados de atendimento */}
+        {/* Seção 5 — Locais de atendimento */}
         <Card>
-          <SectionTitle>Estados onde atende</SectionTitle>
+          <SectionTitle>Locais de atendimento</SectionTitle>
           <p className="mt-1 text-sm text-neutral-500">
-            Selecione os estados onde você atende presencialmente ou online.
+            Selecione os estados e as cidades onde você atende. Você pode atender em várias cidades e estados.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {ESTADOS.map((uf) => (
-              <button
-                key={uf}
-                type="button"
-                onClick={() => toggleEstado(uf)}
-                className={badgeClass(profile.estados.includes(uf))}
-                data-testid={`badge-estado-${uf}`}
-              >
-                {uf}
-              </button>
-            ))}
+
+          {/* Passo 1: estado */}
+          <div className="mt-4">
+            <Select value={selectedUf} onValueChange={setSelectedUf}>
+              <SelectTrigger className="w-full bg-white" data-testid="select-estado-painel">
+                <SelectValue placeholder="Selecione um estado..." />
+              </SelectTrigger>
+              <SelectContent>
+                {ESTADOS_UF.map((e) => (
+                  <SelectItem key={e.uf} value={e.uf}>
+                    {e.uf} - {e.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          {estadoError && (
-            <p className="mt-3 text-sm text-[#C0392B]" data-testid="text-estado-erro">{estadoError}</p>
+
+          {/* Passo 2: autocomplete de cidades */}
+          {selectedUf && (
+            <div className="mt-3">
+              <CityAutocomplete
+                uf={selectedUf}
+                onSelect={addCidade}
+                testId="autocomplete-cidade-painel"
+              />
+            </div>
           )}
+
+          {/* Passo 3: cidades selecionadas */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {profile.cidades.map((c) => (
+              <span
+                key={`${c.nome}-${c.uf}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-100 px-3 py-1.5 text-sm text-primary-800"
+                data-testid={`tag-cidade-${c.nome}-${c.uf}`}
+              >
+                {c.nome}, {c.uf}
+                <button
+                  type="button"
+                  onClick={() => removeCidade(c.nome, c.uf)}
+                  className="rounded-full p-0.5 text-primary-600 transition-colors hover:bg-primary-200 hover:text-primary-900"
+                  aria-label={`Remover ${c.nome}, ${c.uf}`}
+                  data-testid={`button-remover-cidade-${c.nome}-${c.uf}`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+            {profile.atendeOnline && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1E7D4F]/30 bg-[#1E7D4F]/10 px-3 py-1.5 text-sm font-medium text-[#1E7D4F]" data-testid="tag-online">
+                🌐 Online - Todo o Brasil
+              </span>
+            )}
+          </div>
+
+          {profile.cidades.length === 0 && !profile.atendeOnline && (
+            <p className="mt-3 text-sm text-neutral-500">
+              Nenhum local adicionado ainda. Selecione um estado e busque suas cidades.
+            </p>
+          )}
+
+          {/* Atendimento online */}
+          <label className="mt-5 flex cursor-pointer items-center gap-2.5">
+            <Checkbox
+              checked={profile.atendeOnline}
+              onCheckedChange={(v) => update({ atendeOnline: v === true })}
+              data-testid="checkbox-online"
+            />
+            <span className="text-sm text-neutral-700">Também atendo online em todo o Brasil</span>
+          </label>
         </Card>
 
         {/* Seção 6 — Links e contato */}
@@ -422,6 +480,16 @@ export default function PainelPerfil() {
                 <span className="inline-flex items-center gap-1 mt-1 text-[#1E7D4F] text-xs font-medium bg-[#1E7D4F]/10 border border-[#1E7D4F]/20 rounded-full px-2 py-0.5">
                   <Check className="h-3 w-3" /> {LAWYER_OAB}
                 </span>
+                {(profile.cidades.length > 0 || profile.atendeOnline) && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs text-neutral-500" data-testid="text-previa-locais">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span>
+                      {profile.cidades.slice(0, 2).map((c) => `${c.nome}, ${c.uf}`).join(" · ")}
+                      {profile.cidades.length > 2 && ` · +${profile.cidades.length - 2} cidades`}
+                      {profile.atendeOnline && (profile.cidades.length > 0 ? " · 🌐 Online" : "🌐 Online - Todo o Brasil")}
+                    </span>
+                  </p>
+                )}
               </div>
             </div>
 
