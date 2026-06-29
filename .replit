@@ -26,3 +26,6 @@ channel = "stable-25_05"
 
 [userenv.development]
 ASAAS_BASE_URL = "https://sandbox.asaas.com/api/v3"
+
+[userenv.production]
+ASAAS_BASE_URL = "https://api.asaas.com/v3"

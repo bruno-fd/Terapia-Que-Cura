@@ -161,3 +161,53 @@ export function deleteSubscription(subscriptionId: string): Promise<unknown> {
 export function getPayment(paymentId: string): Promise<AsaasPayment> {
   return asaasFetch<AsaasPayment>(`/payments/${paymentId}`);
 }
+
+// ---------------------------------------------------------------------------
+// Webhooks. Registramos o webhook de forma programática (ver
+// registerAsaasWebhook) para que um pagamento confirmado atualize o status da
+// assinatura automaticamente, sem depender de configuração manual no painel.
+// ---------------------------------------------------------------------------
+export interface AsaasWebhook {
+  id?: string;
+  name: string;
+  url: string;
+  email?: string;
+  enabled: boolean;
+  interrupted: boolean;
+  apiVersion?: number;
+  authToken?: string | null;
+  sendType: "SEQUENTIALLY" | "NON_SEQUENTIALLY";
+  events: string[];
+}
+
+export async function listWebhooks(): Promise<AsaasWebhook[]> {
+  const result = await asaasFetch<AsaasList<AsaasWebhook>>("/webhooks");
+  return result.data ?? [];
+}
+
+export function createWebhook(input: AsaasWebhook): Promise<AsaasWebhook> {
+  return asaasFetch<AsaasWebhook>("/webhooks", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function updateWebhook(
+  id: string,
+  input: Partial<AsaasWebhook>,
+): Promise<AsaasWebhook> {
+  return asaasFetch<AsaasWebhook>(`/webhooks/${id}`, {
+    method: "PUT",
+    body: input,
+  });
+}
+
+// Dados da conta Asaas; usamos o e-mail como destino padrão das notificações
+// de falha do webhook quando ASAAS_WEBHOOK_EMAIL não está definido.
+export interface AsaasAccount {
+  email: string | null;
+}
+
+export function getMyAccount(): Promise<AsaasAccount> {
+  return asaasFetch<AsaasAccount>("/myAccount");
+}

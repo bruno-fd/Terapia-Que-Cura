@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { registerAsaasWebhook } from "./lib/registerAsaasWebhook";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,8 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Registro idempotente do webhook Asaas, para que um pagamento confirmado
+  // ative a assinatura sem configuração manual. Não bloqueia a inicialização.
+  void registerAsaasWebhook();
 });
