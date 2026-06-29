@@ -50,6 +50,34 @@ function formatDatePtBr(iso: string): string {
   }).format(date);
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Fallback para posts antigos sem bodyHtml: monta o HTML a partir das
+// seções estruturadas (body) para o editor poder recuperar o conteúdo.
+function sectionsToHtml(body: ApiBlogPost["body"]): string {
+  const parts: string[] = [];
+  for (const section of body) {
+    if (section.heading) {
+      parts.push(`<h2>${escapeHtml(section.heading)}</h2>`);
+    }
+    for (const p of section.paragraphs) {
+      parts.push(`<p>${escapeHtml(p)}</p>`);
+    }
+  }
+  return parts.join("");
+}
+
+function initialBodyHtml(post: ApiBlogPost): string {
+  return post.bodyHtml && post.bodyHtml.trim()
+    ? post.bodyHtml
+    : sectionsToHtml(post.body);
+}
+
 // ============================================================
 // Gate de senha
 // ============================================================
@@ -221,7 +249,7 @@ function PostEditor({
   const [subtitle, setSubtitle] = useState(post.subtitle);
   const [excerpt, setExcerpt] = useState(post.excerpt);
   const [category, setCategory] = useState(post.category);
-  const [bodyHtml, setBodyHtml] = useState(post.bodyHtml || "");
+  const [bodyHtml, setBodyHtml] = useState(() => initialBodyHtml(post));
 
   // Reinicializa o formulário quando outro post é aberto no editor.
   useEffect(() => {
@@ -229,7 +257,7 @@ function PostEditor({
     setSubtitle(post.subtitle);
     setExcerpt(post.excerpt);
     setCategory(post.category);
-    setBodyHtml(post.bodyHtml || "");
+    setBodyHtml(initialBodyHtml(post));
   }, [post.id]);
 
   const collect = () => ({
