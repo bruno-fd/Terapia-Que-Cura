@@ -4,6 +4,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CityAutocomplete } from "@/components/CityAutocomplete";
+import { ESTADOS_UF } from "@/lib/ibge";
 import { 
   ArrowRight, 
   Shield, 
@@ -28,23 +30,25 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [problema, setProblema] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
+  const [cidade, setCidade] = useState<string>("");
+
+  const handleEstadoChange = (uf: string) => {
+    setEstado(uf);
+    setCidade("");
+  };
 
   const handleSearch = () => {
     let url = "/advogados";
-    if (problema || estado) {
+    if (problema || estado || cidade) {
       url += "?";
       const params = new URLSearchParams();
       if (problema) params.append("problema", problema);
       if (estado) params.append("estado", estado);
+      if (cidade) params.append("cidade", cidade);
       url += params.toString();
     }
     setLocation(url);
   };
-
-  const estados = [
-    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", 
-    "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
-  ];
 
   const problemas = [
     "INSS: benefício negado ou cortado",
@@ -90,34 +94,44 @@ export default function Home() {
                 </div>
 
                 <div className="bg-primary-50 p-6 rounded-[32px] border border-primary-100 shadow-sm relative z-10">
-                  <div className="flex flex-col md:flex-row lg:flex-col xl:flex-row gap-4">
-                    <div className="flex-1">
-                      <Select value={problema} onValueChange={setProblema}>
-                        <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-problema">
-                          <SelectValue placeholder="Qual é o seu problema?" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {problemas.map(p => (
-                            <SelectItem key={p} value={p}>{p}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="w-full md:w-48 lg:w-full xl:w-48">
-                      <Select value={estado} onValueChange={setEstado}>
-                        <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-estado">
-                          <SelectValue placeholder="Seu estado" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {estados.map(uf => (
-                            <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <div className="flex flex-col gap-3">
+                    <Select value={problema} onValueChange={setProblema}>
+                      <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-problema">
+                        <SelectValue placeholder="Qual é o seu problema?" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {problemas.map(p => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="sm:flex-1 min-w-0">
+                        <Select value={estado} onValueChange={handleEstadoChange}>
+                          <SelectTrigger className="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-estado">
+                            <SelectValue placeholder="Estado" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            {ESTADOS_UF.map(e => (
+                              <SelectItem key={e.uf} value={e.uf}>{e.uf} - {e.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="sm:flex-1 min-w-0">
+                        <CityAutocomplete
+                          uf={estado}
+                          onSelect={(nome) => setCidade(`${nome}, ${estado}`)}
+                          clearOnSelect={false}
+                          placeholder="Sua cidade..."
+                          inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
+                          testId="select-cidade"
+                        />
+                      </div>
                     </div>
                     <Button 
                       onClick={handleSearch} 
-                      className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full md:w-auto lg:w-full xl:w-auto"
+                      className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full"
                       data-testid="button-buscar-advogado"
                     >
                       Encontrar advogado
