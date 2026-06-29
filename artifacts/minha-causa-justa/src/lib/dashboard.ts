@@ -1,15 +1,8 @@
-// Estado simulado da área logada do advogado.
-// Tudo é mantido no localStorage (sem backend real nesta etapa).
+// Helpers da área logada do advogado. O perfil agora é persistido no banco
+// via API (hooks gerados em @workspace/api-client-react). Aqui ficam apenas
+// utilidades de UI e listas estáticas reutilizadas por várias telas.
 
 import { CATEGORIA_NOMES } from "@/data/categories";
-
-const LOGGED_KEY = "mcj_logado";
-const PROFILE_KEY = "mcj_perfil";
-
-// Dados cadastrais fixos (viriam da OAB / cadastro original)
-export const LAWYER_NAME = "Dr. Carlos Eduardo Mendes";
-export const LAWYER_OAB = "OAB/SP 123.456";
-export const SUPPORT_EMAIL = "contato@minhacausajusta.com.br";
 
 // Áreas de atuação = categorias do site (fonte única em data/categories.ts)
 export const AREAS = CATEGORIA_NOMES;
@@ -24,82 +17,9 @@ export interface Cidade {
   uf: string;
 }
 
-export interface Profile {
-  photo: string | null;
-  about: string;
-  areas: string[];
-  cidades: Cidade[];
-  atendeOnline: boolean;
-  whatsapp: string;
-  instagram: string;
-  linkedin: string;
-  website: string;
-  outro: string;
-}
-
-const DEFAULT_PROFILE: Profile = {
-  photo: null,
-  about:
-    "Atuo há 8 anos com causas previdenciárias e trabalhistas em São Paulo. Meu foco é ajudar trabalhadores que tiveram benefícios negados pelo INSS ou que foram demitidos sem receber o que era devido.",
-  areas: ["INSS e Previdência", "Trabalho e Emprego"],
-  cidades: [
-    { nome: "São Paulo", uf: "SP" },
-    { nome: "Campinas", uf: "SP" },
-  ],
-  atendeOnline: false,
-  whatsapp: "",
-  instagram: "",
-  linkedin: "",
-  website: "",
-  outro: "",
-};
-
-export function isLoggedIn(): boolean {
-  try {
-    return localStorage.getItem(LOGGED_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-export function login() {
-  try {
-    localStorage.setItem(LOGGED_KEY, "true");
-  } catch {
-    // ignore (modo privado etc.)
-  }
-}
-
-export function logout() {
-  try {
-    localStorage.removeItem(LOGGED_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-export function getProfile(): Profile {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    if (!raw) return { ...DEFAULT_PROFILE };
-    const parsed = JSON.parse(raw) as Partial<Profile>;
-    return { ...DEFAULT_PROFILE, ...parsed };
-  } catch {
-    return { ...DEFAULT_PROFILE };
-  }
-}
-
-export function saveProfile(profile: Profile) {
-  try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  } catch {
-    // ignore
-  }
-}
-
 export function getInitial(name: string): string {
-  const clean = name.replace(/^Dr[a]?\.\s*/, "");
-  return clean.charAt(0).toUpperCase();
+  const clean = name.replace(/^Dr[a]?\.\s*/, "").trim();
+  return (clean.charAt(0) || "A").toUpperCase();
 }
 
 // Máscara de telefone brasileiro: (11) 99999-9999

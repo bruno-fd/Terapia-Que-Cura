@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Eye, Phone, Target, TrendingUp, ArrowUp, Rocket, Check } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { getProfile } from "@/lib/dashboard";
+import { useGetPerfil } from "@workspace/api-client-react";
 
 type DemoState = "primeiro" | "tres";
 type Period = "mes" | "trimestre" | "total";
@@ -30,7 +30,9 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 export default function PainelMetricas() {
   const [demo, setDemo] = useState<DemoState>("tres");
   const [period, setPeriod] = useState<Period>("mes");
-  const profile = getProfile();
+  const { data: profile } = useGetPerfil();
+  const hasPhoto = !!profile?.photo;
+  const areasCount = profile?.areas.length ?? 0;
 
   const data = PERIOD_DATA[period];
   const conversion = data.views > 0 ? Math.round((data.contacts / data.views) * 100) : 0;
@@ -95,9 +97,14 @@ export default function PainelMetricas() {
       </div>
 
       {demo === "primeiro" ? (
-        <WelcomeState hasPhoto={!!profile.photo} />
+        <WelcomeState hasPhoto={hasPhoto} />
       ) : (
-        <MetricsState data={data} conversion={conversion} profile={profile} />
+        <MetricsState
+          data={data}
+          conversion={conversion}
+          hasPhoto={hasPhoto}
+          areasCount={areasCount}
+        />
       )}
     </DashboardLayout>
   );
@@ -155,16 +162,18 @@ function WelcomeState({ hasPhoto }: { hasPhoto: boolean }) {
 function MetricsState({
   data,
   conversion,
-  profile,
+  hasPhoto,
+  areasCount,
 }: {
   data: typeof PERIOD_DATA[Period];
   conversion: number;
-  profile: ReturnType<typeof getProfile>;
+  hasPhoto: boolean;
+  areasCount: number;
 }) {
   const tips: string[] = [];
-  if (!profile.photo)
+  if (!hasPhoto)
     tips.push("📷 Adicione uma foto ao seu perfil, perfis com foto recebem 3x mais visualizações.");
-  if (profile.areas.length < 3)
+  if (areasCount < 3)
     tips.push("✅ Selecione mais áreas de atuação para aparecer em mais buscas.");
   if (conversion < 10)
     tips.push("✏️ Reescreva seu 'Sobre mim' focando no que você resolve, não onde se formou.");

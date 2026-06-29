@@ -32,7 +32,7 @@ export function Navbar() {
             </Link>
           </Button>
           <Button asChild className="bg-primary text-white hover:bg-primary-700">
-            <Link href="/login" data-testid="button-entrar">
+            <Link href="/sign-in" data-testid="button-entrar">
               Área do advogado
             </Link>
           </Button>
@@ -65,7 +65,7 @@ export function Navbar() {
               </Link>
             </Button>
             <Button asChild className="w-full bg-primary text-white hover:bg-primary-700 justify-center">
-              <Link href="/login" onClick={closeMenu} data-testid="mobile-button-entrar">
+              <Link href="/sign-in" onClick={closeMenu} data-testid="mobile-button-entrar">
                 Área do advogado
               </Link>
             </Button>

@@ -81,6 +81,7 @@ export default function PainelAssinatura() {
 
   const [showAssinar, setShowAssinar] = useState(false);
   const [planoEscolhido, setPlanoEscolhido] = useState<Plano>("mensal");
+  const [pendingPlano, setPendingPlano] = useState<Plano | null>(null);
   const [showCancelar, setShowCancelar] = useState(false);
   const [canceling, setCanceling] = useState(false);
 
@@ -101,6 +102,35 @@ export default function PainelAssinatura() {
   useEffect(() => {
     void load();
   }, []);
+
+  // Lê o plano pré-selecionado no cadastro (vindo da página de planos).
+  useEffect(() => {
+    let pre: string | null = null;
+    try {
+      pre = localStorage.getItem("mcj_plano_preselect");
+    } catch {
+      pre = null;
+    }
+    if (pre === "mensal" || pre === "anual") {
+      try {
+        localStorage.removeItem("mcj_plano_preselect");
+      } catch {
+        // Ignora ambientes sem localStorage.
+      }
+      setPendingPlano(pre);
+    }
+  }, []);
+
+  // Abre o plano pré-selecionado só depois de carregar e se ainda não houver
+  // assinatura ativa.
+  useEffect(() => {
+    if (loading || !state || !pendingPlano) return;
+    if (!state.hasSubscription) {
+      setPlanoEscolhido(pendingPlano);
+      setShowAssinar(true);
+    }
+    setPendingPlano(null);
+  }, [loading, state, pendingPlano]);
 
   function abrirAssinar(plano: Plano) {
     setPlanoEscolhido(plano);

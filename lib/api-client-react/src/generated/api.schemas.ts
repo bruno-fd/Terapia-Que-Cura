@@ -131,3 +131,68 @@ export interface CreateSubscriptionInput {
   telefone?: string;
 }
 
+export interface Cidade {
+  /** @minLength 1 */
+  nome: string;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     */
+  uf: string;
+}
+
+export type LawyerProfileSubscriptionStatus = typeof LawyerProfileSubscriptionStatus[keyof typeof LawyerProfileSubscriptionStatus] | null;
+
+
+export const LawyerProfileSubscriptionStatus = {
+  pendente: 'pendente',
+  ativa: 'ativa',
+  atrasada: 'atrasada',
+  inativa: 'inativa',
+} as const;
+
+export interface LawyerProfile {
+  nome: string;
+  oab: string;
+  photo?: string | null;
+  about: string;
+  areas: string[];
+  cidades: Cidade[];
+  atendeOnline: boolean;
+  whatsapp: string;
+  instagram: string;
+  linkedin: string;
+  website: string;
+  outro: string;
+  complete: boolean;
+  subscriptionStatus?: LawyerProfileSubscriptionStatus;
+  visivel: boolean;
+}
+
+export interface UpdateProfileInput {
+  nome: string;
+  oab: string;
+  photo?: string | null;
+  about: string;
+  areas: string[];
+  cidades: Cidade[];
+  atendeOnline: boolean;
+  whatsapp: string;
+  instagram: string;
+  linkedin: string;
+  website: string;
+  outro: string;
+}
+
+export interface PublicLawyer {
+  id: number;
+  nome: string;
+  oab: string;
+  photo?: string | null;
+  about: string;
+  areas: string[];
+  cidades: Cidade[];
+  atendeOnline: boolean;
+  whatsapp: string;
+}
+

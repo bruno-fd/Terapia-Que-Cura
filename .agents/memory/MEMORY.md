@@ -1,1 +1,1 @@
-- [Asaas recurring billing](asaas-billing.md) — access_token header (not Bearer), billingType UNDEFINED, status derived live from payments, demo uses fixed DEMO_LAWYER_REF.
+- [Form rehydration from React Query](rq-form-rehydration.md) — rehydrate a form by data-reference identity (not a boolean), so refetches don't clobber edits and a user/account switch resyncs.

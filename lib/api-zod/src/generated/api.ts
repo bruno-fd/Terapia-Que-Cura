@@ -169,6 +169,119 @@ export const DeleteBlogPostResponse = zod.void()
 
 
 /**
+ * Returns lawyers whose subscription is active and whose profile is complete.
+ * @summary List public lawyers (paying and with a complete profile)
+ */
+
+export const listAdvogadosResponseCidadesItemUfMin = 2;
+export const listAdvogadosResponseCidadesItemUfMax = 2;
+
+
+
+export const ListAdvogadosResponseItem = zod.object({
+  "id": zod.number(),
+  "nome": zod.string(),
+  "oab": zod.string(),
+  "photo": zod.string().nullish(),
+  "about": zod.string(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(listAdvogadosResponseCidadesItemUfMin).max(listAdvogadosResponseCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "whatsapp": zod.string()
+})
+export const ListAdvogadosResponse = zod.array(ListAdvogadosResponseItem)
+
+
+/**
+ * @summary Get the authenticated lawyer's profile
+ */
+
+export const getPerfilResponseCidadesItemUfMin = 2;
+export const getPerfilResponseCidadesItemUfMax = 2;
+
+
+
+export const GetPerfilResponse = zod.object({
+  "nome": zod.string(),
+  "oab": zod.string(),
+  "photo": zod.string().nullish(),
+  "about": zod.string(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(getPerfilResponseCidadesItemUfMin).max(getPerfilResponseCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "whatsapp": zod.string(),
+  "instagram": zod.string(),
+  "linkedin": zod.string(),
+  "website": zod.string(),
+  "outro": zod.string(),
+  "complete": zod.boolean(),
+  "subscriptionStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "visivel": zod.boolean()
+})
+
+
+/**
+ * @summary Create or update the authenticated lawyer's profile
+ */
+
+export const updatePerfilBodyCidadesItemUfMin = 2;
+export const updatePerfilBodyCidadesItemUfMax = 2;
+
+
+
+export const UpdatePerfilBody = zod.object({
+  "nome": zod.string(),
+  "oab": zod.string(),
+  "photo": zod.string().nullish(),
+  "about": zod.string(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(updatePerfilBodyCidadesItemUfMin).max(updatePerfilBodyCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "whatsapp": zod.string(),
+  "instagram": zod.string(),
+  "linkedin": zod.string(),
+  "website": zod.string(),
+  "outro": zod.string()
+})
+
+
+export const updatePerfilResponseCidadesItemUfMin = 2;
+export const updatePerfilResponseCidadesItemUfMax = 2;
+
+
+
+export const UpdatePerfilResponse = zod.object({
+  "nome": zod.string(),
+  "oab": zod.string(),
+  "photo": zod.string().nullish(),
+  "about": zod.string(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(updatePerfilResponseCidadesItemUfMin).max(updatePerfilResponseCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "whatsapp": zod.string(),
+  "instagram": zod.string(),
+  "linkedin": zod.string(),
+  "website": zod.string(),
+  "outro": zod.string(),
+  "complete": zod.boolean(),
+  "subscriptionStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "visivel": zod.boolean()
+})
+
+
+/**
  * @summary Get the current subscription state for the lawyer
  */
 export const GetAssinaturaResponse = zod.object({

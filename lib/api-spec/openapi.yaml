@@ -16,6 +16,8 @@ tags:
     description: Admin blog generation and management
   - name: subscription
     description: Lawyer subscription billing via Asaas
+  - name: lawyer
+    description: Lawyer profile and public directory
 paths:
   /healthz:
     get:
@@ -187,6 +189,68 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+  /advogados:
+    get:
+      operationId: listAdvogados
+      tags: [lawyer]
+      summary: List public lawyers (paying and with a complete profile)
+      description: Returns lawyers whose subscription is active and whose profile is complete.
+      responses:
+        "200":
+          description: List of public lawyers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicLawyer"
+  /perfil:
+    get:
+      operationId: getPerfil
+      tags: [lawyer]
+      summary: Get the authenticated lawyer's profile
+      responses:
+        "200":
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LawyerProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+    put:
+      operationId: updatePerfil
+      tags: [lawyer]
+      summary: Create or update the authenticated lawyer's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LawyerProfile"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -471,3 +535,151 @@ components:
         - cpfCnpj
         - email
       additionalProperties: false
+    Cidade:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        uf:
+          type: string
+          minLength: 2
+          maxLength: 2
+      required:
+        - nome
+        - uf
+      additionalProperties: false
+    LawyerProfile:
+      type: object
+      properties:
+        nome:
+          type: string
+        oab:
+          type: string
+        photo:
+          type: string
+          nullable: true
+        about:
+          type: string
+        areas:
+          type: array
+          items:
+            type: string
+        cidades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cidade"
+        atendeOnline:
+          type: boolean
+        whatsapp:
+          type: string
+        instagram:
+          type: string
+        linkedin:
+          type: string
+        website:
+          type: string
+        outro:
+          type: string
+        complete:
+          type: boolean
+        subscriptionStatus:
+          type: string
+          enum: [pendente, ativa, atrasada, inativa]
+          nullable: true
+        visivel:
+          type: boolean
+      required:
+        - nome
+        - oab
+        - about
+        - areas
+        - cidades
+        - atendeOnline
+        - whatsapp
+        - instagram
+        - linkedin
+        - website
+        - outro
+        - complete
+        - visivel
+    UpdateProfileInput:
+      type: object
+      properties:
+        nome:
+          type: string
+        oab:
+          type: string
+        photo:
+          type: string
+          nullable: true
+        about:
+          type: string
+        areas:
+          type: array
+          items:
+            type: string
+        cidades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cidade"
+        atendeOnline:
+          type: boolean
+        whatsapp:
+          type: string
+        instagram:
+          type: string
+        linkedin:
+          type: string
+        website:
+          type: string
+        outro:
+          type: string
+      required:
+        - nome
+        - oab
+        - about
+        - areas
+        - cidades
+        - atendeOnline
+        - whatsapp
+        - instagram
+        - linkedin
+        - website
+        - outro
+      additionalProperties: false
+    PublicLawyer:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        oab:
+          type: string
+        photo:
+          type: string
+          nullable: true
+        about:
+          type: string
+        areas:
+          type: array
+          items:
+            type: string
+        cidades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cidade"
+        atendeOnline:
+          type: boolean
+        whatsapp:
+          type: string
+      required:
+        - id
+        - nome
+        - oab
+        - about
+        - areas
+        - cidades
+        - atendeOnline
+        - whatsapp

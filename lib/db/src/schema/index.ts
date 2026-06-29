@@ -19,3 +19,4 @@
 
 export * from "./blog-posts";
 export * from "./subscriptions";
+export * from "./advogados";

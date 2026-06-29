@@ -27,8 +27,11 @@ import type {
   BlogPostInput,
   CreateSubscriptionInput,
   HealthStatus,
+  LawyerProfile,
+  PublicLawyer,
   SubscriptionState,
-  UpdateBlogPostInput
+  UpdateBlogPostInput,
+  UpdateProfileInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -570,6 +573,231 @@ export const useDeleteBlogPost = <TError = ErrorType<ApiErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteBlogPostMutationOptions(options));
+    }
+
+export const getListAdvogadosUrl = () => {
+
+
+
+
+  return `/api/advogados`
+}
+
+/**
+ * Returns lawyers whose subscription is active and whose profile is complete.
+ * @summary List public lawyers (paying and with a complete profile)
+ */
+export const listAdvogados = async ( options?: RequestInit): Promise<PublicLawyer[]> => {
+
+  return customFetch<PublicLawyer[]>(getListAdvogadosUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdvogadosQueryKey = () => {
+    return [
+    `/api/advogados`
+    ] as const;
+    }
+
+
+export const getListAdvogadosQueryOptions = <TData = Awaited<ReturnType<typeof listAdvogados>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdvogadosQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdvogados>>> = ({ signal }) => listAdvogados({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdvogados>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdvogadosQueryResult = NonNullable<Awaited<ReturnType<typeof listAdvogados>>>
+export type ListAdvogadosQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List public lawyers (paying and with a complete profile)
+ */
+
+export function useListAdvogados<TData = Awaited<ReturnType<typeof listAdvogados>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdvogadosQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPerfilUrl = () => {
+
+
+
+
+  return `/api/perfil`
+}
+
+/**
+ * @summary Get the authenticated lawyer's profile
+ */
+export const getPerfil = async ( options?: RequestInit): Promise<LawyerProfile> => {
+
+  return customFetch<LawyerProfile>(getGetPerfilUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPerfilQueryKey = () => {
+    return [
+    `/api/perfil`
+    ] as const;
+    }
+
+
+export const getGetPerfilQueryOptions = <TData = Awaited<ReturnType<typeof getPerfil>>, TError = ErrorType<ApiErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPerfil>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPerfilQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPerfil>>> = ({ signal }) => getPerfil({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPerfil>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPerfilQueryResult = NonNullable<Awaited<ReturnType<typeof getPerfil>>>
+export type GetPerfilQueryError = ErrorType<ApiErrorResponse>
+
+
+/**
+ * @summary Get the authenticated lawyer's profile
+ */
+
+export function useGetPerfil<TData = Awaited<ReturnType<typeof getPerfil>>, TError = ErrorType<ApiErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPerfil>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPerfilQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePerfilUrl = () => {
+
+
+
+
+  return `/api/perfil`
+}
+
+/**
+ * @summary Create or update the authenticated lawyer's profile
+ */
+export const updatePerfil = async (updateProfileInput: UpdateProfileInput, options?: RequestInit): Promise<LawyerProfile> => {
+
+  return customFetch<LawyerProfile>(getUpdatePerfilUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateProfileInput)
+  }
+);}
+
+
+
+
+export const getUpdatePerfilMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePerfil>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePerfil>>, TError,{data: BodyType<UpdateProfileInput>}, TContext> => {
+
+const mutationKey = ['updatePerfil'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePerfil>>, {data: BodyType<UpdateProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updatePerfil(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePerfilMutationResult = NonNullable<Awaited<ReturnType<typeof updatePerfil>>>
+    export type UpdatePerfilMutationBody = BodyType<UpdateProfileInput>
+    export type UpdatePerfilMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Create or update the authenticated lawyer's profile
+ */
+export const useUpdatePerfil = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePerfil>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePerfil>>,
+        TError,
+        {data: BodyType<UpdateProfileInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePerfilMutationOptions(options));
     }
 
 export const getGetAssinaturaUrl = () => {

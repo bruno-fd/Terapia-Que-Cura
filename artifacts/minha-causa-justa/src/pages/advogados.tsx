@@ -7,112 +7,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle } from "lucide-react";
+import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle, Loader2 } from "lucide-react";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { CATEGORIAS, categoriaPorSlug, slugDaCategoria } from "@/data/categories";
+import { useListAdvogados, type PublicLawyer } from "@workspace/api-client-react";
 
-// Mock Data
-const MOCK_LAWYERS = [
-  {
-    id: 1,
-    name: "Dra. Carla Mendes Santos",
-    oab: "OAB/SP 145.782",
-    primaryArea: "Direito Previdenciário",
-    secondaryArea: "Direito da Saúde",
-    states: "SP, RJ",
-    cities: ["São Paulo, SP", "Campinas, SP", "Rio de Janeiro, RJ"],
-    online: true,
-    badges: ["INSS e Previdência", "Plano de Saúde"],
-    about: "Advogada previdenciária com 12 anos de experiência. Atuo exclusivamente com causas contra o INSS e operadoras de saúde. Acompanho cada cliente do primeiro atendimento até a decisão final, com linguagem clara e sem juridiquês. Acredito que entender o próprio processo é parte de conquistar o direito.",
-    phone: "(11) 9 8765-4321",
-    instagram: "carlamendes.adv",
-    website: "https://carlamendesadv.com.br",
-    linkedin: "https://www.linkedin.com/in/carlamendes"
-  },
-  {
-    id: 2,
-    name: "Dr. Marcos Oliveira",
-    oab: "OAB/MG 98.433",
-    primaryArea: "Direito do Trabalho",
-    secondaryArea: "Direito do Consumidor",
-    states: "MG, DF, GO",
-    cities: ["Belo Horizonte, MG", "Brasília, DF", "Goiânia, GO"],
-    online: false,
-    badges: ["Trabalho e Emprego", "Direito do Consumidor"],
-    about: "Especialista em demissão sem justa causa e rescisão indireta. Mais de 800 causas trabalhistas encerradas. Trabalho para que o trabalhador receba tudo o que tem direito, com agilidade e transparência em cada etapa do processo.",
-    phone: "(31) 9 7654-3210",
-    instagram: "marcos.trabalhista",
-    website: "",
-    linkedin: "https://www.linkedin.com/in/marcosoliveira"
-  },
-  {
-    id: 3,
-    name: "Dra. Patrícia Lima Costa",
-    oab: "OAB/RJ 212.100",
-    primaryArea: "Direito de Família",
-    secondaryArea: "Direito das Sucessões",
-    states: "RJ, ES",
-    cities: ["Rio de Janeiro, RJ", "Niterói, RJ", "Vitória, ES"],
-    online: false,
-    badges: ["Família", "Herança e Inventário"],
-    about: "Atuo com famílias em momentos difíceis. Linguagem clara, processo transparente, sem surpresas. Cada caso é tratado com o cuidado e a discrição que assuntos de família exigem, sempre buscando a solução menos desgastante para todos os envolvidos.",
-    phone: "(21) 9 6543-2109",
-    instagram: "patricialima.familia",
-    website: "https://patricialima.adv.br",
-    linkedin: ""
-  },
-  {
-    id: 4,
-    name: "Dr. Ricardo Souza Neto",
-    oab: "OAB/RS 67.890",
-    primaryArea: "Direito Previdenciário",
-    secondaryArea: "",
-    states: "RS, SC, PR",
-    cities: ["Porto Alegre, RS", "Florianópolis, SC", "Curitiba, PR"],
-    online: true,
-    badges: ["INSS e Previdência", "Servidor Público"],
-    about: "Mais de 1.200 benefícios conquistados para clientes do Sul do Brasil. Primeira consulta gratuita. Atendo presencialmente e online, sempre explicando passo a passo o que pode ser feito no seu caso antes de qualquer decisão.",
-    phone: "(51) 9 5432-1098",
+// Tipo de exibição derivado do advogado público vindo da API.
+interface Lawyer {
+  id: number;
+  name: string;
+  oab: string;
+  photo: string | null;
+  primaryArea: string;
+  secondaryArea: string;
+  cities: string[];
+  online: boolean;
+  badges: string[];
+  about: string;
+  phone: string;
+  instagram: string;
+  website: string;
+  linkedin: string;
+}
+
+function toViewLawyer(l: PublicLawyer): Lawyer {
+  return {
+    id: l.id,
+    name: l.nome,
+    oab: l.oab,
+    photo: l.photo ?? null,
+    primaryArea: l.areas[0] ?? "",
+    secondaryArea: l.areas[1] ?? "",
+    cities: l.cidades.map((c) => `${c.nome}, ${c.uf}`),
+    online: l.atendeOnline,
+    badges: l.areas,
+    about: l.about,
+    phone: l.whatsapp,
     instagram: "",
     website: "",
-    linkedin: "https://www.linkedin.com/in/ricardosouza"
-  },
-  {
-    id: 5,
-    name: "Dra. Fernanda Almeida",
-    oab: "OAB/BA 54.321",
-    primaryArea: "Direito da Saúde",
-    secondaryArea: "Direito do Consumidor",
-    states: "BA, SE, AL",
-    cities: ["Salvador, BA", "Aracaju, SE", "Maceió, AL"],
-    online: true,
-    badges: ["Plano de Saúde", "Acidentes e Indenizações"],
-    about: "Especializada em obrigar planos de saúde a cumprir o contrato. Resultados em 30 a 60 dias. Atuo com liminares para garantir cirurgias, exames e tratamentos negados, sempre com foco na urgência que a saúde exige.",
-    phone: "(71) 9 4321-0987",
-    instagram: "fernanda.saude.adv",
-    website: "",
-    linkedin: ""
-  },
-  {
-    id: 6,
-    name: "Dr. Thiago Corrêa Barbosa",
-    oab: "OAB/CE 33.456",
-    primaryArea: "Direito de Família",
-    secondaryArea: "",
-    states: "CE, PI, MA",
-    cities: ["Fortaleza, CE", "Teresina, PI", "São Luís, MA"],
-    online: false,
-    badges: ["Família", "Crimes e Defesa Criminal"],
-    about: "Cuido de questões de família com respeito e agilidade. Atendimento humanizado em todos os casos. Acredito que cada família merece ser ouvida com atenção, e trabalho para que o processo seja o mais tranquilo possível para você e para quem você ama.",
-    phone: "(85) 9 3210-9876",
-    instagram: "thiago.familia.adv",
-    website: "https://thiagobarbosa.com.br",
-    linkedin: "https://www.linkedin.com/in/thiagobarbosa"
-  }
-];
-
-type Lawyer = typeof MOCK_LAWYERS[0];
+    linkedin: "",
+  };
+}
 
 // Gerador de números pseudoaleatórios determinístico (mulberry32).
 // Para a mesma semente, sempre produz a mesma sequência.
@@ -144,10 +80,31 @@ export default function Advogados() {
   const [categoria, setCategoria] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
+  // Filtros efetivamente aplicados (só mudam ao clicar em "Buscar"), separados
+  // do estado dos campos para que a lista não filtre enquanto o usuário digita.
+  const [applied, setApplied] = useState({ cat: "", est: "", cid: "" });
   // Ordem sorteada de forma justa, definida uma vez por visita (estável durante a navegação).
   const [rotationSeed] = useState(() => Date.now());
-  const rotatedLawyers = useMemo(() => shuffleFair(MOCK_LAWYERS, rotationSeed), [rotationSeed]);
-  const [filteredLawyers, setFilteredLawyers] = useState<Lawyer[]>(rotatedLawyers);
+
+  const { data: publicLawyers, isLoading } = useListAdvogados();
+  const rotatedLawyers = useMemo(
+    () => shuffleFair((publicLawyers ?? []).map(toViewLawyer), rotationSeed),
+    [publicLawyers, rotationSeed],
+  );
+
+  const filteredLawyers = useMemo(() => {
+    let filtered: Lawyer[] = rotatedLawyers;
+    if (applied.cat && applied.cat !== "Outro") {
+      filtered = filtered.filter((l) => l.badges.includes(applied.cat));
+    }
+    if (applied.est) {
+      filtered = filtered.filter((l) => l.cities.some((c) => c.endsWith(`, ${applied.est}`)));
+    }
+    if (applied.cid) {
+      filtered = filtered.filter((l) => l.cities.includes(applied.cid));
+    }
+    return filtered;
+  }, [rotatedLawyers, applied]);
 
   const [contactLawyer, setContactLawyer] = useState<Lawyer | null>(null);
   const [detailLawyer, setDetailLawyer] = useState<Lawyer | null>(null);
@@ -164,26 +121,12 @@ export default function Advogados() {
     if (cidParam) setCidade(cidParam);
 
     if (catNome || estParam || cidParam) {
-      applyFilters(catNome, estParam || "", cidParam || "");
+      setApplied({ cat: catNome, est: estParam || "", cid: cidParam || "" });
     }
   }, []);
 
-  const applyFilters = (cat: string, est: string, cid: string) => {
-    let filtered: Lawyer[] = rotatedLawyers;
-    if (cat && cat !== "Outro") {
-      filtered = filtered.filter(l => l.badges.includes(cat));
-    }
-    if (est) {
-      filtered = filtered.filter(l => l.cities.some(c => c.endsWith(`, ${est}`)));
-    }
-    if (cid) {
-      filtered = filtered.filter(l => l.cities.includes(cid));
-    }
-    setFilteredLawyers(filtered);
-  };
-
   const handleSearch = () => {
-    applyFilters(categoria, estado, cidade);
+    setApplied({ cat: categoria, est: estado, cid: cidade });
 
     // Update URL without reload (slug nos query strings)
     const url = new URL(window.location.href);
@@ -334,14 +277,18 @@ export default function Advogados() {
         {/* Lawyer cards section */}
         <section className="py-16 bg-[#F5F4F2]">
           <div className="container mx-auto px-6 max-w-[1200px]">
-            {filteredLawyers.length === 0 ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20" data-testid="advogados-carregando">
+                <Loader2 className="h-7 w-7 animate-spin text-primary-500" />
+              </div>
+            ) : filteredLawyers.length === 0 ? (
               <div className="text-center py-20">
                 <h3 className="text-2xl font-bold text-primary-900 mb-2">Nenhum advogado encontrado</h3>
                 <p className="text-neutral-600">Tente ajustar seus filtros para ver mais resultados.</p>
                 <Button
                   variant="outline"
                   className="mt-6 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50"
-                  onClick={() => { setCategoria(""); setEstado(""); setCidade(""); applyFilters("", "", ""); }}
+                  onClick={() => { setCategoria(""); setEstado(""); setCidade(""); setApplied({ cat: "", est: "", cid: "" }); }}
                   data-testid="button-limpar-filtros"
                 >
                   Limpar filtros

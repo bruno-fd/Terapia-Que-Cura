@@ -1,26 +1,40 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Instagram, Linkedin, Globe, Link2, Phone, X, MapPin } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetPerfil,
+  useUpdatePerfil,
+  getGetPerfilQueryKey,
+  type UpdateProfileInput,
+} from "@workspace/api-client-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
-import {
-  AREAS,
-  LAWYER_NAME,
-  LAWYER_OAB,
-  SUPPORT_EMAIL,
-  getProfile,
-  saveProfile,
-  getInitial,
-  maskPhone,
-  type Profile,
-} from "@/lib/dashboard";
+import { AREAS, getInitial, maskPhone } from "@/lib/dashboard";
 
 const ABOUT_LIMIT = 500;
 const MAX_PHOTO_MB = 5;
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+type Profile = UpdateProfileInput;
+
+const EMPTY_PROFILE: Profile = {
+  nome: "",
+  oab: "",
+  photo: null,
+  about: "",
+  areas: [],
+  cidades: [],
+  atendeOnline: false,
+  whatsapp: "",
+  instagram: "",
+  linkedin: "",
+  website: "",
+  outro: "",
+};
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -35,15 +49,51 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default function PainelPerfil() {
-  const [profile, setProfile] = useState<Profile>(() => getProfile());
+  const queryClient = useQueryClient();
+  const { data: loaded, isLoading, isError, refetch } = useGetPerfil();
+  const updateMutation = useUpdatePerfil();
+
+  const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
+  // Guarda a referência dos dados já carregados no formulário. Como o React
+  // Query reutiliza a mesma referência quando os dados não mudam, isto evita
+  // sobrescrever edições em refetches e ressincroniza ao trocar de usuário.
+  const hydratedFrom = useRef<typeof loaded | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [areaError, setAreaError] = useState("");
+  const [nomeError, setNomeError] = useState("");
+  const [oabError, setOabError] = useState("");
   const [selectedUf, setSelectedUf] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Preenche o formulário sempre que chega um conjunto novo de dados do
+  // servidor (primeira carga ou troca de usuário), sem clobber em refetches.
+  useEffect(() => {
+    if (loaded && hydratedFrom.current !== loaded) {
+      setProfile({
+        nome: loaded.nome,
+        oab: loaded.oab,
+        photo: loaded.photo ?? null,
+        about: loaded.about,
+        areas: loaded.areas,
+        cidades: loaded.cidades,
+        atendeOnline: loaded.atendeOnline,
+        whatsapp: loaded.whatsapp,
+        instagram: loaded.instagram,
+        linkedin: loaded.linkedin,
+        website: loaded.website,
+        outro: loaded.outro,
+      });
+      hydratedFrom.current = loaded;
+    }
+  }, [loaded]);
+
+  const ready = loaded != null && hydratedFrom.current === loaded;
+
+  const saving = updateMutation.isPending;
 
   const update = (patch: Partial<Profile>) => {
     setProfile((p) => ({ ...p, ...patch }));
@@ -99,23 +149,51 @@ export default function PainelPerfil() {
 
   const aboutOver = profile.about.length > ABOUT_LIMIT;
 
+  const focusField = (id: string) => {
+    const el = document.getElementById(id);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus();
+  };
+
   const handleSave = () => {
+    setSaveError("");
+    if (!profile.nome.trim()) {
+      setNomeError("Informe seu nome completo.");
+      focusField("nome");
+      return;
+    }
+    setNomeError("");
+    if (!profile.oab.trim()) {
+      setOabError("Informe seu número de OAB.");
+      focusField("oab");
+      return;
+    }
+    setOabError("");
     if (!profile.whatsapp.trim()) {
       setWhatsappError("Informe um WhatsApp para contato.");
-      const el = document.getElementById("whatsapp");
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      el?.focus();
+      focusField("whatsapp");
       return;
     }
     if (aboutOver) return;
     setWhatsappError("");
-    setSaving(true);
-    setTimeout(() => {
-      saveProfile(profile);
-      setSaving(false);
-      setShowSuccess(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 700);
+
+    updateMutation.mutate(
+      { data: profile },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetPerfilQueryKey() });
+          setShowSuccess(true);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        },
+        onError: (err) => {
+          setSaveError(
+            err instanceof Error
+              ? err.message
+              : "Não foi possível salvar. Tente novamente.",
+          );
+        },
+      },
+    );
   };
 
   const badgeClass = (active: boolean) =>
@@ -124,6 +202,33 @@ export default function PainelPerfil() {
         ? "bg-primary-500 text-white border-primary-500"
         : "bg-white text-primary-800 border-primary-300 hover:bg-primary-50"
     }`;
+
+  if (isError && !loaded) {
+    return (
+      <DashboardLayout active="perfil">
+        <div className="flex flex-col items-center justify-center gap-4 py-32 text-center" data-testid="perfil-erro">
+          <p className="text-sm text-neutral-600">Não foi possível carregar seu perfil.</p>
+          <Button
+            onClick={() => void refetch()}
+            className="bg-primary-600 hover:bg-primary-700 text-white"
+            data-testid="button-recarregar-perfil"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isLoading || !ready) {
+    return (
+      <DashboardLayout active="perfil">
+        <div className="flex items-center justify-center py-32" data-testid="perfil-carregando">
+          <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout active="perfil">
@@ -134,6 +239,16 @@ export default function PainelPerfil() {
           data-testid="banner-sucesso"
         >
           <Check className="h-4 w-4" /> Perfil atualizado com sucesso!
+        </div>
+      )}
+
+      {/* Banner de erro */}
+      {saveError && (
+        <div
+          className="mb-6 rounded-lg bg-[#C0392B]/10 border border-[#C0392B]/30 text-[#C0392B] px-4 py-3 text-sm font-medium flex items-center gap-2"
+          data-testid="banner-erro"
+        >
+          <X className="h-4 w-4" /> {saveError}
         </div>
       )}
 
@@ -154,7 +269,7 @@ export default function PainelPerfil() {
               {profile.photo ? (
                 <img src={profile.photo} alt="Foto de perfil" className="h-full w-full object-cover" />
               ) : (
-                <span className="text-2xl font-bold text-primary-800">{getInitial(LAWYER_NAME)}</span>
+                <span className="text-2xl font-bold text-primary-800">{getInitial(profile.nome)}</span>
               )}
             </div>
             <div className="flex flex-col items-center sm:items-start gap-2">
@@ -197,27 +312,58 @@ export default function PainelPerfil() {
           </div>
         </Card>
 
-        {/* Seção 2 — Dados cadastrais (somente leitura) */}
-        <Card className="bg-primary-50 border-primary-100">
+        {/* Seção 2 — Dados cadastrais */}
+        <Card>
           <SectionTitle>Dados cadastrais</SectionTitle>
-          <div className="mt-4 space-y-3">
+          <p className="mt-1 text-sm text-neutral-500">
+            Seu nome e OAB aparecem no seu perfil público.
+          </p>
+          <div className="mt-4 space-y-4">
             <div>
-              <p className="text-xs text-neutral-500">Nome completo</p>
-              <p className="text-neutral-900 font-medium">{LAWYER_NAME}</p>
+              <label htmlFor="nome" className="block text-sm font-bold text-neutral-700 mb-1.5">
+                Nome completo<span className="text-[#C0392B]"> *</span>
+              </label>
+              <input
+                id="nome"
+                type="text"
+                value={profile.nome}
+                onChange={(e) => {
+                  update({ nome: e.target.value });
+                  if (nomeError) setNomeError("");
+                }}
+                placeholder="Ex: Dra. Carla Mendes Santos"
+                className={`w-full h-11 px-4 rounded-lg border text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                  nomeError ? "border-[#C0392B]" : "border-neutral-300"
+                }`}
+                data-testid="input-nome"
+              />
+              {nomeError && (
+                <p className="mt-1.5 text-sm text-[#C0392B]" data-testid="error-nome">{nomeError}</p>
+              )}
             </div>
             <div>
-              <p className="text-xs text-neutral-500">OAB</p>
-              <p className="text-neutral-900 font-medium flex items-center gap-2">
-                {LAWYER_OAB}
-                <span className="inline-flex items-center gap-1 text-[#1E7D4F] text-sm">
-                  <Check className="h-4 w-4" />
-                </span>
-              </p>
+              <label htmlFor="oab" className="block text-sm font-bold text-neutral-700 mb-1.5">
+                OAB<span className="text-[#C0392B]"> *</span>
+              </label>
+              <input
+                id="oab"
+                type="text"
+                value={profile.oab}
+                onChange={(e) => {
+                  update({ oab: e.target.value });
+                  if (oabError) setOabError("");
+                }}
+                placeholder="Ex: OAB/SP 145.782"
+                className={`w-full h-11 px-4 rounded-lg border text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                  oabError ? "border-[#C0392B]" : "border-neutral-300"
+                }`}
+                data-testid="input-oab"
+              />
+              {oabError && (
+                <p className="mt-1.5 text-sm text-[#C0392B]" data-testid="error-oab">{oabError}</p>
+              )}
             </div>
           </div>
-          <p className="mt-4 text-xs text-neutral-500">
-            Para alterar essas informações, entre em contato com {SUPPORT_EMAIL}
-          </p>
         </Card>
 
         {/* Seção 3 — Sobre mim */}
@@ -466,13 +612,13 @@ export default function PainelPerfil() {
                 {profile.photo ? (
                   <img src={profile.photo} alt="Foto" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-xl font-bold text-primary-800">{getInitial(LAWYER_NAME)}</span>
+                  <span className="text-xl font-bold text-primary-800">{getInitial(profile.nome)}</span>
                 )}
               </div>
               <div className="min-w-0">
-                <h3 className="font-bold text-primary-900 leading-tight">{LAWYER_NAME}</h3>
+                <h3 className="font-bold text-primary-900 leading-tight">{profile.nome || "Seu nome"}</h3>
                 <span className="inline-flex items-center gap-1 mt-1 text-[#1E7D4F] text-xs font-medium bg-[#1E7D4F]/10 border border-[#1E7D4F]/20 rounded-full px-2 py-0.5">
-                  <Check className="h-3 w-3" /> {LAWYER_OAB}
+                  <Check className="h-3 w-3" /> {profile.oab || "OAB"}
                 </span>
                 {(profile.cidades.length > 0 || profile.atendeOnline) && (
                   <p className="mt-1.5 flex items-center gap-1 text-xs text-neutral-500" data-testid="text-previa-locais">

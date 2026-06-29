@@ -15,12 +15,9 @@ import {
   AsaasError,
   type AsaasPayment,
 } from "../lib/asaas";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
-
-// Modo demonstração: enquanto não há login real, toda a área usa um advogado
-// fixo. Quando houver cadastro real, troque por req.user.id.
-const DEMO_LAWYER_REF = "demo-advogado";
 
 type Plano = "mensal" | "anual";
 type SubStatus = "pendente" | "ativa" | "atrasada" | "inativa";
@@ -128,17 +125,19 @@ const EMPTY_STATE = {
   payments: [],
 };
 
-async function findRow(): Promise<SubscriptionRow | undefined> {
+async function findRow(
+  lawyerRef: string,
+): Promise<SubscriptionRow | undefined> {
   const [row] = await db
     .select()
     .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.lawyerRef, DEMO_LAWYER_REF));
+    .where(eq(subscriptionsTable.lawyerRef, lawyerRef));
   return row;
 }
 
 // Estado atual da assinatura do advogado.
-router.get("/assinatura", async (req, res): Promise<void> => {
-  const row = await findRow();
+router.get("/assinatura", requireAuth, async (req, res): Promise<void> => {
+  const row = await findRow(req.userId!);
   if (!row) {
     res.json(GetAssinaturaResponse.parse(EMPTY_STATE));
     return;
@@ -171,7 +170,7 @@ router.get("/assinatura", async (req, res): Promise<void> => {
 });
 
 // Cria uma assinatura na Asaas e persiste o vínculo.
-router.post("/assinatura", async (req, res): Promise<void> => {
+router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateAssinaturaBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -180,7 +179,7 @@ router.post("/assinatura", async (req, res): Promise<void> => {
   const { plano, nome, cpfCnpj, email, telefone } = parsed.data;
   const plan = PLANS[plano as Plano];
 
-  const existing = await findRow();
+  const existing = await findRow(req.userId!);
   if (existing && existing.status !== "inativa") {
     res.status(409).json({ error: "Você já possui uma assinatura ativa." });
     return;
@@ -210,7 +209,7 @@ router.post("/assinatura", async (req, res): Promise<void> => {
     }
 
     const values = {
-      lawyerRef: DEMO_LAWYER_REF,
+      lawyerRef: req.userId!,
       asaasCustomerId: customer.id,
       asaasSubscriptionId: subscription.id,
       plan: plano,
@@ -249,8 +248,11 @@ router.post("/assinatura", async (req, res): Promise<void> => {
 });
 
 // Cancela a assinatura do advogado.
-router.post("/assinatura/cancelar", async (req, res): Promise<void> => {
-  const row = await findRow();
+router.post(
+  "/assinatura/cancelar",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const row = await findRow(req.userId!);
   if (!row) {
     res.status(404).json({ error: "Nenhuma assinatura encontrada." });
     return;
@@ -274,7 +276,8 @@ router.post("/assinatura/cancelar", async (req, res): Promise<void> => {
     .returning();
 
   res.json(CancelAssinaturaResponse.parse(buildState(updated, [], "inativa")));
-});
+  },
+);
 
 // Webhook da Asaas (configurado no painel Asaas). Atualiza o status conforme
 // os eventos de pagamento. Não faz parte do contrato OpenAPI (rota externa).

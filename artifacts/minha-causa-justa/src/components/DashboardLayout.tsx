@@ -1,8 +1,11 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, type ReactNode } from "react";
+import { Link } from "wouter";
 import { User, BarChart3, CreditCard, ExternalLink, LogOut, Menu, X } from "lucide-react";
-import { isLoggedIn, logout, LAWYER_NAME } from "@/lib/dashboard";
+import { useClerk, useUser } from "@clerk/react";
 import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
+import { PainelStatusBanner } from "@/components/PainelStatusBanner";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type ActiveItem = "perfil" | "metricas" | "assinatura";
 
@@ -25,25 +28,17 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function DashboardLayout({ active, children }: DashboardLayoutProps) {
-  const [, setLocation] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [authorized, setAuthorized] = useState(false);
+  const { signOut } = useClerk();
+  const { user } = useUser();
 
-  // Proteção de rota simulada: sem login, volta para /login
-  useEffect(() => {
-    if (!isLoggedIn()) {
-      setLocation("/login");
-    } else {
-      setAuthorized(true);
-    }
-  }, [setLocation]);
-
-  // Evita o flash do conteúdo protegido antes do redirecionamento
-  if (!authorized) return null;
+  const displayName =
+    user?.fullName ||
+    user?.primaryEmailAddress?.emailAddress ||
+    "Advogado";
 
   const handleLogout = () => {
-    logout();
-    setLocation("/login");
+    void signOut({ redirectUrl: basePath || "/" });
   };
 
   const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => (
@@ -118,7 +113,7 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
           <span className="hidden md:block text-sm text-neutral-500">Área do Advogado</span>
 
           <div className="flex items-center gap-4">
-            <span className="hidden sm:block text-sm text-neutral-700 truncate max-w-[200px]">{LAWYER_NAME}</span>
+            <span className="hidden sm:block text-sm text-neutral-700 truncate max-w-[200px]">{displayName}</span>
             <button
               onClick={handleLogout}
               className="text-sm text-primary-700 font-medium hover:underline"
@@ -167,7 +162,10 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
 
         {/* Conteúdo principal */}
         <main className="flex-1 min-w-0 p-5 md:p-8">
-          <div className="max-w-[900px] mx-auto">{children}</div>
+          <div className="max-w-[900px] mx-auto">
+            <PainelStatusBanner />
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,11 +9,24 @@ import advogadoHero from "@/assets/advogado-hero.png";
 import advogadaPerfil from "@/assets/advogada-perfil.png";
 
 export default function Cadastro() {
+  const [, setLocation] = useLocation();
+
   const scrollToPlans = () => {
     const plansSection = document.getElementById("planos");
     if (plansSection) {
       plansSection.scrollIntoView({ behavior: "smooth" });
     }
+  };
+
+  // Guarda o plano escolhido e leva o advogado ao cadastro de conta. Depois do
+  // signup ele cai no painel de assinatura, que abre o plano pré-selecionado.
+  const escolherPlano = (plano: "mensal" | "anual") => {
+    try {
+      localStorage.setItem("mcj_plano_preselect", plano);
+    } catch {
+      // Ignora ambientes sem localStorage.
+    }
+    setLocation("/sign-up");
   };
 
   const beneficios = [
@@ -187,7 +201,7 @@ export default function Cadastro() {
                 </ul>
 
                 <Button
-                  onClick={scrollToPlans}
+                  onClick={() => escolherPlano("mensal")}
                   variant="outline"
                   className="w-full h-14 text-base font-medium rounded-full border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300 transition-all"
                   data-testid="button-assinar-mensal"
@@ -225,7 +239,7 @@ export default function Cadastro() {
                 </ul>
 
                 <Button
-                  onClick={scrollToPlans}
+                  onClick={() => escolherPlano("anual")}
                   className="w-full h-14 text-base font-medium rounded-full bg-accent-500 hover:bg-accent-600 text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
                   data-testid="button-assinar-anual"
                 >
