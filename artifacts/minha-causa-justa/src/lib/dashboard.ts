@@ -1,6 +1,8 @@
 // Estado simulado da área logada do advogado.
 // Tudo é mantido no localStorage (sem backend real nesta etapa).
 
+import { CATEGORIA_NOMES } from "@/data/categories";
+
 const LOGGED_KEY = "mcj_logado";
 const PROFILE_KEY = "mcj_perfil";
 
@@ -9,20 +11,8 @@ export const LAWYER_NAME = "Dr. Carlos Eduardo Mendes";
 export const LAWYER_OAB = "OAB/SP 123.456";
 export const SUPPORT_EMAIL = "contato@minhacausajusta.com.br";
 
-export const AREAS = [
-  "INSS",
-  "Auxílio Doença",
-  "Aposentadoria",
-  "BPC/LOAS",
-  "Pensão por Morte",
-  "Pensão Alimentícia",
-  "Inventário e Herança",
-  "Plano de Saúde",
-  "Trabalhista",
-  "Consumidor",
-  "Família",
-  "Previdenciário",
-] as const;
+// Áreas de atuação = categorias do site (fonte única em data/categories.ts)
+export const AREAS = CATEGORIA_NOMES;
 
 export const ESTADOS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
@@ -51,7 +41,7 @@ const DEFAULT_PROFILE: Profile = {
   photo: null,
   about:
     "Atuo há 8 anos com causas previdenciárias e trabalhistas em São Paulo. Meu foco é ajudar trabalhadores que tiveram benefícios negados pelo INSS ou que foram demitidos sem receber o que era devido.",
-  areas: ["INSS", "Trabalhista"],
+  areas: ["INSS e Previdência", "Trabalho e Emprego"],
   cidades: [
     { nome: "São Paulo", uf: "SP" },
     { nome: "Campinas", uf: "SP" },

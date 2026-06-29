@@ -22,6 +22,7 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
+- Legal categories source of truth: `artifacts/minha-causa-justa/src/data/categories.ts`.
 - DB schema source of truth: `lib/db/src/schema/` (blog posts in `blog-posts.ts`, exported via `index.ts`).
 - API contract source of truth: `lib/api-spec/openapi.yaml`; run `pnpm --filter @workspace/api-spec run codegen` to regenerate Zod (`@workspace/api-zod`) and React Query hooks (`@workspace/api-client-react`).
 - Blog generation logic: `artifacts/api-server/src/lib/blog-generator.ts` (Anthropic via Replit proxy); blog routes: `artifacts/api-server/src/routes/blog.ts`.
@@ -31,7 +32,8 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Architecture decisions
 
 - Blog posts are DB-backed (Drizzle, `blogPostsTable`). Generated posts are published immediately and merged ahead of the static `BLOG_POSTS`, deduped by slug (generated wins).
-- Post macrocategory MUST equal the blog's `BLOG_CATEGORIES`. This is enforced server-side: a `VALID_CATEGORIES` whitelist in `routes/blog.ts` rejects anything else with 400, so generated posts always land in a real blog category.
+- Site legal categories (12 of them) have a single source of truth: `artifacts/minha-causa-justa/src/data/categories.ts` (`CATEGORIAS` array of `{nome, slug, emoji, descricao}`, plus `CATEGORIA_NOMES`, type `CategoriaNome`, and helpers `categoriaPorSlug`/`slugDaCategoria`). `BLOG_CATEGORIES` and the dashboard `AREAS` both derive from it. URLs filter by slug query string (`?categoria=<slug>`) everywhere (`/advogados`, `/blog`).
+- Post macrocategory MUST equal a category `nome`. This is enforced server-side: a `VALID_CATEGORIES` whitelist in `routes/blog.ts` rejects anything else with 400. The server cannot import the frontend artifact, so `VALID_CATEGORIES` is a hand-maintained copy that MUST stay in sync with `categories.ts` (`nome` field).
 - Admin auth is a simulated gate: hardcoded password `123456`, checked client-side and via the `x-admin-password` header on `/api/admin/*` routes. Not real auth, by design.
 - The AI generator strips em dashes before persisting, to honor the strict no-em-dash copy rule.
 

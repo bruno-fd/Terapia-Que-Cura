@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle } from "lucide-react";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
+import { CATEGORIAS, categoriaPorSlug, slugDaCategoria } from "@/data/categories";
 
 // Mock Data
 const MOCK_LAWYERS = [
@@ -22,7 +23,7 @@ const MOCK_LAWYERS = [
     states: "SP, RJ",
     cities: ["São Paulo, SP", "Campinas, SP", "Rio de Janeiro, RJ"],
     online: true,
-    badges: ["INSS", "Auxílio Doença", "Aposentadoria", "BPC/LOAS"],
+    badges: ["INSS e Previdência", "Plano de Saúde"],
     about: "Advogada previdenciária com 12 anos de experiência. Atuo exclusivamente com causas contra o INSS e operadoras de saúde. Acompanho cada cliente do primeiro atendimento até a decisão final, com linguagem clara e sem juridiquês. Acredito que entender o próprio processo é parte de conquistar o direito.",
     phone: "(11) 9 8765-4321",
     instagram: "carlamendes.adv",
@@ -38,7 +39,7 @@ const MOCK_LAWYERS = [
     states: "MG, DF, GO",
     cities: ["Belo Horizonte, MG", "Brasília, DF", "Goiânia, GO"],
     online: false,
-    badges: ["Demissão", "Rescisão", "Direitos Trabalhistas", "Consumidor"],
+    badges: ["Trabalho e Emprego", "Direito do Consumidor"],
     about: "Especialista em demissão sem justa causa e rescisão indireta. Mais de 800 causas trabalhistas encerradas. Trabalho para que o trabalhador receba tudo o que tem direito, com agilidade e transparência em cada etapa do processo.",
     phone: "(31) 9 7654-3210",
     instagram: "marcos.trabalhista",
@@ -54,7 +55,7 @@ const MOCK_LAWYERS = [
     states: "RJ, ES",
     cities: ["Rio de Janeiro, RJ", "Niterói, RJ", "Vitória, ES"],
     online: false,
-    badges: ["Pensão Alimentícia", "Pensão por Morte", "Inventário", "Herança"],
+    badges: ["Família", "Herança e Inventário"],
     about: "Atuo com famílias em momentos difíceis. Linguagem clara, processo transparente, sem surpresas. Cada caso é tratado com o cuidado e a discrição que assuntos de família exigem, sempre buscando a solução menos desgastante para todos os envolvidos.",
     phone: "(21) 9 6543-2109",
     instagram: "patricialima.familia",
@@ -70,7 +71,7 @@ const MOCK_LAWYERS = [
     states: "RS, SC, PR",
     cities: ["Porto Alegre, RS", "Florianópolis, SC", "Curitiba, PR"],
     online: true,
-    badges: ["INSS", "BPC/LOAS", "Aposentadoria por Invalidez", "Revisão de Benefício"],
+    badges: ["INSS e Previdência", "Servidor Público"],
     about: "Mais de 1.200 benefícios conquistados para clientes do Sul do Brasil. Primeira consulta gratuita. Atendo presencialmente e online, sempre explicando passo a passo o que pode ser feito no seu caso antes de qualquer decisão.",
     phone: "(51) 9 5432-1098",
     instagram: "",
@@ -86,7 +87,7 @@ const MOCK_LAWYERS = [
     states: "BA, SE, AL",
     cities: ["Salvador, BA", "Aracaju, SE", "Maceió, AL"],
     online: true,
-    badges: ["Plano de Saúde", "Negativa de Cobertura", "Reajuste Abusivo", "Consumidor"],
+    badges: ["Plano de Saúde", "Acidentes e Indenizações"],
     about: "Especializada em obrigar planos de saúde a cumprir o contrato. Resultados em 30 a 60 dias. Atuo com liminares para garantir cirurgias, exames e tratamentos negados, sempre com foco na urgência que a saúde exige.",
     phone: "(71) 9 4321-0987",
     instagram: "fernanda.saude.adv",
@@ -102,7 +103,7 @@ const MOCK_LAWYERS = [
     states: "CE, PI, MA",
     cities: ["Fortaleza, CE", "Teresina, PI", "São Luís, MA"],
     online: false,
-    badges: ["Pensão Alimentícia", "Divórcio", "Guarda", "Família"],
+    badges: ["Família", "Crimes e Defesa Criminal"],
     about: "Cuido de questões de família com respeito e agilidade. Atendimento humanizado em todos os casos. Acredito que cada família merece ser ouvida com atenção, e trabalho para que o processo seja o mais tranquilo possível para você e para quem você ama.",
     phone: "(85) 9 3210-9876",
     instagram: "thiago.familia.adv",
@@ -140,7 +141,7 @@ function shuffleFair<T>(list: T[], seed: number): T[] {
 
 export default function Advogados() {
   const [, setLocation] = useLocation();
-  const [problema, setProblema] = useState<string>("");
+  const [categoria, setCategoria] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
   // Ordem sorteada de forma justa, definida uma vez por visita (estável durante a navegação).
@@ -153,38 +154,24 @@ export default function Advogados() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const probParam = params.get("problema");
+    const catParam = params.get("categoria");
     const estParam = params.get("estado");
     const cidParam = params.get("cidade");
 
-    if (probParam) setProblema(probParam);
+    const catNome = catParam ? categoriaPorSlug(catParam)?.nome ?? "" : "";
+    if (catNome) setCategoria(catNome);
     if (estParam) setEstado(estParam);
     if (cidParam) setCidade(cidParam);
 
-    if (probParam || estParam || cidParam) {
-      applyFilters(probParam || "", estParam || "", cidParam || "");
+    if (catNome || estParam || cidParam) {
+      applyFilters(catNome, estParam || "", cidParam || "");
     }
   }, []);
 
-  const applyFilters = (prob: string, est: string, cid: string) => {
+  const applyFilters = (cat: string, est: string, cid: string) => {
     let filtered: Lawyer[] = rotatedLawyers;
-    if (prob) {
-      // Very simple filter matching text
-      filtered = filtered.filter(l =>
-        l.primaryArea.toLowerCase().includes(prob.toLowerCase().split(' ')[0]) ||
-        l.secondaryArea.toLowerCase().includes(prob.toLowerCase().split(' ')[0]) ||
-        l.badges.some(b => prob.toLowerCase().includes(b.toLowerCase())) ||
-        prob.toLowerCase().includes(l.primaryArea.toLowerCase()) ||
-        (prob === "INSS: benefício negado ou cortado" && l.badges.includes("INSS")) ||
-        (prob === "Auxílio Doença" && l.badges.includes("Auxílio Doença")) ||
-        (prob === "Aposentadoria" && l.badges.includes("Aposentadoria")) ||
-        (prob === "BPC/LOAS" && l.badges.includes("BPC/LOAS")) ||
-        (prob === "Plano de saúde: reajuste abusivo ou negativa de cobertura" && l.badges.includes("Plano de Saúde")) ||
-        (prob === "Pensão alimentícia" && l.badges.includes("Pensão Alimentícia")) ||
-        (prob === "Pensão por morte" && l.badges.includes("Pensão por Morte")) ||
-        (prob === "Inventário e herança" && l.badges.includes("Inventário")) ||
-        (prob === "Demissão e direitos trabalhistas" && l.badges.includes("Demissão"))
-      );
+    if (cat && cat !== "Outro") {
+      filtered = filtered.filter(l => l.badges.includes(cat));
     }
     if (est) {
       filtered = filtered.filter(l => l.cities.some(c => c.endsWith(`, ${est}`)));
@@ -196,12 +183,13 @@ export default function Advogados() {
   };
 
   const handleSearch = () => {
-    applyFilters(problema, estado, cidade);
+    applyFilters(categoria, estado, cidade);
 
-    // Update URL without reload
+    // Update URL without reload (slug nos query strings)
     const url = new URL(window.location.href);
-    if (problema) url.searchParams.set("problema", problema);
-    else url.searchParams.delete("problema");
+    const slug = categoria && categoria !== "Outro" ? slugDaCategoria(categoria) : undefined;
+    if (slug) url.searchParams.set("categoria", slug);
+    else url.searchParams.delete("categoria");
 
     if (estado) url.searchParams.set("estado", estado);
     else url.searchParams.delete("estado");
@@ -217,18 +205,7 @@ export default function Advogados() {
     setCidade("");
   };
 
-  const problemas = [
-    "INSS: benefício negado ou cortado",
-    "Auxílio Doença",
-    "Aposentadoria",
-    "BPC/LOAS",
-    "Plano de saúde: reajuste abusivo ou negativa de cobertura",
-    "Pensão alimentícia",
-    "Pensão por morte",
-    "Inventário e herança",
-    "Demissão e direitos trabalhistas",
-    "Outro"
-  ];
+  const opcoesCategoria = [...CATEGORIAS.map((c) => c.nome), "Outro"];
 
   const getInitials = (name: string) => {
     return name.replace("Dr. ", "").replace("Dra. ", "").split(" ").map(n => n[0]).slice(0, 2).join("");
@@ -312,12 +289,12 @@ export default function Advogados() {
             <div className="bg-primary-50 p-4 md:p-6 rounded-[32px] border border-primary-100 shadow-sm">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
-                  <Select value={problema} onValueChange={setProblema}>
+                  <Select value={categoria} onValueChange={setCategoria}>
                     <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="filter-select-problema">
                       <SelectValue placeholder="Qual é o seu problema?" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {problemas.map(p => (
+                      {opcoesCategoria.map(p => (
                         <SelectItem key={p} value={p}>{p}</SelectItem>
                       ))}
                     </SelectContent>
@@ -364,7 +341,7 @@ export default function Advogados() {
                 <Button
                   variant="outline"
                   className="mt-6 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50"
-                  onClick={() => { setProblema(""); setEstado(""); setCidade(""); applyFilters("", "", ""); }}
+                  onClick={() => { setCategoria(""); setEstado(""); setCidade(""); applyFilters("", "", ""); }}
                   data-testid="button-limpar-filtros"
                 >
                   Limpar filtros

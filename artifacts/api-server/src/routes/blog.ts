@@ -27,14 +27,21 @@ const ADMIN_PASSWORD = "123456";
 
 // Macrocategorias válidas: devem ser idênticas às categorias do blog público,
 // garantindo que todo post gerado caia na categoria correta do site.
+// IMPORTANTE: manter em sincronia com a fonte única do front-end em
+// artifacts/minha-causa-justa/src/data/categories.ts (campo `nome`).
 const VALID_CATEGORIES = new Set<string>([
-  "INSS",
-  "Trabalhista",
+  "INSS e Previdência",
+  "Trabalho e Emprego",
   "Família",
-  "Previdenciário",
-  "Saúde",
-  "Consumidor",
-  "Inventário e Herança",
+  "Herança e Inventário",
+  "Plano de Saúde",
+  "Dívidas e Nome Negativado",
+  "Imóveis e Moradia",
+  "Direito do Consumidor",
+  "Acidentes e Indenizações",
+  "Crimes e Defesa Criminal",
+  "Servidor Público",
+  "Empresarial",
 ]);
 
 const router: IRouter = Router();

@@ -1,0 +1,225 @@
+# Task — Atualização de Categorias em Todo o Site
+
+## Contexto
+
+A lista de categorias do site foi revisada e ampliada de 7 para 12 categorias. Essa atualização deve ser aplicada em todos os pontos do site onde categorias aparecem: filtros de busca, cadastro de advogados, painel do advogado, blog, cards de perfil e página home.
+
+---
+
+## Nova lista de categorias — fonte da verdade
+
+Usar exatamente esses nomes em todo o site, sem variações:
+
+1. INSS e Previdência
+2. Trabalho e Emprego
+3. Família
+4. Herança e Inventário
+5. Plano de Saúde
+6. Dívidas e Nome Negativado
+7. Imóveis e Moradia
+8. Direito do Consumidor
+9. Acidentes e Indenizações
+10. Crimes e Defesa Criminal
+11. Servidor Público
+12. Empresarial
+
+---
+
+## Arquivos que precisam ser atualizados
+
+---
+
+### 1. index.html — Home
+
+**Seção 2 — Cards de problemas ("Qual situação se parece com a sua?")**
+
+Substituir os 8 cards atuais pelos seguintes 12 cards, mantendo o mesmo estilo visual (emoji grande, título em bold, subtítulo em `--color-neutral-700`):
+
+1. 🏥 **INSS e Previdência** — Benefício negado, aposentadoria, auxílio doença, pensão por morte e BPC/LOAS.
+2. 💼 **Trabalho e Emprego** — Demissão, rescisão, horas extras, FGTS, acidente de trabalho e carteira não assinada.
+3. 👨‍👩‍👧 **Família** — Pensão alimentícia, divórcio, guarda de filhos e reconhecimento de paternidade.
+4. 📋 **Herança e Inventário** — Divisão de bens após falecimento, testamento e inventário judicial ou extrajudicial.
+5. 💊 **Plano de Saúde** — Negativa de cobertura, reajuste abusivo, cancelamento indevido e reembolso negado.
+6. 💳 **Dívidas e Nome Negativado** — Cobrança indevida, negativação no Serasa ou SPC e renegociação de dívidas.
+7. 🏠 **Imóveis e Moradia** — Despejo, contrato de aluguel, compra e venda, distrato com construtora e financiamento.
+8. 🛒 **Direito do Consumidor** — Produto com defeito, propaganda enganosa, voo atrasado ou cancelado e cancelamento de contrato.
+9. ⚠️ **Acidentes e Indenizações** — Acidente de trânsito, queda em estabelecimento, erro médico e dano moral.
+10. ⚖️ **Crimes e Defesa Criminal** — Ameaça, violência doméstica, furto e defesa em processo criminal.
+11. 🏛️ **Servidor Público** — Concurso público, reintegração, progressão de carreira e processo administrativo.
+12. 🏢 **Empresarial** — Abertura e fechamento de empresa, cobrança de dívida e recuperação judicial.
+
+Grid: 4 colunas desktop / 2 colunas tablet / 1 coluna mobile. Manter o link "→ Ver todas as áreas de atuação" abaixo do grid.
+
+Cada card clicável leva para `advogados.html` com o filtro de categoria pré-selecionado via query string. Exemplo: `advogados.html?categoria=inss-e-previdencia`.
+
+**Seção 1 — Hero (campo de busca)**
+
+No select "Qual é o seu problema?", atualizar as opções para as 12 categorias novas:
+- INSS e Previdência
+- Trabalho e Emprego
+- Família
+- Herança e Inventário
+- Plano de Saúde
+- Dívidas e Nome Negativado
+- Imóveis e Moradia
+- Direito do Consumidor
+- Acidentes e Indenizações
+- Crimes e Defesa Criminal
+- Servidor Público
+- Empresarial
+- Outro
+
+---
+
+### 2. advogados.html — Lista de advogados
+
+**Filtro de categoria no hero**
+
+Atualizar o select "Qual é o seu problema?" com as 12 categorias novas (mesma lista acima).
+
+Ao chegar na página com query string `?categoria=inss-e-previdencia`, o select deve pré-selecionar a categoria correspondente e filtrar os cards automaticamente.
+
+**Cards de advogados fictícios**
+
+Atualizar as especialidades nos badges dos 6 cards de demonstração para usar apenas categorias da nova lista. Distribuir as categorias entre os cards de forma variada.
+
+---
+
+### 3. cadastro.html — Cadastro de advogados
+
+**Seção de áreas de atuação**
+
+Substituir a lista atual de badges clicáveis pelas 12 novas categorias:
+
+INSS e Previdência · Trabalho e Emprego · Família · Herança e Inventário · Plano de Saúde · Dívidas e Nome Negativado · Imóveis e Moradia · Direito do Consumidor · Acidentes e Indenizações · Crimes e Defesa Criminal · Servidor Público · Empresarial
+
+Manter o mesmo comportamento de toggle (ativo/inativo), mínimo de 1 selecionado, e o mesmo estilo visual dos badges.
+
+---
+
+### 4. painel-perfil.html — Painel do advogado
+
+**Seção 4 — Áreas de atuação**
+
+Substituir os badges atuais pelas 12 novas categorias. Manter o comportamento idêntico ao atual (toggle, mínimo 1, mensagem de erro se tentar desmarcar o único ativo).
+
+Estado inicial de demonstração: selecionar "INSS e Previdência" e "Trabalho e Emprego" como pré-selecionados.
+
+---
+
+### 5. blog.html — Listagem do blog
+
+**Sidebar — Categorias**
+
+Substituir a lista de categorias na sidebar pelas 12 novas:
+- Todas as categorias
+- INSS e Previdência
+- Trabalho e Emprego
+- Família
+- Herança e Inventário
+- Plano de Saúde
+- Dívidas e Nome Negativado
+- Imóveis e Moradia
+- Direito do Consumidor
+- Acidentes e Indenizações
+- Crimes e Defesa Criminal
+- Servidor Público
+- Empresarial
+
+**Cards de posts fictícios**
+
+Atualizar as categorias nos badges dos 6 cards de demonstração para usar apenas as novas categorias. Sugestão de distribuição:
+
+1. [INSS e Previdência] — INSS negou seu benefício? Veja o que diz a lei e quais são seus direitos
+2. [Trabalho e Emprego] — Fui demitido sem justa causa: o que tenho direito a receber?
+3. [Família] — Pensão alimentícia: como funciona e quem tem direito
+4. [INSS e Previdência] — Aposentadoria por tempo de contribuição: quem pode pedir e como calcular
+5. [Plano de Saúde] — Plano de saúde negou cobertura? Entenda quando isso é ilegal
+6. [Direito do Consumidor] — Voo atrasado ou cancelado: o que você pode exigir da companhia aérea
+
+---
+
+### 6. post.html — Post individual
+
+**Badge de categoria**
+
+Garantir que o badge de categoria usa um dos 12 nomes da nova lista. No post de demonstração (trabalhista), atualizar para "Trabalho e Emprego".
+
+**Breadcrumb**
+
+Atualizar o breadcrumb para refletir a nova categoria: Blog › Trabalho e Emprego › [título do post]
+
+---
+
+### 7. painel-metricas.html — Desempenho do advogado
+
+**Card de posição relativa**
+
+Atualizar o texto de demonstração para usar a nova nomenclatura:
+"Em Trabalho e Emprego em SP, seu perfil está entre os Top 30% dos perfis mais visualizados"
+
+---
+
+## Slug das categorias para URLs e query strings
+
+Usar os seguintes slugs consistentemente em todo o JavaScript e URLs:
+
+| Categoria | Slug |
+|---|---|
+| INSS e Previdência | inss-e-previdencia |
+| Trabalho e Emprego | trabalho-e-emprego |
+| Família | familia |
+| Herança e Inventário | heranca-e-inventario |
+| Plano de Saúde | plano-de-saude |
+| Dívidas e Nome Negativado | dividas-e-nome-negativado |
+| Imóveis e Moradia | imoveis-e-moradia |
+| Direito do Consumidor | direito-do-consumidor |
+| Acidentes e Indenizações | acidentes-e-indenizacoes |
+| Crimes e Defesa Criminal | crimes-e-defesa-criminal |
+| Servidor Público | servidor-publico |
+| Empresarial | empresarial |
+
+---
+
+## Objeto JavaScript de categorias — usar em todo o projeto
+
+Criar um objeto global `CATEGORIAS` em `main.js` para ser a fonte única de verdade, evitando inconsistências entre páginas:
+
+```javascript
+const CATEGORIAS = [
+  { nome: 'INSS e Previdência',        slug: 'inss-e-previdencia',         emoji: '🏥' },
+  { nome: 'Trabalho e Emprego',         slug: 'trabalho-e-emprego',          emoji: '💼' },
+  { nome: 'Família',                    slug: 'familia',                     emoji: '👨‍👩‍👧' },
+  { nome: 'Herança e Inventário',       slug: 'heranca-e-inventario',        emoji: '📋' },
+  { nome: 'Plano de Saúde',             slug: 'plano-de-saude',              emoji: '💊' },
+  { nome: 'Dívidas e Nome Negativado',  slug: 'dividas-e-nome-negativado',   emoji: '💳' },
+  { nome: 'Imóveis e Moradia',          slug: 'imoveis-e-moradia',           emoji: '🏠' },
+  { nome: 'Direito do Consumidor',      slug: 'direito-do-consumidor',       emoji: '🛒' },
+  { nome: 'Acidentes e Indenizações',   slug: 'acidentes-e-indenizacoes',    emoji: '⚠️' },
+  { nome: 'Crimes e Defesa Criminal',   slug: 'crimes-e-defesa-criminal',    emoji: '⚖️' },
+  { nome: 'Servidor Público',           slug: 'servidor-publico',            emoji: '🏛️' },
+  { nome: 'Empresarial',                slug: 'empresarial',                 emoji: '🏢' },
+];
+```
+
+Usar esse objeto para renderizar dinamicamente selects, badges e listas de categorias em todas as páginas, em vez de hardcodar HTML repetido. Isso garante que uma futura atualização de categoria precise ser feita em um único lugar.
+
+---
+
+## Checklist de verificação
+
+Após aplicar todas as mudanças, verificar:
+
+- [ ] Home: 12 cards de problema na seção 2
+- [ ] Home: select do hero com 12 categorias + "Outro"
+- [ ] advogados.html: select com 12 categorias
+- [ ] advogados.html: query string `?categoria=` pré-seleciona e filtra corretamente
+- [ ] cadastro.html: 12 badges de áreas de atuação
+- [ ] painel-perfil.html: 12 badges de áreas de atuação
+- [ ] blog.html: 12 categorias na sidebar + "Todas as categorias"
+- [ ] blog.html: badges dos posts fictícios usando nova lista
+- [ ] post.html: badge e breadcrumb atualizados
+- [ ] painel-metricas.html: texto de demonstração atualizado
+- [ ] main.js: objeto CATEGORIAS criado e usado em todas as páginas
+- [ ] Slugs consistentes em todas as URLs e query strings
+- [ ] Responsivo: grid de 12 cards na home funciona em mobile (1 coluna) e tablet (2 colunas)

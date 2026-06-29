@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { getPostBySlug } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
+import { slugDaCategoria } from "@/data/categories";
 import NotFound from "@/pages/not-found";
 
 export default function Post() {
@@ -57,7 +58,7 @@ export default function Post() {
                 </Link>
                 <ChevronRight className="h-3.5 w-3.5 shrink-0" />
                 <Link
-                  href={`/blog?categoria=${encodeURIComponent(post.category)}`}
+                  href={`/blog?categoria=${slugDaCategoria(post.category) ?? ""}`}
                   className="text-primary-600 hover:underline"
                 >
                   {post.category}
@@ -151,7 +152,7 @@ export default function Post() {
             </article>
 
             {/* Sidebar */}
-            <BlogSidebar activeCategory={post.category} stickyCta />
+            <BlogSidebar activeSlug={slugDaCategoria(post.category) ?? null} stickyCta />
           </div>
         </div>
       </main>

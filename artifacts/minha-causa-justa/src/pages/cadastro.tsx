@@ -39,7 +39,7 @@ export default function Cadastro() {
   ];
 
   const paraQuem = [
-    "Você atua em causas populares: INSS, trabalhista, família, previdência, consumidor ou inventários",
+    "Você atua em causas populares: INSS e previdência, trabalho e emprego, família, plano de saúde, consumidor ou herança e inventário",
     "Está construindo sua carteira de clientes e precisa de visibilidade",
     "Atende pessoas físicas, não grandes empresas",
     "Quer aparecer para clientes na sua cidade ou estado",

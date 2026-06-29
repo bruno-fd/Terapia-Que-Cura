@@ -1,3 +1,3 @@
 - [Flaky banner tests](flaky-banner-tests.md) — auto-hiding success banners + non-retrying Playwright count() = false failures; prefer persistent UI cleared on next edit.
 - [IBGE city feature](ibge-city-feature.md) — cities load on-demand from IBGE API (in-memory cache); city values must always carry their UF since names repeat across states.
-- [Blog category integrity](blog-category-integrity.md) — generated posts must validate category against BLOG_CATEGORIES server-side or they vanish from blog filters; lists duplicated front/back.
+- [Blog category integrity](blog-category-integrity.md) — site categories single-sourced in data/categories.ts (slug-based URLs); server VALID_CATEGORIES is a hand-synced copy; category changes also need DB UPDATEs.

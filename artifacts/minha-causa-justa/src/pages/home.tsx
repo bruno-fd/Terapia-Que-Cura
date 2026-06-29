@@ -6,20 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
-import { 
-  ArrowRight, 
-  Shield, 
-  Search, 
-  MessageCircle, 
-  HeartCrack,
-  Activity,
-  BriefcaseBusiness,
-  Accessibility,
-  TrendingUp,
-  Baby,
-  Flower2,
-  FileText
-} from "lucide-react";
+import { ArrowRight, Shield, Search, MessageCircle } from "lucide-react";
+import { CATEGORIAS, slugDaCategoria } from "@/data/categories";
 
 import heroPessoa from "@/assets/hero-pessoa.png";
 import celularPessoa from "@/assets/celular-pessoa.png";
@@ -28,7 +16,7 @@ import confiancaPessoa from "@/assets/confianca-pessoa.png";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [problema, setProblema] = useState<string>("");
+  const [categoria, setCategoria] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
 
@@ -39,29 +27,18 @@ export default function Home() {
 
   const handleSearch = () => {
     let url = "/advogados";
-    if (problema || estado || cidade) {
-      url += "?";
+    const slug = categoria && categoria !== "Outro" ? slugDaCategoria(categoria) : undefined;
+    if (slug || estado || cidade) {
       const params = new URLSearchParams();
-      if (problema) params.append("problema", problema);
+      if (slug) params.append("categoria", slug);
       if (estado) params.append("estado", estado);
       if (cidade) params.append("cidade", cidade);
-      url += params.toString();
+      url += `?${params.toString()}`;
     }
     setLocation(url);
   };
 
-  const problemas = [
-    "INSS: benefício negado ou cortado",
-    "Auxílio Doença",
-    "Aposentadoria",
-    "BPC/LOAS",
-    "Plano de saúde: reajuste abusivo ou negativa de cobertura",
-    "Pensão alimentícia",
-    "Pensão por morte",
-    "Inventário e herança",
-    "Demissão e direitos trabalhistas",
-    "Outro"
-  ];
+  const opcoesCategoria = [...CATEGORIAS.map((c) => c.nome), "Outro"];
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
@@ -95,12 +72,12 @@ export default function Home() {
 
                 <div className="bg-primary-50 p-6 rounded-[32px] border border-primary-100 shadow-sm relative z-10">
                   <div className="flex flex-col gap-3">
-                    <Select value={problema} onValueChange={setProblema}>
+                    <Select value={categoria} onValueChange={setCategoria}>
                       <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-problema">
                         <SelectValue placeholder="Qual é o seu problema?" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        {problemas.map(p => (
+                        {opcoesCategoria.map(p => (
                           <SelectItem key={p} value={p}>{p}</SelectItem>
                         ))}
                       </SelectContent>
@@ -161,32 +138,20 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { icon: HeartCrack, title: "INSS negou meu benefício", desc: "Seu pedido foi recusado ou cortado sem explicação.", filter: "INSS: benefício negado ou cortado", bg: "bg-blue-50" },
-                { icon: Activity, title: "Preciso do Auxílio Doença", desc: "Está afastado do trabalho e o INSS não reconhece sua situação.", filter: "Auxílio Doença", bg: "bg-indigo-50" },
-                { icon: BriefcaseBusiness, title: "Quero me aposentar", desc: "Não sabe se já tem direito ou como dar entrada.", filter: "Aposentadoria", bg: "bg-cyan-50" },
-                { icon: Accessibility, title: "BPC/LOAS: benefício para quem precisa", desc: "Pessoa com deficiência ou idoso sem renda que foi negado.", filter: "BPC/LOAS", bg: "bg-teal-50" },
-                { icon: TrendingUp, title: "Plano de saúde aumentou absurdamente", desc: "Reajuste abusivo ou negativa de cobertura indevida.", filter: "Plano de saúde: reajuste abusivo ou negativa de cobertura", bg: "bg-orange-50" },
-                { icon: Baby, title: "Pensão alimentícia", desc: "Precisa cobrar ou revisar o valor que o pai ou a mãe paga.", filter: "Pensão alimentícia", bg: "bg-pink-50" },
-                { icon: Flower2, title: "Pensão por morte", desc: "Perdeu alguém e não sabe como garantir o benefício.", filter: "Pensão por morte", bg: "bg-purple-50" },
-                { icon: FileText, title: "Inventário e herança", desc: "Familiar faleceu e a família não sabe como dividir os bens.", filter: "Inventário e herança", bg: "bg-emerald-50" }
-              ].map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <Link 
-                    key={idx} 
-                    href={`/advogados?problema=${encodeURIComponent(item.filter)}`}
-                    className="bg-white p-8 rounded-[32px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:border-primary-100 hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full"
-                    data-testid={`card-situacao-${idx}`}
-                  >
-                    <div className={`w-16 h-16 rounded-2xl ${item.bg} text-primary-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon strokeWidth={1.5} className="w-8 h-8" />
-                    </div>
-                    <h3 className="font-bold text-xl text-primary-900 mb-3 leading-tight">{item.title}</h3>
-                    <p className="text-neutral-600 text-sm leading-relaxed flex-grow">{item.desc}</p>
-                  </Link>
-                );
-              })}
+              {CATEGORIAS.map((cat, idx) => (
+                <Link
+                  key={cat.slug}
+                  href={`/advogados?categoria=${cat.slug}`}
+                  className="bg-white p-8 rounded-[32px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:border-primary-100 hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full"
+                  data-testid={`card-situacao-${idx}`}
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform duration-300">
+                    <span aria-hidden="true">{cat.emoji}</span>
+                  </div>
+                  <h3 className="font-bold text-xl text-primary-900 mb-3 leading-tight">{cat.nome}</h3>
+                  <p className="text-neutral-600 text-sm leading-relaxed flex-grow">{cat.descricao}</p>
+                </Link>
+              ))}
             </div>
 
             <div className="mt-16 text-center">

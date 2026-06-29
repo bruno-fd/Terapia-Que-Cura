@@ -1,16 +1,16 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { BLOG_CATEGORIES } from "@/data/blog";
+import { CATEGORIAS } from "@/data/categories";
 
 interface BlogSidebarProps {
-  // Categoria atualmente ativa (destacada na lista). Opcional.
-  activeCategory?: string | null;
+  // Slug da categoria atualmente ativa (destacada na lista). Opcional.
+  activeSlug?: string | null;
   // Quando true, o bloco CTA acompanha a rolagem (fixo durante a leitura)
   stickyCta?: boolean;
 }
 
 export function BlogSidebar({
-  activeCategory = null,
+  activeSlug = null,
   stickyCta = false,
 }: BlogSidebarProps) {
   return (
@@ -27,7 +27,7 @@ export function BlogSidebar({
             <Link
               href="/blog"
               className={`block py-2.5 text-sm transition-colors hover:text-primary-600 ${
-                !activeCategory
+                !activeSlug
                   ? "text-primary-600 font-bold"
                   : "text-neutral-700"
               }`}
@@ -35,19 +35,19 @@ export function BlogSidebar({
               Todas as categorias
             </Link>
           </li>
-          {BLOG_CATEGORIES.map((category) => {
-            const isActive = activeCategory === category;
+          {CATEGORIAS.map((categoria) => {
+            const isActive = activeSlug === categoria.slug;
             return (
-              <li key={category}>
+              <li key={categoria.slug}>
                 <Link
-                  href={`/blog?categoria=${encodeURIComponent(category)}`}
+                  href={`/blog?categoria=${categoria.slug}`}
                   className={`block py-2.5 text-sm transition-colors hover:text-primary-600 ${
                     isActive
                       ? "text-primary-600 font-bold"
                       : "text-neutral-700"
                   }`}
                 >
-                  {category}
+                  {categoria.nome}
                 </Link>
               </li>
             );

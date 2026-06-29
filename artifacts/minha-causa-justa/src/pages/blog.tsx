@@ -6,12 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import { BLOG_POSTS } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
+import { categoriaPorSlug } from "@/data/categories";
 
 export default function Blog() {
-  // Lê a categoria do query param (?categoria=...) para filtrar os cards
+  // Lê o slug da categoria do query param (?categoria=...) para filtrar os cards
   const search = useSearch();
   const params = new URLSearchParams(search);
-  const activeCategory = params.get("categoria");
+  const activeSlug = params.get("categoria");
+  const activeCategoria = activeSlug ? categoriaPorSlug(activeSlug) : undefined;
+  const activeCategoryName = activeCategoria?.nome ?? null;
 
   // Posts gerados no painel /admin aparecem antes dos posts fixos.
   // Em caso de slug repetido, o post gerado tem precedência.
@@ -22,8 +25,8 @@ export default function Blog() {
     ...BLOG_POSTS.filter((p) => !generatedSlugs.has(p.slug)),
   ];
 
-  const posts = activeCategory
-    ? allPosts.filter((post) => post.category === activeCategory)
+  const posts = activeCategoryName
+    ? allPosts.filter((post) => post.category === activeCategoryName)
     : allPosts;
 
   return (
@@ -47,11 +50,11 @@ export default function Blog() {
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-12 items-start">
             {/* Coluna principal — lista de posts */}
             <div className="flex-1 w-full">
-              {activeCategory && (
+              {activeCategoryName && (
                 <p className="text-sm text-neutral-500 mb-6">
                   Mostrando posts da categoria{" "}
                   <span className="font-bold text-primary-600">
-                    {activeCategory}
+                    {activeCategoryName}
                   </span>
                   .{" "}
                   <Link
@@ -120,7 +123,7 @@ export default function Blog() {
             </div>
 
             {/* Sidebar */}
-            <BlogSidebar activeCategory={activeCategory} />
+            <BlogSidebar activeSlug={activeSlug} />
           </div>
         </div>
       </main>

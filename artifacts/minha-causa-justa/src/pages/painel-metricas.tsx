@@ -224,7 +224,7 @@ function MetricsState({
           <div>
             <p className="text-sm text-neutral-500">Você está entre os</p>
             <p className="text-2xl font-bold text-[#1E7D4F] mt-0.5">Top 30%</p>
-            <p className="text-sm text-neutral-500">perfis mais visualizados em Trabalhista no SP</p>
+            <p className="text-sm text-neutral-500">perfis mais visualizados em Trabalho e Emprego em SP</p>
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-700 mb-3">Visualizações este mês</p>

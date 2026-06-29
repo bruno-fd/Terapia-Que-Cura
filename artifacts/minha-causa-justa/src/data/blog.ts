@@ -1,19 +1,14 @@
 // ============================================================
-// Blog data — categorias e posts (conteúdo fictício)
+// Blog data — posts (conteúdo fictício)
 // Fonte única usada por blog.tsx, post.tsx e BlogSidebar.tsx
+// As categorias vêm de data/categories.ts (fonte única do site).
 // ============================================================
 
-export const BLOG_CATEGORIES = [
-  "INSS",
-  "Trabalhista",
-  "Família",
-  "Previdenciário",
-  "Saúde",
-  "Consumidor",
-  "Inventário e Herança",
-] as const;
+import { CATEGORIA_NOMES, type CategoriaNome } from "@/data/categories";
 
-export type BlogCategory = (typeof BLOG_CATEGORIES)[number];
+export const BLOG_CATEGORIES = CATEGORIA_NOMES;
+
+export type BlogCategory = CategoriaNome;
 
 export interface PostSection {
   heading?: string;
@@ -37,7 +32,7 @@ export interface BlogPost {
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "inss-negou-seu-beneficio",
-    category: "INSS",
+    category: "INSS e Previdência",
     title:
       "INSS negou seu benefício? Veja o que diz a lei e quais são seus direitos",
     excerpt:
@@ -75,7 +70,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "demitido-sem-justa-causa",
-    category: "Trabalhista",
+    category: "Trabalho e Emprego",
     title: "Fui demitido sem justa causa: o que tenho direito a receber?",
     excerpt:
       "A demissão sem justa causa garante um conjunto de verbas previstas na CLT. Saber quais são ajuda o trabalhador a conferir se tudo foi pago corretamente.",
@@ -134,7 +129,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "aposentadoria-por-tempo-de-contribuicao",
-    category: "Previdenciário",
+    category: "INSS e Previdência",
     title:
       "Aposentadoria por tempo de contribuição: quem pode pedir e como calcular",
     excerpt:
@@ -164,7 +159,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "plano-de-saude-negou-cobertura",
-    category: "Saúde",
+    category: "Plano de Saúde",
     title: "Plano de saúde negou cobertura? Entenda quando isso é ilegal",
     excerpt:
       "Nem toda negativa de plano de saúde está de acordo com a lei. Existem regras claras sobre coberturas obrigatórias e prazos de atendimento.",
@@ -193,7 +188,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "inventario-e-heranca",
-    category: "Inventário e Herança",
+    category: "Herança e Inventário",
     title:
       "Inventário e herança: o que acontece com os bens depois que alguém falece",
     excerpt:
