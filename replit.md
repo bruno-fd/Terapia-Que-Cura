@@ -28,6 +28,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - Blog generation logic: `artifacts/api-server/src/lib/blog-generator.ts` (Anthropic via Replit proxy); blog routes: `artifacts/api-server/src/routes/blog.ts`.
 - Public blog data merge: `artifacts/minha-causa-justa/src/data/published-posts.ts` (DB posts) + `data/blog.ts` (static posts); pages `blog.tsx` / `post.tsx`.
 - Admin page + client API helper: `artifacts/minha-causa-justa/src/pages/admin.tsx` + `src/lib/admin.ts`.
+- Subscriptions (Asaas): DB schema `lib/db/src/schema/subscriptions.ts`; Asaas REST client `artifacts/api-server/src/lib/asaas.ts`; routes `artifacts/api-server/src/routes/subscription.ts`; frontend helper `artifacts/minha-causa-justa/src/lib/assinatura.ts`; page `src/pages/painel-assinatura.tsx`.
 
 ## Architecture decisions
 
@@ -38,6 +39,11 @@ _Replace the heading above with the project's name, and this line with one sente
 - Post macrocategory MUST equal a category `nome`. This is enforced server-side: a `VALID_CATEGORIES` whitelist in `routes/blog.ts` rejects anything else with 400. The server cannot import the frontend artifact, so `VALID_CATEGORIES` is a hand-maintained copy that MUST stay in sync with `categories.ts` (`nome` field).
 - Admin auth is a simulated gate: hardcoded password `123456`, checked client-side and via the `x-admin-password` header on `/api/admin/*` routes. Not real auth, by design.
 - The AI generator strips em dashes before persisting, to honor the strict no-em-dash copy rule.
+- Lawyer subscriptions use Asaas (Brazilian gateway) recurring billing. Contract-first: GET `/assinatura` (`getAssinatura`), POST `/assinatura` (`createAssinatura`), POST `/assinatura/cancelar` (`cancelAssinatura`), plus a public webhook POST `/assinatura/webhook` (NOT in the OpenAPI spec). Plans: Mensal R$49,90 (MONTHLY), Anual R$478,80 (YEARLY). Money stored as integer cents (`valueCents`); Asaas API uses reais (`valueCents/100`).
+- Asaas subscriptions are created with `billingType: "UNDEFINED"` so the customer chooses PIX/Boleto/Card on the hosted invoice. The invoice URL is surfaced as `invoiceUrl` for the "Pagar agora" button.
+- DEMO MODE: there is no real lawyer auth yet, so the subscription routes use a fixed `DEMO_LAWYER_REF = "demo-advogado"`. When real auth lands, swap this for the authenticated user id. The `subscriptions.lawyerRef` column is unique (one subscription per lawyer).
+- Subscription status is derived live from Asaas payments on GET (and persisted): any OVERDUE → `atrasada`; else any CONFIRMED/RECEIVED/RECEIVED_IN_CASH → `ativa`; else `pendente`; a cancelled row stays `inativa`. The webhook also writes status authoritatively (PAYMENT_CONFIRMED/RECEIVED → ativa, PAYMENT_OVERDUE → atrasada, PAYMENT_DELETED/REFUNDED → inativa). This makes the demo work even before any webhook is configured.
+- Required env for billing: secret `ASAAS_API_KEY` (sent as the `access_token` header). `ASAAS_BASE_URL` defaults to the sandbox (`https://sandbox.asaas.com/api/v3`); set it to the production base to go live. Optional `ASAAS_WEBHOOK_TOKEN` enables `asaas-access-token` header verification on the webhook.
 
 ## Product
 

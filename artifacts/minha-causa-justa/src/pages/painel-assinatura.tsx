@@ -294,7 +294,7 @@ export default function PainelAssinatura() {
                         data-testid={`cobranca-${i}`}
                       >
                         <td className="py-3 pr-4 text-neutral-700">
-                          {formatDate(c.date) || "—"}
+                          {formatDate(c.date) || "N/D"}
                         </td>
                         <td className="py-3 pr-4 text-neutral-700">
                           {c.description}

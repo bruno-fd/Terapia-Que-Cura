@@ -23,6 +23,7 @@ const router: IRouter = Router();
 const DEMO_LAWYER_REF = "demo-advogado";
 
 type Plano = "mensal" | "anual";
+type SubStatus = "pendente" | "ativa" | "atrasada" | "inativa";
 
 interface PlanConfig {
   valueCents: number;
@@ -68,7 +69,7 @@ function paymentDisplayStatus(
 function deriveStatus(
   row: SubscriptionRow,
   payments: AsaasPayment[],
-): "pendente" | "ativa" | "atrasada" | "inativa" {
+): SubStatus {
   if (row.status === "inativa") return "inativa";
   const hasOverdue = payments.some((p) => p.status === "OVERDUE");
   if (hasOverdue) return "atrasada";
@@ -87,8 +88,11 @@ function openInvoiceUrl(payments: AsaasPayment[]): string | null {
   return open?.invoiceUrl ?? null;
 }
 
-function buildState(row: SubscriptionRow, payments: AsaasPayment[]) {
-  const status = deriveStatus(row, payments);
+function buildState(
+  row: SubscriptionRow,
+  payments: AsaasPayment[],
+  status: SubStatus,
+) {
   const visible = payments
     .filter((p) => p.status !== "DELETED")
     .map((p) => ({
@@ -141,23 +145,29 @@ router.get("/assinatura", async (req, res): Promise<void> => {
   }
 
   let payments: AsaasPayment[] = [];
+  let fetched = false;
   try {
     payments = await listSubscriptionPayments(row.asaasSubscriptionId);
+    fetched = true;
   } catch (err) {
     req.log.error({ err }, "Falha ao listar pagamentos da Asaas");
   }
 
-  // Mantém o status persistido em sincronia com o derivado.
-  const derived = deriveStatus(row, payments);
-  if (derived !== row.status) {
+  // Só recalcula/persiste o status quando os pagamentos foram obtidos com
+  // sucesso. Numa falha temporária da Asaas, mantemos o status persistido
+  // para não rebaixar uma assinatura ativa por engano.
+  const status = fetched
+    ? deriveStatus(row, payments)
+    : (row.status as SubStatus);
+  if (fetched && status !== row.status) {
     await db
       .update(subscriptionsTable)
-      .set({ status: derived, updatedAt: new Date() })
+      .set({ status, updatedAt: new Date() })
       .where(eq(subscriptionsTable.id, row.id));
-    row.status = derived;
+    row.status = status;
   }
 
-  res.json(GetAssinaturaResponse.parse(buildState(row, payments)));
+  res.json(GetAssinaturaResponse.parse(buildState(row, payments, status)));
 });
 
 // Cria uma assinatura na Asaas e persiste o vínculo.
@@ -224,7 +234,10 @@ router.post("/assinatura", async (req, res): Promise<void> => {
       [row] = await db.insert(subscriptionsTable).values(values).returning();
     }
 
-    res.status(201).json(CreateAssinaturaResponse.parse(buildState(row, payments)));
+    const status = deriveStatus(row, payments);
+    res
+      .status(201)
+      .json(CreateAssinaturaResponse.parse(buildState(row, payments, status)));
   } catch (err) {
     if (err instanceof AsaasError) {
       req.log.error({ err }, "Erro Asaas ao criar assinatura");
@@ -260,7 +273,7 @@ router.post("/assinatura/cancelar", async (req, res): Promise<void> => {
     .where(eq(subscriptionsTable.id, row.id))
     .returning();
 
-  res.json(CancelAssinaturaResponse.parse(buildState(updated, [])));
+  res.json(CancelAssinaturaResponse.parse(buildState(updated, [], "inativa")));
 });
 
 // Webhook da Asaas (configurado no painel Asaas). Atualiza o status conforme
