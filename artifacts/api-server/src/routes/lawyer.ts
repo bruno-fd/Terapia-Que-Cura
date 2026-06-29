@@ -14,8 +14,30 @@ import {
   ListAdvogadosResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { getAuth, clerkClient } from "@clerk/express";
+import type { Request } from "express";
+import { sendEmail } from "../lib/email";
+import { welcomeEmail } from "../lib/email-templates";
 
 const router: IRouter = Router();
+
+// Busca o e-mail do advogado no Clerk e envia as boas-vindas. Best-effort:
+// qualquer falha (Clerk indisponível, sem e-mail, Resend) apenas registra log.
+async function sendWelcomeEmail(req: Request): Promise<void> {
+  try {
+    const clerkUserId = getAuth(req).userId;
+    if (!clerkUserId) return;
+    const user = await clerkClient.users.getUser(clerkUserId);
+    const to =
+      user.primaryEmailAddress?.emailAddress ??
+      user.emailAddresses[0]?.emailAddress;
+    if (!to) return;
+    const tpl = welcomeEmail(user.firstName);
+    await sendEmail({ to, subject: tpl.subject, html: tpl.html });
+  } catch (err) {
+    req.log.error({ err }, "Falha ao enviar e-mail de boas-vindas");
+  }
+}
 
 type SubStatus = "pendente" | "ativa" | "atrasada" | "inativa";
 
@@ -115,6 +137,9 @@ router.get("/perfil", requireAuth, async (req, res): Promise<void> => {
       .insert(advogadosTable)
       .values({ userId })
       .returning();
+    // Primeiro acesso ao painel: envia boas-vindas com as instruções de
+    // cadastro (best-effort, nunca quebra a resposta).
+    await sendWelcomeEmail(req);
   }
 
   const status = await getSubscriptionStatus(userId);

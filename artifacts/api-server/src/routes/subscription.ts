@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { db, subscriptionsTable, type SubscriptionRow } from "@workspace/db";
 import {
   GetAssinaturaResponse,
@@ -16,6 +16,12 @@ import {
   type AsaasPayment,
 } from "../lib/asaas";
 import { requireAuth } from "../middlewares/requireAuth";
+import { sendEmail } from "../lib/email";
+import {
+  subscriptionCreatedEmail,
+  paymentConfirmedEmail,
+  paymentOverdueEmail,
+} from "../lib/email-templates";
 
 const router: IRouter = Router();
 
@@ -50,6 +56,14 @@ const PENDING_STATUSES = new Set([
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function formatBRL(cents: number): string {
+  return `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`;
+}
+
+function planoLabel(plano: Plano): string {
+  return plano === "mensal" ? "Plano Mensal" : "Plano Anual";
 }
 
 function paymentDisplayStatus(
@@ -234,6 +248,17 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
     }
 
     const status = deriveStatus(row, payments);
+
+    // Envia instruções de pagamento (best-effort, não bloqueia a resposta
+    // em caso de falha no e-mail).
+    const tpl = subscriptionCreatedEmail({
+      nome: nome,
+      planoLabel: planoLabel(plano as Plano),
+      valorLabel: formatBRL(plan.valueCents),
+      invoiceUrl: openInvoiceUrl(payments),
+    });
+    await sendEmail({ to: email, subject: tpl.subject, html: tpl.html });
+
     res
       .status(201)
       .json(CreateAssinaturaResponse.parse(buildState(row, payments, status)));
@@ -313,11 +338,60 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
   }
 
   if (newStatus) {
-    await db
+    // Atualiza apenas quando há mudança real de status. O .returning() só
+    // devolve a linha se ela foi alterada, tornando a deduplicação segura
+    // mesmo sob entregas concorrentes ou repetidas do webhook (a Asaas
+    // dispara PAYMENT_CONFIRMED e PAYMENT_RECEIVED para o mesmo pagamento).
+    const [changed] = await db
       .update(subscriptionsTable)
       .set({ status: newStatus, updatedAt: new Date() })
-      .where(eq(subscriptionsTable.asaasSubscriptionId, subscriptionId));
-    req.log.info({ event, subscriptionId, newStatus }, "Webhook Asaas aplicado");
+      .where(
+        and(
+          eq(subscriptionsTable.asaasSubscriptionId, subscriptionId),
+          ne(subscriptionsTable.status, newStatus),
+        ),
+      )
+      .returning();
+
+    if (changed) {
+      req.log.info(
+        { event, subscriptionId, newStatus },
+        "Webhook Asaas aplicado",
+      );
+
+      if (changed.customerEmail) {
+        if (newStatus === "ativa") {
+          const tpl = paymentConfirmedEmail(changed.customerName);
+          await sendEmail({
+            to: changed.customerEmail,
+            subject: tpl.subject,
+            html: tpl.html,
+          });
+        } else if (newStatus === "atrasada") {
+          // Busca a fatura em aberto para incluir o link "Regularizar agora".
+          let invoiceUrl: string | null = null;
+          try {
+            invoiceUrl = openInvoiceUrl(
+              await listSubscriptionPayments(subscriptionId),
+            );
+          } catch (err) {
+            req.log.error(
+              { err },
+              "Falha ao buscar fatura para e-mail de atraso",
+            );
+          }
+          const tpl = paymentOverdueEmail({
+            nome: changed.customerName,
+            invoiceUrl,
+          });
+          await sendEmail({
+            to: changed.customerEmail,
+            subject: tpl.subject,
+            html: tpl.html,
+          });
+        }
+      }
+    }
   }
 
   res.sendStatus(200);
