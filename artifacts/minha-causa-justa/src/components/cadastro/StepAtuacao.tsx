@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
+import {
+  contarAdvogados,
+  type ConcorrenciaResult,
+} from "@workspace/api-client-react";
 import { AREAS } from "@/lib/dashboard";
 import type { FunnelData } from "@/lib/cadastro-funnel";
-import { ArrowRight, ArrowLeft, X } from "lucide-react";
+import { ArrowRight, ArrowLeft, X, Loader2, Users } from "lucide-react";
 
 interface Props {
   data: FunnelData;
@@ -14,10 +18,62 @@ interface Props {
   onBack: () => void;
 }
 
+// Mensagem sempre positiva, em faixas, reforçando a demanda sem desmotivar.
+function mensagemConcorrencia(
+  count: number,
+  area: string,
+  local: string,
+): string {
+  if (count <= 0) {
+    return `Você pode ser um dos primeiros em ${area} em ${local}. Quem chega cedo aparece primeiro para quem procura.`;
+  }
+  if (count <= 5) {
+    return `Espaço aberto: poucos advogados de ${area} aparecem em ${local}. É a hora ideal para garantir destaque.`;
+  }
+  if (count <= 20) {
+    return `A procura por ${area} em ${local} está aquecida. Com um perfil completo, você se destaca dos demais.`;
+  }
+  return `${area} é muito buscada em ${local}. Há bastante demanda; um perfil bem feito coloca você na frente.`;
+}
+
 export function StepAtuacao({ data, update, onNext, onBack }: Props) {
   const [selectedUf, setSelectedUf] = useState("");
   const [areaErro, setAreaErro] = useState("");
   const [localErro, setLocalErro] = useState("");
+  const [counts, setCounts] = useState<ConcorrenciaResult | null>(null);
+  const [loadingCount, setLoadingCount] = useState(false);
+
+  const primeiraArea = data.areas[0] ?? "";
+  const primeiraCidade = data.cidades[0];
+  // O card só aparece com cidade E ao menos uma área (contrato da Etapa 2).
+  const mostrarCard = !!primeiraArea && !!primeiraCidade;
+
+  // Busca a contagem real quando há cidade + área.
+  useEffect(() => {
+    if (!mostrarCard || !primeiraCidade) {
+      setCounts(null);
+      return;
+    }
+    let ativo = true;
+    setLoadingCount(true);
+    contarAdvogados({
+      area: primeiraArea,
+      cidade: primeiraCidade.nome,
+      uf: primeiraCidade.uf,
+    })
+      .then((r) => {
+        if (ativo) setCounts(r);
+      })
+      .catch(() => {
+        if (ativo) setCounts(null);
+      })
+      .finally(() => {
+        if (ativo) setLoadingCount(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [mostrarCard, primeiraArea, primeiraCidade?.nome, primeiraCidade?.uf]);
 
   const toggleArea = (area: string) => {
     setAreaErro("");
@@ -54,6 +110,10 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
     if (ok) onNext();
   };
 
+  const localLabel = primeiraCidade
+    ? `${primeiraCidade.nome}, ${primeiraCidade.uf}`
+    : "todo o Brasil";
+
   const badgeClass = (active: boolean) =>
     `px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
       active
@@ -69,30 +129,6 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
       <p className="text-neutral-600 mb-8">
         Isso define para quem o seu perfil aparece nas buscas.
       </p>
-
-      <div className="mb-8">
-        <h3 className="text-sm font-bold text-neutral-700 mb-3">
-          Áreas de atuação<span className="text-[#C0392B]"> *</span>
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {AREAS.map((area) => (
-            <button
-              key={area}
-              type="button"
-              onClick={() => toggleArea(area)}
-              className={badgeClass(data.areas.includes(area))}
-              data-testid={`badge-area-${area}`}
-            >
-              {area}
-            </button>
-          ))}
-        </div>
-        {areaErro && (
-          <p className="mt-3 text-sm text-[#C0392B]" data-testid="erro-area">
-            {areaErro}
-          </p>
-        )}
-      </div>
 
       <div>
         <h3 className="text-sm font-bold text-neutral-700 mb-3">
@@ -161,6 +197,71 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
           </p>
         )}
       </div>
+
+      <div className="mt-8">
+        <h3 className="text-sm font-bold text-neutral-700 mb-3">
+          Áreas de atuação<span className="text-[#C0392B]"> *</span>
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {AREAS.map((area) => (
+            <button
+              key={area}
+              type="button"
+              onClick={() => toggleArea(area)}
+              className={badgeClass(data.areas.includes(area))}
+              data-testid={`badge-area-${area}`}
+            >
+              {area}
+            </button>
+          ))}
+        </div>
+        {areaErro && (
+          <p className="mt-3 text-sm text-[#C0392B]" data-testid="erro-area">
+            {areaErro}
+          </p>
+        )}
+      </div>
+
+      {mostrarCard && (
+        <div
+          className="mt-8 rounded-2xl border border-primary-100 bg-[#EEF5FC] p-6"
+          data-testid="bloco-concorrencia"
+        >
+          {loadingCount ? (
+            <div
+              className="flex items-center gap-2 text-primary-700"
+              data-testid="concorrencia-carregando"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" /> Analisando o mercado em{" "}
+              {localLabel}...
+            </div>
+          ) : counts ? (
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
+                <Users className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-lg font-bold text-primary-900">
+                  {counts.naAreaECidade} advogado(s) de {primeiraArea} em{" "}
+                  {localLabel}
+                </p>
+                <p className="mt-1 text-sm text-neutral-700">
+                  {mensagemConcorrencia(
+                    counts.naAreaECidade,
+                    primeiraArea,
+                    localLabel,
+                  )}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-neutral-600">
+              Seu perfil tem espaço garantido em {localLabel} assim que
+              publicado.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-8 flex items-center justify-between">
         <Button

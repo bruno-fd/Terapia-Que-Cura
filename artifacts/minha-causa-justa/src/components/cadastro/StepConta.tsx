@@ -25,11 +25,76 @@ interface Props {
   data: FunnelData;
   onNext: () => void;
   onBack: () => void;
+  onEditar: (step: number) => void;
 }
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-export function StepConta({ data, onNext, onBack }: Props) {
+// Resumo do pedido com link "Editar" por linha, levando de volta à etapa certa.
+function ResumoPedido({
+  data,
+  onEditar,
+}: {
+  data: FunnelData;
+  onEditar: (step: number) => void;
+}) {
+  const plano = data.plano ?? "mensal";
+  const info = PLANOS[plano];
+  const primeiraCidade = data.cidades[0];
+  const localLabel = primeiraCidade
+    ? `${primeiraCidade.nome}, ${primeiraCidade.uf}${
+        data.cidades.length > 1 ? ` +${data.cidades.length - 1}` : ""
+      }${data.atendeOnline ? " e online" : ""}`
+    : data.atendeOnline
+      ? "Online, todo o Brasil"
+      : "Não informado";
+  const areasLabel = data.areas.length
+    ? data.areas.join(", ")
+    : "Não informado";
+
+  const linha = (
+    rotulo: string,
+    valor: string,
+    step: number,
+    testid: string,
+  ) => (
+    <div
+      className="flex items-start justify-between gap-4 py-3"
+      data-testid={`resumo-${testid}`}
+    >
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          {rotulo}
+        </p>
+        <p className="text-sm font-medium text-neutral-800 break-words">
+          {valor}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => onEditar(step)}
+        className="shrink-0 text-sm font-medium text-primary-700 underline-offset-2 hover:underline"
+        data-testid={`button-editar-${testid}`}
+      >
+        Editar
+      </button>
+    </div>
+  );
+
+  return (
+    <div
+      className="mb-8 rounded-2xl border border-neutral-200 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] divide-y divide-neutral-100"
+      data-testid="resumo-pedido"
+    >
+      {linha("Plano", info.label, 3, "plano")}
+      {linha("Valor", `${info.precoMes}/mês`, 3, "valor")}
+      {linha("Cidade e UF", localLabel, 2, "local")}
+      {linha("Áreas de atuação", areasLabel, 2, "areas")}
+    </div>
+  );
+}
+
+export function StepConta({ data, onNext, onBack, onEditar }: Props) {
   const { isLoaded, isSignedIn } = useUser();
 
   if (!isLoaded) {
@@ -50,6 +115,8 @@ export function StepConta({ data, onNext, onBack }: Props) {
           Use o mesmo e-mail informado no início. É com ele que você acessa seu
           painel.
         </p>
+
+        <ResumoPedido data={data} onEditar={onEditar} />
 
         <div className="flex justify-center">
           <SignUp
@@ -75,10 +142,17 @@ export function StepConta({ data, onNext, onBack }: Props) {
     );
   }
 
-  return <PagamentoBloco data={data} onNext={onNext} onBack={onBack} />;
+  return (
+    <PagamentoBloco
+      data={data}
+      onNext={onNext}
+      onBack={onBack}
+      onEditar={onEditar}
+    />
+  );
 }
 
-function PagamentoBloco({ data, onNext, onBack }: Props) {
+function PagamentoBloco({ data, onNext, onBack, onEditar }: Props) {
   const [state, setState] = useState<SubscriptionState | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [cpfCnpj, setCpfCnpj] = useState("");
@@ -153,6 +227,8 @@ function PagamentoBloco({ data, onNext, onBack }: Props) {
           ? "Acompanhe o status do pagamento abaixo."
           : `Você escolheu o ${info.label} (${info.precoMes}/mês).`}
       </p>
+
+      {!state && <ResumoPedido data={data} onEditar={onEditar} />}
 
       {!state && (
         <>

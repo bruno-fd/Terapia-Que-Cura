@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { StepIdentificacao } from "@/components/cadastro/StepIdentificacao";
 import { StepAtuacao } from "@/components/cadastro/StepAtuacao";
-import { StepConcorrencia } from "@/components/cadastro/StepConcorrencia";
+import { StepPlano } from "@/components/cadastro/StepPlano";
 import { StepConta } from "@/components/cadastro/StepConta";
 import { StepPerfil } from "@/components/cadastro/StepPerfil";
 import {
@@ -21,6 +21,9 @@ import {
 } from "@/lib/cadastro-funnel";
 import { RotateCcw } from "lucide-react";
 
+// A barra de progresso cobre apenas as Etapas 1-4 (a 5 é a conclusão do perfil).
+const PROGRESS_STEPS = 4;
+
 const STEP_LABELS = [
   "Identificação",
   "Atuação",
@@ -29,25 +32,48 @@ const STEP_LABELS = [
   "Perfil",
 ];
 
+// Lê a etapa a partir do hash (#etapa-1..5), se presente e válido.
+function parseHashStep(): number | null {
+  const m = /^#?etapa-([1-5])$/.exec(window.location.hash);
+  return m ? Number(m[1]) : null;
+}
+
 export default function Cadastro() {
   const [, setLocation] = useLocation();
   const { isSignedIn } = useUser();
   const [data, setData] = useState<FunnelData>(() => emptyFunnel());
-  const [retomado, setRetomado] = useState(false);
   const [mostrarBanner, setMostrarBanner] = useState(false);
+  // Maior etapa já alcançada, para permitir voltar via hash sem pular adiante.
+  const furthest = useRef(1);
 
-  // Carrega o lead salvo (resumo do funil) na montagem.
+  // Carrega o lead salvo (resumo do funil) na montagem e sincroniza o hash.
   useEffect(() => {
     const salvo = loadFunnel();
-    if (salvo) {
-      setData(salvo);
-      // Se o usuário avançou para além da identificação, oferece retomar.
-      if (salvo.step > 1 && !salvo.email) {
-        setMostrarBanner(false);
-      } else if (salvo.step > 1) {
-        setMostrarBanner(true);
-      }
+    const hashStep = parseHashStep();
+    const base = salvo ?? emptyFunnel();
+    const inicial = hashStep
+      ? { ...base, step: Math.min(hashStep, base.step) }
+      : base;
+    setData(inicial);
+    furthest.current = base.step;
+    if (salvo && salvo.step > 1 && salvo.email) {
+      setMostrarBanner(true);
     }
+    window.history.replaceState(null, "", `#etapa-${inicial.step}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Voltar/avançar do navegador: reage apenas a hashes #etapa-N (ignora os
+  // hashes internos do Clerk no signup), e nunca pula além do já alcançado.
+  useEffect(() => {
+    const onHash = () => {
+      const hashStep = parseHashStep();
+      if (!hashStep) return;
+      const alvo = Math.min(hashStep, furthest.current);
+      setData((d) => (d.step === alvo ? d : { ...d, step: alvo }));
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   // Persiste localmente a cada mudança.
@@ -58,15 +84,20 @@ export default function Cadastro() {
   const update = (patch: Partial<FunnelData>) =>
     setData((d) => ({ ...d, ...patch }));
 
-  // Avança de etapa: persiste o lead no back-end (captura + remarketing).
+  // Avança/volta de etapa: persiste o lead no back-end (captura + remarketing)
+  // e espelha a etapa no hash (cria uma entrada para o botão Voltar).
   const goTo = (step: number) => {
     const clamped = Math.min(Math.max(step, 1), TOTAL_STEPS);
+    furthest.current = Math.max(furthest.current, clamped);
     setData((d) => {
       const next = { ...d, step: clamped };
       void syncLead(next);
       saveFunnel(next);
       return next;
     });
+    if (parseHashStep() !== clamped) {
+      window.location.hash = `etapa-${clamped}`;
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -82,20 +113,23 @@ export default function Cadastro() {
 
   const recomecar = () => {
     const novo = emptyFunnel();
+    furthest.current = 1;
     setData(novo);
     saveFunnel(novo);
     setMostrarBanner(false);
+    window.history.replaceState(null, "", "#etapa-1");
   };
 
   const mostrarPreco = data.step >= 2;
+  const mostrarProgresso = data.step <= PROGRESS_STEPS;
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
       <Navbar />
 
-      <main className="flex-grow py-10 md:py-16">
+      <main className={`flex-grow py-10 md:py-16 ${mostrarPreco ? "pb-28" : ""}`}>
         <div className="container mx-auto px-6 max-w-[720px]">
-          <ProgressBar step={data.step} />
+          {mostrarProgresso && <ProgressBar step={data.step} />}
 
           {mostrarBanner && data.step > 1 && (
             <div
@@ -130,7 +164,7 @@ export default function Cadastro() {
               />
             )}
             {data.step === 3 && (
-              <StepConcorrencia
+              <StepPlano
                 data={data}
                 update={update}
                 onNext={next}
@@ -138,26 +172,38 @@ export default function Cadastro() {
               />
             )}
             {data.step === 4 && (
-              <StepConta data={data} onNext={next} onBack={back} />
+              <StepConta
+                data={data}
+                onNext={next}
+                onBack={back}
+                onEditar={goTo}
+              />
             )}
             {data.step === 5 &&
               (isSignedIn ? (
                 <StepPerfil data={data} onConcluir={concluir} onBack={back} />
               ) : (
-                <StepConta data={data} onNext={next} onBack={back} />
+                <StepConta
+                  data={data}
+                  onNext={next}
+                  onBack={back}
+                  onEditar={goTo}
+                />
               ))}
           </div>
-
-          {mostrarPreco && (
-            <p
-              className="mt-6 text-center text-sm font-medium text-neutral-600"
-              data-testid="preco-transparencia"
-            >
-              {PRECO_TRANSPARENCIA}
-            </p>
-          )}
         </div>
       </main>
+
+      {mostrarPreco && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-sm"
+          data-testid="preco-transparencia"
+        >
+          <p className="container mx-auto px-6 py-4 text-center text-sm font-medium text-neutral-700">
+            {PRECO_TRANSPARENCIA}
+          </p>
+        </div>
+      )}
 
       <Footer />
     </div>
@@ -165,12 +211,12 @@ export default function Cadastro() {
 }
 
 function ProgressBar({ step }: { step: number }) {
-  const pct = Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100);
+  const pct = Math.round(((step - 1) / (PROGRESS_STEPS - 1)) * 100);
   return (
     <div className="mb-8" data-testid="progress-bar">
       <div className="mb-2 flex items-center justify-between text-xs font-medium text-neutral-500">
         <span>
-          Etapa {step} de {TOTAL_STEPS}
+          Etapa {step} de {PROGRESS_STEPS}
         </span>
         <span>{STEP_LABELS[step - 1]}</span>
       </div>

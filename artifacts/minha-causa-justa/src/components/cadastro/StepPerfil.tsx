@@ -9,7 +9,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { getInitial, maskPhone } from "@/lib/dashboard";
 import type { FunnelData } from "@/lib/cadastro-funnel";
-import { ArrowLeft, Loader2, Check } from "lucide-react";
+import {
+  getAssinatura,
+  type SubscriptionState,
+} from "@/lib/assinatura";
+import {
+  ArrowLeft,
+  Loader2,
+  Check,
+  CheckCircle2,
+  ShieldCheck,
+} from "lucide-react";
 
 const ABOUT_LIMIT = 500;
 const MAX_PHOTO_MB = 5;
@@ -30,7 +40,7 @@ export function StepPerfil({ data, onConcluir, onBack }: Props) {
 
   const [profile, setProfile] = useState<UpdateProfileInput>({
     nome: data.nome,
-    oab: "",
+    oab: data.oab ? `OAB/${data.seccional} ${data.oab}`.trim() : "",
     photo: null,
     about: "",
     areas: data.areas,
@@ -45,6 +55,22 @@ export function StepPerfil({ data, onConcluir, onBack }: Props) {
   const [oabErro, setOabErro] = useState("");
   const [photoErro, setPhotoErro] = useState("");
   const [saveErro, setSaveErro] = useState("");
+  const [assinatura, setAssinatura] = useState<SubscriptionState | null>(null);
+
+  // Estado do pagamento, para o banner desta etapa (confirmado x aguardando).
+  useEffect(() => {
+    let ativo = true;
+    getAssinatura()
+      .then((s) => {
+        if (ativo) setAssinatura(s.hasSubscription ? s : null);
+      })
+      .catch(() => {
+        if (ativo) setAssinatura(null);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   // Mescla dados já salvos no servidor (se o advogado retomou o cadastro)
   // sem sobrescrever o que veio do funil. Roda uma única vez.
@@ -127,6 +153,38 @@ export function StepPerfil({ data, onConcluir, onBack }: Props) {
         Já preenchemos o que você informou. Complete os campos abaixo para
         publicar.
       </p>
+
+      {assinatura?.status === "ativa" ? (
+        <div
+          className="mb-8 flex items-start gap-3 rounded-2xl border border-[#1E7D4F]/30 bg-[#1E7D4F]/10 p-4"
+          data-testid="banner-pagamento-confirmado"
+        >
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#1E7D4F]" />
+          <div>
+            <p className="font-bold text-primary-900">Pagamento confirmado</p>
+            <p className="text-sm text-neutral-700">
+              Sua assinatura está ativa. Conclua o perfil para publicar agora
+              mesmo.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="mb-8 flex items-start gap-3 rounded-2xl border border-[#B97D00]/30 bg-[#B97D00]/10 p-4"
+          data-testid="banner-pagamento-aguardando"
+        >
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#B97D00]" />
+          <div>
+            <p className="font-bold text-primary-900">
+              Aguardando confirmação do pagamento
+            </p>
+            <p className="text-sm text-neutral-700">
+              Você já pode concluir o perfil. Assim que o pagamento for
+              confirmado, ele fica publicado automaticamente.
+            </p>
+          </div>
+        </div>
+      )}
 
       {saveErro && (
         <div

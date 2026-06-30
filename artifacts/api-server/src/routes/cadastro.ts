@@ -42,12 +42,22 @@ function toLead(row: CadastroLeadRow) {
 // concluíram. Enviado no máximo uma vez por lead (dedupe via remarketingSentAt,
 // reivindicado com UPDATE condicional para evitar corrida).
 //
-// PONTO DE INTEGRAÇÃO COM AGENDADOR: o ideal é que um job periódico (cron)
-// varra leads com completed=false, updatedAt mais antigo que algumas horas e
-// remarketingSentAt nulo, e então dispare este envio. Como não há cron neste
-// ambiente, acionamos inline a partir do salvamento do lead, de forma
-// best-effort (nunca quebra a resposta).
-async function maybeSendRemarketing(
+// PONTO DE INTEGRAÇÃO COM AGENDADOR (disparo por inatividade): esta função é o
+// mecanismo de envio, mas NÃO é chamada a partir da rota pública de upsert (isso
+// permitiria abuso/spam com e-mails arbitrários). O disparo deve partir de um job
+// periódico (cron), ainda não disponível neste ambiente. Quando houver um
+// agendador, registre algo como:
+//
+//   // a cada N minutos:
+//   const parados = await db.select().from(cadastroLeadsTable).where(and(
+//     eq(cadastroLeadsTable.completed, false),
+//     isNull(cadastroLeadsTable.remarketingSentAt),
+//     lt(cadastroLeadsTable.updatedAt, sql`now() - interval '6 hours'`),
+//   ));
+//   for (const row of parados) await maybeSendRemarketing(row, logger);
+//
+// O dedupe (remarketingSentAt via UPDATE condicional) já é seguro contra corrida.
+export async function maybeSendRemarketing(
   row: CadastroLeadRow,
   log: Logger,
 ): Promise<void> {
@@ -135,7 +145,11 @@ router.post("/cadastro/lead", async (req, res): Promise<void> => {
     })
     .returning();
 
-  await maybeSendRemarketing(row, req.log);
+  // ATENÇÃO: NÃO disparar e-mail aqui. Esta rota é pública (o lead existe antes
+  // da conta), então um envio inline a cada POST permitiria abuso/spam de e-mail
+  // com endereços arbitrários. O remarketing deve ser disparado por inatividade
+  // a partir de um agendador (cron), que chama `maybeSendRemarketing` apenas
+  // para leads parados há algumas horas. Ver o ponto de integração abaixo.
 
   res.json(UpsertCadastroLeadResponse.parse(toLead(row)));
 });

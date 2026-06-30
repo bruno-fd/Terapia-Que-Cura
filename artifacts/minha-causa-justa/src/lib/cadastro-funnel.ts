@@ -18,6 +18,10 @@ export interface FunnelData {
   nome: string;
   email: string;
   telefone: string;
+  // OAB e seccional ficam apenas no localStorage (não no lead do back-end):
+  // a retomada é no mesmo navegador e o remarketing só precisa do e-mail.
+  oab: string;
+  seccional: string;
   plano: Plano | null;
   areas: string[];
   cidades: Cidade[];
@@ -71,6 +75,8 @@ export function emptyFunnel(): FunnelData {
     nome: "",
     email: "",
     telefone: "",
+    oab: "",
+    seccional: "",
     plano: null,
     areas: [],
     cidades: [],
@@ -92,6 +98,8 @@ export function loadFunnel(): FunnelData | null {
       nome: parsed.nome ?? "",
       email: parsed.email ?? "",
       telefone: parsed.telefone ?? "",
+      oab: parsed.oab ?? "",
+      seccional: parsed.seccional ?? "",
       plano:
         parsed.plano === "mensal" || parsed.plano === "anual"
           ? parsed.plano
@@ -161,6 +169,9 @@ export async function fetchLead(leadId: string): Promise<FunnelData | null> {
       nome: r.nome,
       email: r.email,
       telefone: r.telefone,
+      // OAB/seccional não são persistidos no lead do back-end.
+      oab: "",
+      seccional: "",
       plano: r.plano === "mensal" || r.plano === "anual" ? r.plano : null,
       areas: r.areas,
       cidades: r.cidades,
