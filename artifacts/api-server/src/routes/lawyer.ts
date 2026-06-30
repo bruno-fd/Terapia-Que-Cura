@@ -12,6 +12,7 @@ import {
   UpdatePerfilBody,
   UpdatePerfilResponse,
   ListAdvogadosResponse,
+  ContarAdvogadosResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { getAuth, clerkClient } from "@clerk/express";
@@ -121,6 +122,75 @@ router.get("/advogados", async (_req, res): Promise<void> => {
     }));
 
   res.json(ListAdvogadosResponse.parse(visible));
+});
+
+// Normaliza texto para comparação (sem acentos, minúsculo, sem espaços extras).
+function normalizar(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+// Contagem de concorrência: advogados pagantes (assinatura "ativa") com perfil
+// completo, opcionalmente filtrados por área, cidade e UF. Usado no funil de
+// cadastro para mostrar números reais de concorrência. Reaproveita a mesma
+// regra de visibilidade do diretório público (join + isComplete).
+router.get("/advogados/contagem", async (req, res): Promise<void> => {
+  const area =
+    typeof req.query["area"] === "string" ? req.query["area"] : "";
+  const cidade =
+    typeof req.query["cidade"] === "string" ? req.query["cidade"] : "";
+  const uf = typeof req.query["uf"] === "string" ? req.query["uf"] : "";
+
+  const areaN = normalizar(area);
+  const cidadeN = normalizar(cidade);
+  const ufN = normalizar(uf);
+
+  const rows = await db
+    .select({
+      advogado: advogadosTable,
+      status: subscriptionsTable.status,
+    })
+    .from(advogadosTable)
+    .innerJoin(
+      subscriptionsTable,
+      eq(subscriptionsTable.lawyerRef, advogadosTable.userId),
+    )
+    .where(eq(subscriptionsTable.status, "ativa"));
+
+  const visiveis = rows
+    .map(({ advogado }) => advogado)
+    .filter((advogado) => isComplete(advogado));
+
+  const matchesArea = (adv: AdvogadoRow): boolean =>
+    !areaN || (adv.areas ?? []).some((a) => normalizar(a) === areaN);
+
+  const matchesLocal = (adv: AdvogadoRow): boolean => {
+    if (!cidadeN && !ufN) return true;
+    if (adv.atendeOnline) return true;
+    return (adv.cidades ?? []).some((c) => {
+      const okCidade = !cidadeN || normalizar(c.nome) === cidadeN;
+      const okUf = !ufN || normalizar(c.uf) === ufN;
+      return okCidade && okUf;
+    });
+  };
+
+  const naArea = visiveis.filter(matchesArea);
+  const naCidade = visiveis.filter(matchesLocal);
+  const naAreaECidade = visiveis.filter(
+    (adv) => matchesArea(adv) && matchesLocal(adv),
+  );
+
+  res.json(
+    ContarAdvogadosResponse.parse({
+      total: visiveis.length,
+      naArea: naArea.length,
+      naCidade: naCidade.length,
+      naAreaECidade: naAreaECidade.length,
+    }),
+  );
 });
 
 // Perfil do advogado autenticado. Cria um registro vazio na primeira leitura

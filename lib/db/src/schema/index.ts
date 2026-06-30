@@ -20,3 +20,4 @@
 export * from "./blog-posts";
 export * from "./subscriptions";
 export * from "./advogados";
+export * from "./cadastro-leads";

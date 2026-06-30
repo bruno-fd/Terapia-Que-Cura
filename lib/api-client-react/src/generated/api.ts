@@ -25,13 +25,17 @@ import type {
   BlogIdeasResult,
   BlogPost,
   BlogPostInput,
+  CadastroLead,
+  ConcorrenciaResult,
+  ContarAdvogadosParams,
   CreateSubscriptionInput,
   HealthStatus,
   LawyerProfile,
   PublicLawyer,
   SubscriptionState,
   UpdateBlogPostInput,
-  UpdateProfileInput
+  UpdateProfileInput,
+  UpsertCadastroLeadInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -641,6 +645,239 @@ export function useListAdvogados<TData = Awaited<ReturnType<typeof listAdvogados
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListAdvogadosQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getContarAdvogadosUrl = (params?: ContarAdvogadosParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/advogados/contagem?${stringifiedParams}` : `/api/advogados/contagem`
+}
+
+/**
+ * Returns counts of lawyers with an active subscription and a complete profile, optionally filtered by area, city and state. Used to show real competition numbers during the registration funnel.
+ * @summary Count active, visible lawyers by area and location
+ */
+export const contarAdvogados = async (params?: ContarAdvogadosParams, options?: RequestInit): Promise<ConcorrenciaResult> => {
+
+  return customFetch<ConcorrenciaResult>(getContarAdvogadosUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getContarAdvogadosQueryKey = (params?: ContarAdvogadosParams,) => {
+    return [
+    `/api/advogados/contagem`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getContarAdvogadosQueryOptions = <TData = Awaited<ReturnType<typeof contarAdvogados>>, TError = ErrorType<unknown>>(params?: ContarAdvogadosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof contarAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getContarAdvogadosQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof contarAdvogados>>> = ({ signal }) => contarAdvogados(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof contarAdvogados>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ContarAdvogadosQueryResult = NonNullable<Awaited<ReturnType<typeof contarAdvogados>>>
+export type ContarAdvogadosQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Count active, visible lawyers by area and location
+ */
+
+export function useContarAdvogados<TData = Awaited<ReturnType<typeof contarAdvogados>>, TError = ErrorType<unknown>>(
+ params?: ContarAdvogadosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof contarAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getContarAdvogadosQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertCadastroLeadUrl = () => {
+
+
+
+
+  return `/api/cadastro/lead`
+}
+
+/**
+ * Upserts the registration lead by leadId. Public (no auth): called on each funnel step to persist progress and enable remarketing.
+ * @summary Create or update a registration lead
+ */
+export const upsertCadastroLead = async (upsertCadastroLeadInput: UpsertCadastroLeadInput, options?: RequestInit): Promise<CadastroLead> => {
+
+  return customFetch<CadastroLead>(getUpsertCadastroLeadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(upsertCadastroLeadInput)
+  }
+);}
+
+
+
+
+export const getUpsertCadastroLeadMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertCadastroLead>>, TError,{data: BodyType<UpsertCadastroLeadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertCadastroLead>>, TError,{data: BodyType<UpsertCadastroLeadInput>}, TContext> => {
+
+const mutationKey = ['upsertCadastroLead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertCadastroLead>>, {data: BodyType<UpsertCadastroLeadInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertCadastroLead(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertCadastroLeadMutationResult = NonNullable<Awaited<ReturnType<typeof upsertCadastroLead>>>
+    export type UpsertCadastroLeadMutationBody = BodyType<UpsertCadastroLeadInput>
+    export type UpsertCadastroLeadMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Create or update a registration lead
+ */
+export const useUpsertCadastroLead = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertCadastroLead>>, TError,{data: BodyType<UpsertCadastroLeadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertCadastroLead>>,
+        TError,
+        {data: BodyType<UpsertCadastroLeadInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertCadastroLeadMutationOptions(options));
+    }
+
+export const getGetCadastroLeadUrl = (leadId: string,) => {
+
+
+
+
+  return `/api/cadastro/lead/${leadId}`
+}
+
+/**
+ * @summary Get a registration lead by id
+ */
+export const getCadastroLead = async (leadId: string, options?: RequestInit): Promise<CadastroLead> => {
+
+  return customFetch<CadastroLead>(getGetCadastroLeadUrl(leadId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCadastroLeadQueryKey = (leadId: string,) => {
+    return [
+    `/api/cadastro/lead/${leadId}`
+    ] as const;
+    }
+
+
+export const getGetCadastroLeadQueryOptions = <TData = Awaited<ReturnType<typeof getCadastroLead>>, TError = ErrorType<ApiErrorResponse>>(leadId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCadastroLead>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCadastroLeadQueryKey(leadId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCadastroLead>>> = ({ signal }) => getCadastroLead(leadId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: leadId !== null && leadId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCadastroLead>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCadastroLeadQueryResult = NonNullable<Awaited<ReturnType<typeof getCadastroLead>>>
+export type GetCadastroLeadQueryError = ErrorType<ApiErrorResponse>
+
+
+/**
+ * @summary Get a registration lead by id
+ */
+
+export function useGetCadastroLead<TData = Awaited<ReturnType<typeof getCadastroLead>>, TError = ErrorType<ApiErrorResponse>>(
+ leadId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCadastroLead>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCadastroLeadQueryOptions(leadId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

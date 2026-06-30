@@ -18,6 +18,8 @@ tags:
     description: Lawyer subscription billing via Asaas
   - name: lawyer
     description: Lawyer profile and public directory
+  - name: cadastro
+    description: Progressive lawyer registration funnel (lead capture)
 paths:
   /healthz:
     get:
@@ -208,6 +210,89 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PublicLawyer"
+  /advogados/contagem:
+    get:
+      operationId: contarAdvogados
+      tags: [cadastro]
+      summary: Count active, visible lawyers by area and location
+      description: >-
+        Returns counts of lawyers with an active subscription and a complete
+        profile, optionally filtered by area, city and state. Used to show real
+        competition numbers during the registration funnel.
+      parameters:
+        - name: area
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: cidade
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: uf
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Competition counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConcorrenciaResult"
+  /cadastro/lead:
+    post:
+      operationId: upsertCadastroLead
+      tags: [cadastro]
+      summary: Create or update a registration lead
+      description: >-
+        Upserts the registration lead by leadId. Public (no auth): called on
+        each funnel step to persist progress and enable remarketing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertCadastroLeadInput"
+      responses:
+        "200":
+          description: Saved lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CadastroLead"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+  /cadastro/lead/{leadId}:
+    get:
+      operationId: getCadastroLead
+      tags: [cadastro]
+      summary: Get a registration lead by id
+      parameters:
+        - name: leadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lead found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CadastroLead"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
   /perfil:
     get:
       operationId: getPerfil
@@ -683,3 +768,91 @@ components:
         - cidades
         - atendeOnline
         - whatsapp
+    ConcorrenciaResult:
+      type: object
+      properties:
+        total:
+          type: integer
+        naArea:
+          type: integer
+        naCidade:
+          type: integer
+        naAreaECidade:
+          type: integer
+      required:
+        - total
+        - naArea
+        - naCidade
+        - naAreaECidade
+    CadastroLead:
+      type: object
+      properties:
+        leadId:
+          type: string
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        plano:
+          type: string
+          enum: [mensal, anual]
+          nullable: true
+        areas:
+          type: array
+          items:
+            type: string
+        cidades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cidade"
+        atendeOnline:
+          type: boolean
+        step:
+          type: integer
+        completed:
+          type: boolean
+      required:
+        - leadId
+        - nome
+        - email
+        - telefone
+        - areas
+        - cidades
+        - atendeOnline
+        - step
+        - completed
+    UpsertCadastroLeadInput:
+      type: object
+      properties:
+        leadId:
+          type: string
+          minLength: 1
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        plano:
+          type: string
+          enum: [mensal, anual]
+          nullable: true
+        areas:
+          type: array
+          items:
+            type: string
+        cidades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cidade"
+        atendeOnline:
+          type: boolean
+        step:
+          type: integer
+        completed:
+          type: boolean
+      required:
+        - leadId
+      additionalProperties: false

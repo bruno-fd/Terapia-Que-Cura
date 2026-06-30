@@ -196,6 +196,104 @@ export const ListAdvogadosResponse = zod.array(ListAdvogadosResponseItem)
 
 
 /**
+ * Returns counts of lawyers with an active subscription and a complete profile, optionally filtered by area, city and state. Used to show real competition numbers during the registration funnel.
+ * @summary Count active, visible lawyers by area and location
+ */
+export const ContarAdvogadosQueryParams = zod.object({
+  "area": zod.coerce.string().optional(),
+  "cidade": zod.coerce.string().optional(),
+  "uf": zod.coerce.string().optional()
+})
+
+export const ContarAdvogadosResponse = zod.object({
+  "total": zod.number(),
+  "naArea": zod.number(),
+  "naCidade": zod.number(),
+  "naAreaECidade": zod.number()
+})
+
+
+/**
+ * Upserts the registration lead by leadId. Public (no auth): called on each funnel step to persist progress and enable remarketing.
+ * @summary Create or update a registration lead
+ */
+
+
+export const upsertCadastroLeadBodyCidadesItemUfMin = 2;
+export const upsertCadastroLeadBodyCidadesItemUfMax = 2;
+
+
+
+export const UpsertCadastroLeadBody = zod.object({
+  "leadId": zod.string().min(1),
+  "nome": zod.string().optional(),
+  "email": zod.string().optional(),
+  "telefone": zod.string().optional(),
+  "plano": zod.enum(['mensal', 'anual']).nullish(),
+  "areas": zod.array(zod.string()).optional(),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(upsertCadastroLeadBodyCidadesItemUfMin).max(upsertCadastroLeadBodyCidadesItemUfMax)
+})).optional(),
+  "atendeOnline": zod.boolean().optional(),
+  "step": zod.number().optional(),
+  "completed": zod.boolean().optional()
+})
+
+
+export const upsertCadastroLeadResponseCidadesItemUfMin = 2;
+export const upsertCadastroLeadResponseCidadesItemUfMax = 2;
+
+
+
+export const UpsertCadastroLeadResponse = zod.object({
+  "leadId": zod.string(),
+  "nome": zod.string(),
+  "email": zod.string(),
+  "telefone": zod.string(),
+  "plano": zod.enum(['mensal', 'anual']).nullish(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(upsertCadastroLeadResponseCidadesItemUfMin).max(upsertCadastroLeadResponseCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "step": zod.number(),
+  "completed": zod.boolean()
+})
+
+
+/**
+ * @summary Get a registration lead by id
+ */
+export const GetCadastroLeadParams = zod.object({
+  "leadId": zod.coerce.string()
+})
+
+
+export const getCadastroLeadResponseCidadesItemUfMin = 2;
+export const getCadastroLeadResponseCidadesItemUfMax = 2;
+
+
+
+export const GetCadastroLeadResponse = zod.object({
+  "leadId": zod.string(),
+  "nome": zod.string(),
+  "email": zod.string(),
+  "telefone": zod.string(),
+  "plano": zod.enum(['mensal', 'anual']).nullish(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(getCadastroLeadResponseCidadesItemUfMin).max(getCadastroLeadResponseCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "step": zod.number(),
+  "completed": zod.boolean()
+})
+
+
+/**
  * @summary Get the authenticated lawyer's profile
  */
 

@@ -129,6 +129,28 @@ export function paymentConfirmedEmail(nome?: string | null): EmailContent {
   };
 }
 
+// 5. Remarketing: lead que começou o cadastro mas não concluiu.
+export function remarketingEmail(p: {
+  nome?: string | null;
+  planoLabel?: string | null;
+}): EmailContent {
+  const plano = p.planoLabel?.trim();
+  const linha = plano
+    ? `Você começou seu cadastro e escolheu o ${escapeHtml(plano)}. Falta pouco para o seu perfil aparecer para quem está procurando um advogado agora.`
+    : "Você começou seu cadastro na Minha Causa Justa. Falta pouco para o seu perfil aparecer para quem está procurando um advogado agora.";
+  const body = `
+    <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Seu cadastro está quase pronto</h1>
+    ${paragraph(`${greeting(p.nome)} ${linha}`)}
+    ${paragraph("Retome de onde parou. Leva poucos minutos para concluir e ativar o seu perfil:")}
+    ${button(`${APP_URL}/cadastro`, "Concluir meu cadastro")}
+    ${paragraph(`<span style="font-size:13px;color:${MUTED};">Se você já concluiu, pode ignorar este e-mail.</span>`)}
+  `;
+  return {
+    subject: "Falta pouco para concluir o seu cadastro",
+    html: layout(body),
+  };
+}
+
 // 4. Pagamento em atraso.
 export function paymentOverdueEmail(p: {
   nome?: string | null;

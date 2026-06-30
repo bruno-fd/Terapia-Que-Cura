@@ -196,3 +196,59 @@ export interface PublicLawyer {
   whatsapp: string;
 }
 
+export interface ConcorrenciaResult {
+  total: number;
+  naArea: number;
+  naCidade: number;
+  naAreaECidade: number;
+}
+
+export type CadastroLeadPlano = typeof CadastroLeadPlano[keyof typeof CadastroLeadPlano] | null;
+
+
+export const CadastroLeadPlano = {
+  mensal: 'mensal',
+  anual: 'anual',
+} as const;
+
+export interface CadastroLead {
+  leadId: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  plano?: CadastroLeadPlano;
+  areas: string[];
+  cidades: Cidade[];
+  atendeOnline: boolean;
+  step: number;
+  completed: boolean;
+}
+
+export type UpsertCadastroLeadInputPlano = typeof UpsertCadastroLeadInputPlano[keyof typeof UpsertCadastroLeadInputPlano] | null;
+
+
+export const UpsertCadastroLeadInputPlano = {
+  mensal: 'mensal',
+  anual: 'anual',
+} as const;
+
+export interface UpsertCadastroLeadInput {
+  /** @minLength 1 */
+  leadId: string;
+  nome?: string;
+  email?: string;
+  telefone?: string;
+  plano?: UpsertCadastroLeadInputPlano;
+  areas?: string[];
+  cidades?: Cidade[];
+  atendeOnline?: boolean;
+  step?: number;
+  completed?: boolean;
+}
+
+export type ContarAdvogadosParams = {
+area?: string;
+cidade?: string;
+uf?: string;
+};
+

@@ -1,3 +1,2 @@
-- [Form rehydration from React Query](rq-form-rehydration.md) — rehydrate a form by data-reference identity (not a boolean), so refetches don't clobber edits and a user/account switch resyncs.
-- [Resend transactional email](resend-email.md) — sends go through the Replit Resend connector proxy (no API key), are best-effort/awaited (not fire-and-forget), and webhook dedupe uses a conditional UPDATE + .returning().
-- [Asaas recurring billing](asaas-billing.md) — gateway gotchas: `access_token` header, sandbox/prod are separate accounts+keys selected by env-scoped base URL, webhook authToken re-sync, live-status persistence rules.
+- [Clerk embedded SignUp](clerk-embedded-signup.md) — @clerk/react 6.11.1 has no routing="virtual"; embed `<SignUp routing="hash">` to keep it inline on a page.
+- [Funnel lead sync](funnel-lead-sync.md) — out-of-order lead upserts need server-side monotonic guards on step/completed or completed leads get re-marked abandoned.
