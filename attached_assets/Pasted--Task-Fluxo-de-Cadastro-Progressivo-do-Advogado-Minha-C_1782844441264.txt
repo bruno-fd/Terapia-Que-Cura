@@ -1,0 +1,268 @@
+# Task — Fluxo de Cadastro Progressivo do Advogado
+## Minha Causa Justa
+
+---
+
+## Contexto e objetivo
+
+Substituir o fluxo atual de cadastro (`cadastro.html` único) por um fluxo de 5 etapas, projetado para maximizar conversão através de comprometimento progressivo. O advogado preenche dados de forma incremental, recebe feedback personalizado sobre o mercado em sua região, e só é confrontado com o preço depois de já ter investido tempo e visto valor percebido.
+
+Todo abandono no meio do fluxo gera um registro de lead parcial, reaproveitável para remarketing e para retomada do cadastro.
+
+---
+
+## Princípio ético e legal — não negociável
+
+O fluxo motiva a conversão através de valor percebido genuíno, não através de omissão de informação. O preço nunca é escondido deliberadamente, apenas apresentado no momento estrategicamente correto, depois que o advogado já entende o valor do produto. Isso é diferente de simular gratuidade.
+
+Regra obrigatória: a partir da Etapa 2, deve haver um texto discreto e sempre visível informando "Cadastro com assinatura mensal a partir de R$ 39,90" em algum canto da tela (rodapé do formulário, por exemplo). Isso é exigência do Código de Defesa do Consumidor sobre transparência prévia de cobrança e não pode ser omitido.
+
+---
+
+## Estrutura de arquivos
+
+Substituir `cadastro.html` por cinco etapas dentro da mesma página, sem reload (SPA simples), usando hash de URL para cada etapa:
+
+- `cadastro.html#etapa-1` — Dados básicos
+- `cadastro.html#etapa-2` — Localização e área de atuação
+- `cadastro.html#etapa-3` — Escolha do plano
+- `cadastro.html#etapa-4` — Pagamento
+- `cadastro.html#etapa-5` — Completar perfil (pós-pagamento)
+
+Implementar trocando o conteúdo visível via JavaScript, com barra de progresso fixa no topo indicando a etapa atual. Isso evita reload e mantém a sensação de fluidez que é importante para esse tipo de funil.
+
+---
+
+## Barra de progresso (visível em todas as etapas, exceto Etapa 5)
+
+Fixa no topo, abaixo da nav. Quatro segmentos representando as Etapas 1 a 4.
+
+Estilo: barra horizontal com 4 segmentos, segmento atual em `--color-accent-500`, segmentos completados em `--color-success`, segmentos futuros em `--color-neutral-300`.
+
+Texto acima da barra: "Etapa X de 4" — font-size-sm, `--color-neutral-500`.
+
+---
+
+## Etapa 1 — Dados básicos
+
+### Layout
+Card centralizado, largura máxima 480px, `--color-neutral-0`, `--shadow-md`, `--radius-xl`, padding `--space-8`.
+
+### Título
+"Vamos começar seu cadastro" — font-size-xl, bold, `--color-primary-800`.
+
+### Subtítulo
+"Leva menos de 2 minutos." — font-size-sm, `--color-neutral-500`.
+
+### Campos
+- Nome completo — obrigatório, classe `.input`
+- E-mail — obrigatório, classe `.input`, validação de formato
+- Número OAB (com select de seccional ao lado) — obrigatório, classe `.input`
+
+### Verificação OAB
+Ao sair do campo de número OAB (evento blur), disparar verificação simulada via JavaScript (placeholder para a futura integração com o webservice da OAB). Se válido: ícone de confirmação verde ao lado do campo. Se inválido: mensagem de erro "Não encontramos essa inscrição na OAB. Verifique o número e a seccional."
+
+### Botão
+"Continuar" — `.btn-primary`, largura 100%. Desabilitado até todos os campos obrigatórios estarem preenchidos e válidos.
+
+### Comportamento ao avançar
+Salvar os dados em `localStorage` sob a chave `mcj_lead` como objeto JSON:
+```javascript
+{
+  "leadId": "gerado via timestamp + random",
+  "nome": "...",
+  "email": "...",
+  "oab": "...",
+  "seccional": "...",
+  "etapa_atual": 2,
+  "criado_em": "ISO timestamp",
+  "atualizado_em": "ISO timestamp"
+}
+```
+
+Avançar para Etapa 2.
+
+### Verificação de retomada
+Ao carregar a Etapa 1, checar se já existe `mcj_lead` no localStorage. Se existir e tiver e-mail preenchido, exibir banner no topo do card: "Encontramos um cadastro em andamento. Continuar de onde parei" com link clicável que leva direto para a etapa salva em `etapa_atual`.
+
+---
+
+## Etapa 2 — Localização e área de atuação
+
+### Layout
+Mesma estrutura de card centralizado, largura máxima 560px (um pouco maior por ter mais campos).
+
+### Título
+"Onde você atende?" — font-size-xl, bold, `--color-primary-800`.
+
+### Barra de prova social genérica (topo da etapa, acima dos campos)
+Card pequeno, fundo `--color-primary-50`, `--radius-md`, padding `--space-3`, centralizado.
+
+Texto dinâmico (gerado via JavaScript com número fictício que varia discretamente a cada carregamento, dentro de uma faixa realista, entre 180 e 240): "Mais de [N] pessoas buscaram um advogado na Minha Causa Justa esta semana."
+
+### Campos
+Reutilizar a lógica de estado mais cidade com autocomplete já especificada na task de Cidade de Atuação (API do IBGE). Reutilizar também o objeto `CATEGORIAS` já criado em `main.js` para os badges de área de atuação.
+
+- Select de estado
+- Autocomplete de cidade (pelo menos 1 obrigatória)
+- Badges de categorias de atuação (pelo menos 1 obrigatória)
+
+### Feedback personalizado de concorrência (CRÍTICO — aparece após selecionar cidade e ao menos 1 categoria)
+
+Card que aparece com animação suave (fade-in) abaixo dos campos, assim que cidade e categoria estiverem preenchidas.
+
+Fundo em tom de sucesso claro (criar variável `--color-success-light: #E8F5EE` se não existir) se baixa concorrência, ou `--color-primary-50` se concorrência moderada ou alta. Nunca usar tom de alerta ou vermelho aqui, mesmo com alta concorrência. O objetivo nunca é desmotivar.
+
+Lógica simulada em JavaScript (não há dados reais ainda, usar números fictícios determinísticos baseados em hash da combinação cidade mais categoria, para que a mesma combinação sempre gere o mesmo resultado dentro da sessão, evitando a sensação de número aleatório a cada reload):
+
+```javascript
+function calcularConcorrenciaFicticia(cidade, categoria) {
+  const seed = (cidade + categoria).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return seed % 12;
+}
+```
+
+Textos condicionais:
+
+Se resultado for 0 a 2 (baixa concorrência):
+"Ótima notícia! Apenas [N] advogados de [Categoria] estão cadastrados em [Cidade]. Seu perfil terá grande visibilidade."
+
+Se resultado for 3 a 7 (concorrência moderada):
+"Hoje [N] advogados de [Categoria] atendem em [Cidade] pela plataforma. Ainda há bastante espaço para você se destacar."
+
+Se resultado for 8 a 11 (concorrência mais alta):
+"[Cidade] já tem [N] advogados de [Categoria] cadastrados. É uma região com bastante busca por [Categoria], vale aparecer também."
+
+Nota importante: mesmo no cenário de concorrência mais alta, o texto nunca deve desmotivar. Sempre reforça que existe demanda, motivo principal de cadastro, em vez de apenas mencionar competição.
+
+### Rodapé fixo de transparência de preço
+Texto discreto no rodapé do card, sempre visível a partir desta etapa: "Cadastro com assinatura mensal a partir de R$ 39,90" — font-size-xs, `--color-neutral-500`, centralizado.
+
+### Botão
+"Continuar" — `.btn-primary`, largura 100%.
+
+### Comportamento ao avançar
+Atualizar o objeto `mcj_lead` no localStorage com cidade, estado, categorias selecionadas e `etapa_atual: 3`. Atualizar `atualizado_em`.
+
+Incluir comentário no código indicando o ponto de integração futura: aqui é onde, em produção, os dados parciais seriam enviados ao backend para registro do lead qualificado, possibilitando remarketing por e-mail.
+
+---
+
+## Etapa 3 — Escolha do plano
+
+### Layout
+Mesma estrutura, largura máxima 640px (dois cards de plano lado a lado).
+
+### Título
+"Seu perfil está quase pronto" — font-size-xl, bold, `--color-primary-800`.
+
+### Subtítulo personalizado (usa os dados já preenchidos)
+"Para publicar e aparecer nas buscas de advogados em [Cidade], escolha seu plano." — font-size-md, `--color-neutral-700`. Substituir [Cidade] pelo valor salvo no localStorage.
+
+### Cards de plano
+Reutilizar exatamente os cards de Plano Mensal e Plano Anual já especificados na task original de cadastro (mesmo conteúdo, mesmo estilo visual). Cada card com botão "Selecionar este plano".
+
+### Botão de seleção
+Ao clicar em qualquer um dos dois planos, salvar a escolha no `mcj_lead` (`plano_escolhido: "mensal"` ou `"anual"`) e avançar automaticamente para a Etapa 4, sem precisar de botão "Continuar" adicional.
+
+---
+
+## Etapa 4 — Pagamento
+
+### Layout
+Card centralizado, largura máxima 480px.
+
+### Título
+"Finalize seu cadastro" — font-size-xl, bold, `--color-primary-800`.
+
+### Resumo do pedido (acima do formulário de pagamento)
+Card cinza claro com:
+- Nome do plano escolhido
+- Valor
+- Linha: "Cidade: [Cidade], [UF]"
+- Linha: "Áreas: [categorias selecionadas, separadas por vírgula]"
+- Link discreto "Editar" ao lado de cada linha, que volta para a etapa correspondente sem perder os outros dados já preenchidos
+
+### Formulário de pagamento
+Campos padrão de cartão de crédito: número, validade, CVV, nome no cartão. Classe `.input` em todos.
+
+Nota: nesta fase de demonstração, simular o formulário sem processamento real. Em produção, estes campos serão substituídos pelo checkout transparente ou redirecionamento do Asaas.
+
+### Selo de segurança
+Texto pequeno abaixo do formulário: "Pagamento processado de forma segura pelo Asaas, instituição autorizada pelo Banco Central."
+
+### Botão
+"Confirmar pagamento e ativar perfil" — `.btn-primary`, largura 100%.
+
+### Comportamento ao confirmar (simulado)
+Exibir loading de 2 segundos simulando processamento. Depois, atualizar `mcj_lead` com `pagamento_confirmado: true` e `etapa_atual: 5`. Avançar para Etapa 5.
+
+---
+
+## Etapa 5 — Completar perfil
+
+### Layout
+Sem barra de progresso (o funil de conversão já terminou). Layout muda para o mesmo padrão do `painel-perfil.html` já existente.
+
+### Banner de boas-vindas no topo
+Fundo `--color-success`, texto branco, padding `--space-5`, `--radius-lg`.
+
+"Perfil ativado com sucesso! Falta pouco: complete as informações abaixo para seu perfil ficar ainda mais completo."
+
+### Pré-preenchimento
+Todos os campos já coletados nas etapas anteriores (nome, OAB, cidade, estado, categorias) aparecem automaticamente preenchidos, reaproveitando a estrutura de `painel-perfil.html`.
+
+### Campos restantes a preencher
+Foto de perfil, texto "Sobre mim", links (Instagram, LinkedIn, site), WhatsApp de contato. Mesma estrutura já especificada na task do painel do advogado.
+
+### Botão final
+"Salvar e ir para o painel" — `.btn-primary`, leva para `painel-perfil.html` (agora já populado).
+
+### Comportamento ao salvar
+Limpar o `mcj_lead` do localStorage (o cadastro foi concluído) e simular login automático, redirecionando para `painel-perfil.html` com os dados completos.
+
+---
+
+## Lógica de abandono e retomada (lead parcial)
+
+Em qualquer momento entre a Etapa 1 e a Etapa 4, se o usuário fechar a aba ou sair do fluxo, o `mcj_lead` permanece salvo no `localStorage` com a etapa em que parou.
+
+Incluir comentário no código indicando o ponto de integração futura: em produção, a cada atualização do `mcj_lead`, os dados deveriam ser enviados também a um backend (não apenas localStorage), associados ao e-mail informado na Etapa 1, para permitir:
+
+1. Campanhas de e-mail de remarketing do tipo "Você começou seu cadastro na Minha Causa Justa, finalize agora e apareça para clientes em [Cidade]"
+2. Retomada do cadastro em outro dispositivo, caso o usuário acesse novamente pelo mesmo e-mail
+
+Para esta fase de demonstração no Replit, a retomada funciona apenas via localStorage no mesmo navegador (já especificado na Etapa 1).
+
+---
+
+## Instruções técnicas gerais
+
+- Implementar como aplicação de página única com troca de seções via JavaScript puro, sem reload de página entre etapas.
+- Usar `localStorage` para persistir o `mcj_lead` durante toda a sessão de cadastro.
+- Todas as etapas devem ser responsivas, com o card centralizado se adaptando a mobile (largura 100% menos padding em telas pequenas).
+- Validação de campos obrigatórios antes de permitir avanço de etapa, com mensagem de erro inline e foco automático no primeiro campo inválido.
+- Botão "Voltar" discreto no canto superior esquerdo de cada etapa (exceto Etapa 1), que retorna à etapa anterior sem perder os dados já preenchidos.
+- O texto de transparência de preço (rodapé fixo) é obrigatório a partir da Etapa 2 e não pode ser removido ou ocultado.
+- Código limpo, organizado por etapa, comentado indicando claramente onde futuras integrações de backend (verificação OAB real, envio de lead parcial, processamento de pagamento via Asaas) devem ser conectadas.
+- Não usar nenhuma biblioteca externa além da fonte Inter já importada.
+
+---
+
+## Checklist de verificação
+
+- [ ] Barra de progresso funcional nas Etapas 1 a 4
+- [ ] Etapa 1: verificação OAB simulada funcionando, lead salvo no localStorage
+- [ ] Etapa 1: banner de retomada aparece se já existir lead salvo
+- [ ] Etapa 2: autocomplete de cidade funcionando via API do IBGE
+- [ ] Etapa 2: badges de categoria usando o objeto CATEGORIAS já existente
+- [ ] Etapa 2: feedback de concorrência aparece corretamente e nunca desmotiva
+- [ ] Etapa 2: texto de transparência de preço visível e fixo
+- [ ] Etapa 3: subtítulo personalizado com a cidade do usuário
+- [ ] Etapa 3: seleção de plano avança automaticamente para Etapa 4
+- [ ] Etapa 4: resumo do pedido reflete os dados reais preenchidos
+- [ ] Etapa 4: links "Editar" funcionam e preservam os demais dados
+- [ ] Etapa 5: todos os dados das etapas anteriores aparecem pré-preenchidos
+- [ ] Etapa 5: ao salvar, localStorage do lead é limpo
+- [ ] Fluxo completo responsivo em mobile
+- [ ] Botão "Voltar" funcional em todas as etapas, sem perda de dados
