@@ -46,16 +46,36 @@ export default function Home() {
 
       <main className="flex-grow">
         {/* Section 1 — Hero */}
-        <section className="bg-white py-12 md:py-24 overflow-hidden">
+        <section className="bg-white py-6 md:py-24 overflow-hidden">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
               <div className="w-full lg:w-1/2">
-                <h1 className="text-4xl md:text-5xl lg:text-[56px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
+                {/* Mobile: hero curta com CTA */}
+                <div className="lg:hidden">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-primary-900 leading-[1.15] mb-3 tracking-tight">
+                    Você tem direitos.<br />
+                    <span className="text-primary-500">A gente te ajuda a garanti-los.</span>
+                  </h1>
+                  <p className="text-base text-neutral-600 leading-relaxed mb-5">
+                    Conectamos você a advogados que resolvem casos como o seu.
+                  </p>
+                  <Button
+                    onClick={() => setLocation("/advogados")}
+                    className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all w-full"
+                    data-testid="button-cta-hero-mobile"
+                  >
+                    Falar com um advogado
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+
+                {/* Desktop: hero completa */}
+                <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-[56px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
                   Você tem direitos.<br />
                   <span className="text-primary-500">A gente te ajuda a encontrar quem pode garanti-los.</span>
                 </h1>
                 
-                <div className="space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
+                <div className="hidden lg:block space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
                   <p>
                     Tem horas que a vida bate de frente com a gente. O INSS nega um benefício que você precisa, o plano de saúde recusa um tratamento, o patrão não paga o que deve, a pensão não chega. E aí vem aquela sensação de que o sistema foi feito para te cansar, para você desistir antes de lutar.
                   </p>
@@ -71,7 +91,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="w-full lg:w-1/2 relative">
+              <div className="hidden lg:block w-full lg:w-1/2 relative">
                 <div className="absolute inset-0 bg-primary-100 rounded-[100px] rounded-tl-[30px] rounded-br-[30px] transform rotate-3 scale-105 -z-10"></div>
                 <div className="absolute inset-0 bg-[#E86100]/10 rounded-[100px] rounded-tr-[30px] rounded-bl-[30px] transform -rotate-3 scale-105 -z-20"></div>
                 <div className="relative h-[600px] w-full rounded-[100px] rounded-tl-[40px] rounded-br-[40px] overflow-hidden shadow-xl border-8 border-white">
@@ -86,7 +106,10 @@ export default function Home() {
             </div>
 
             {/* Barra de busca horizontal full-width */}
-            <div className="bg-primary-50 p-4 md:p-5 rounded-[32px] border border-primary-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10 mt-12 lg:mt-16">
+            <div className="bg-primary-50 p-4 md:p-5 rounded-[32px] border border-primary-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10 mt-6 lg:mt-16">
+              <p className="lg:hidden text-base font-bold text-primary-900 mb-3 px-1">
+                Encontre um(a) advogado(a)
+              </p>
               <div className="flex flex-col lg:flex-row gap-3 lg:items-stretch">
                 <div className="lg:flex-1 min-w-0">
                   <Select value={categoria} onValueChange={setCategoria}>
