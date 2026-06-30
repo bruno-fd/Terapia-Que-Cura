@@ -57,7 +57,7 @@ export default function Home() {
                     <span className="text-primary-500">A gente te ajuda a garanti-los.</span>
                   </h1>
                   <p className="text-base text-neutral-600 leading-relaxed mb-5">
-                    Conectamos você a advogados que resolvem casos como o seu.
+                    Tem horas que a vida bate de frente com a gente. O INSS nega um benefício que você precisa, o plano de saúde recusa um tratamento, o patrão não paga o que deve, a pensão não chega. Para isso estamos aqui. <strong className="font-semibold text-primary-800">Conectamos você a advogados prontos para resolver o seu caso.</strong>
                   </p>
                   <Button
                     onClick={() => setLocation("/advogados")}
@@ -106,10 +106,7 @@ export default function Home() {
             </div>
 
             {/* Barra de busca horizontal full-width */}
-            <div className="bg-primary-50 p-4 md:p-5 rounded-[32px] border border-primary-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10 mt-6 lg:mt-16">
-              <p className="lg:hidden text-base font-bold text-primary-900 mb-3 px-1">
-                Encontre um(a) advogado(a)
-              </p>
+            <div className="hidden lg:block bg-primary-50 p-4 md:p-5 rounded-[32px] border border-primary-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10 mt-6 lg:mt-16">
               <div className="flex flex-col lg:flex-row gap-3 lg:items-stretch">
                 <div className="lg:flex-1 min-w-0">
                   <Select value={categoria} onValueChange={setCategoria}>
