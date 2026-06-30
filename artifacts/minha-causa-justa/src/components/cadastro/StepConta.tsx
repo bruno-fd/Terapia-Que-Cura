@@ -10,6 +10,7 @@ import {
   PLANOS,
   maskCpfCnpj,
   type FunnelData,
+  type Plano,
 } from "@/lib/cadastro-funnel";
 import {
   ArrowRight,
@@ -26,6 +27,11 @@ interface Props {
   onNext: () => void;
   onBack: () => void;
   onEditar: (step: number) => void;
+  // "Editar" do plano: volta à Etapa 3 ou à landing, conforme a origem.
+  onEditarPlano: () => void;
+  // Plano que veio da landing (?plano=). Quando presente, é preservado no
+  // redirect pós-cadastro para manter a Etapa 3 pulada após o signup.
+  planoRedirect: Plano | null;
 }
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -34,9 +40,11 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 function ResumoPedido({
   data,
   onEditar,
+  onEditarPlano,
 }: {
   data: FunnelData;
   onEditar: (step: number) => void;
+  onEditarPlano: () => void;
 }) {
   const plano = data.plano ?? "mensal";
   const info = PLANOS[plano];
@@ -55,7 +63,7 @@ function ResumoPedido({
   const linha = (
     rotulo: string,
     valor: string,
-    step: number,
+    onEdit: () => void,
     testid: string,
   ) => (
     <div
@@ -72,7 +80,7 @@ function ResumoPedido({
       </div>
       <button
         type="button"
-        onClick={() => onEditar(step)}
+        onClick={onEdit}
         className="shrink-0 text-sm font-medium text-primary-700 underline-offset-2 hover:underline"
         data-testid={`button-editar-${testid}`}
       >
@@ -86,16 +94,28 @@ function ResumoPedido({
       className="mb-8 rounded-2xl border border-neutral-200 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] divide-y divide-neutral-100"
       data-testid="resumo-pedido"
     >
-      {linha("Plano", info.label, 3, "plano")}
-      {linha("Valor", `${info.precoMes}/mês`, 3, "valor")}
-      {linha("Cidade e UF", localLabel, 2, "local")}
-      {linha("Áreas de atuação", areasLabel, 2, "areas")}
+      {linha("Plano", info.label, onEditarPlano, "plano")}
+      {linha("Valor", `${info.precoMes}/mês`, onEditarPlano, "valor")}
+      {linha("Cidade e UF", localLabel, () => onEditar(2), "local")}
+      {linha("Áreas de atuação", areasLabel, () => onEditar(2), "areas")}
     </div>
   );
 }
 
-export function StepConta({ data, onNext, onBack, onEditar }: Props) {
+export function StepConta({
+  data,
+  onNext,
+  onBack,
+  onEditar,
+  onEditarPlano,
+  planoRedirect,
+}: Props) {
   const { isLoaded, isSignedIn } = useUser();
+  // Mantém o plano da landing na URL após o cadastro, para o funil retomar
+  // já no modo "Etapa 3 pulada".
+  const redirectFluxo = `${basePath}/cadastro/fluxo${
+    planoRedirect ? `?plano=${planoRedirect}` : ""
+  }`;
 
   if (!isLoaded) {
     return (
@@ -116,14 +136,18 @@ export function StepConta({ data, onNext, onBack, onEditar }: Props) {
           painel.
         </p>
 
-        <ResumoPedido data={data} onEditar={onEditar} />
+        <ResumoPedido
+          data={data}
+          onEditar={onEditar}
+          onEditarPlano={onEditarPlano}
+        />
 
         <div className="flex justify-center">
           <SignUp
             routing="hash"
             signInUrl={`${basePath}/sign-in`}
-            fallbackRedirectUrl={`${basePath}/cadastro`}
-            forceRedirectUrl={`${basePath}/cadastro`}
+            fallbackRedirectUrl={redirectFluxo}
+            forceRedirectUrl={redirectFluxo}
             initialValues={{ emailAddress: data.email }}
           />
         </div>
@@ -148,11 +172,19 @@ export function StepConta({ data, onNext, onBack, onEditar }: Props) {
       onNext={onNext}
       onBack={onBack}
       onEditar={onEditar}
+      onEditarPlano={onEditarPlano}
+      planoRedirect={planoRedirect}
     />
   );
 }
 
-function PagamentoBloco({ data, onNext, onBack, onEditar }: Props) {
+function PagamentoBloco({
+  data,
+  onNext,
+  onBack,
+  onEditar,
+  onEditarPlano,
+}: Props) {
   const [state, setState] = useState<SubscriptionState | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [cpfCnpj, setCpfCnpj] = useState("");
@@ -228,7 +260,13 @@ function PagamentoBloco({ data, onNext, onBack, onEditar }: Props) {
           : `Você escolheu o ${info.label} (${info.precoMes}/mês).`}
       </p>
 
-      {!state && <ResumoPedido data={data} onEditar={onEditar} />}
+      {!state && (
+        <ResumoPedido
+          data={data}
+          onEditar={onEditar}
+          onEditarPlano={onEditarPlano}
+        />
+      )}
 
       {!state && (
         <>

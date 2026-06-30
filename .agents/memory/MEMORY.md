@@ -1,2 +1,3 @@
-- [Clerk embedded SignUp](clerk-embedded-signup.md) — @clerk/react 6.11.1 has no routing="virtual"; embed `<SignUp routing="hash">` to keep it inline on a page.
+- [Clerk embedded SignUp](clerk-embedded-signup.md) — to keep Clerk's `<SignUp>` inline on a page use `routing="hash"` (no `routing="virtual"` available); see file for version observed.
 - [Funnel lead sync](funnel-lead-sync.md) — out-of-order lead upserts need server-side monotonic guards on step/completed or completed leads get re-marked abandoned.
+- [Cadastro funnel skip-step](cadastro-funnel-skip-step.md) — `?plano=` on /cadastro/fluxo skips Etapa 3; Clerk signup redirect MUST preserve the param or skip mode resets on remount.

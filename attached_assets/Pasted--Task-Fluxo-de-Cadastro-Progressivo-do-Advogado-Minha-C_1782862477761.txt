@@ -1,0 +1,275 @@
+# Task — Fluxo de Cadastro Progressivo do Advogado
+## Minha Causa Justa — Versão 2
+
+---
+
+## Contexto e objetivo
+
+Esta task reconstrói a página de cadastro atual e implementa um fluxo progressivo de conversão de 4 etapas (mais a landing page como Etapa 0). O objetivo é maximizar conversão através de comprometimento incremental, onde o advogado preenche dados progressivamente, recebe feedback personalizado sobre o mercado em sua região, e chega ao pagamento já com o plano pré-selecionado e intenção alta.
+
+---
+
+## ETAPA 0 — Landing page (cadastro.html)
+
+### Instrução crítica
+
+A página `cadastro.html` atual foi excluída do projeto e precisa ser reinserida exatamente como está no PDF de referência entregue junto com esta task. Isso significa:
+
+- Mesmo texto e copy em todas as seções
+- Mesmas cores e design system
+- Mesmas imagens (a foto da mulher sorrindo no hero e a foto da mulher de lado na seção "Esse perfil foi pensado para você se...")
+- Mesma estrutura de seções na mesma ordem
+- Mesmo FAQ com as mesmas perguntas e respostas
+- Mesmo rodapé
+
+Não alterar nada do conteúdo, layout ou visual desta página. A única mudança em relação ao PDF é nos botões dos planos, descrita abaixo.
+
+### Única alteração permitida na landing page — os botões dos planos
+
+No PDF, ambos os botões dos cards de plano dizem "Cadastrar agora" com o mesmo estilo visual. Alterar para:
+
+**Plano Mensal:**
+- Texto do botão: "Começar com plano mensal"
+- Estilo: `.btn-secondary` (contorno azul, fundo transparente)
+- Link: `cadastro-fluxo.html?plano=mensal`
+
+**Plano Anual:**
+- Texto do botão: "Começar com plano anual"
+- Estilo: `.btn-primary` (fundo laranja `--color-accent-500`)
+- Link: `cadastro-fluxo.html?plano=anual`
+
+Todos os demais botões da landing page ("Quero cadastrar meu perfil", "Cadastrar meu perfil agora") também devem levar para `cadastro-fluxo.html` sem parâmetro de plano — neste caso, o fluxo apresentará a escolha de plano normalmente na Etapa 3.
+
+---
+
+## Estrutura do fluxo progressivo
+
+Criar um novo arquivo `cadastro-fluxo.html` separado da landing page. Este arquivo implementa as 4 etapas do funil como aplicação de página única (sem reload entre etapas), trocando o conteúdo via JavaScript puro.
+
+Ao carregar `cadastro-fluxo.html`, ler o parâmetro `?plano=` da URL e armazenar em variável JavaScript e no `localStorage`. Se o parâmetro não existir, o plano ficará em branco e será solicitado na Etapa 3.
+
+Hash de URL por etapa:
+- `cadastro-fluxo.html?plano=mensal#etapa-1`
+- `cadastro-fluxo.html?plano=mensal#etapa-2`
+- `cadastro-fluxo.html?plano=mensal#etapa-3` (só aparece se plano não foi pré-selecionado)
+- `cadastro-fluxo.html?plano=mensal#etapa-4`
+- `cadastro-fluxo.html#etapa-5`
+
+---
+
+## Barra de progresso (visível em todas as etapas exceto Etapa 5)
+
+Fixa no topo, abaixo da nav. Segmentos representando as etapas ativas (3 se plano foi pré-selecionado, 4 se não foi).
+
+Segmento atual em `--color-accent-500`, segmentos completados em `--color-success`, segmentos futuros em `--color-neutral-300`.
+
+Texto acima: "Etapa X de Y" — font-size-sm, `--color-neutral-500`.
+
+---
+
+## Etapa 1 — Dados básicos
+
+### Layout
+Card centralizado, largura máxima 480px, `--color-neutral-0`, `--shadow-md`, `--radius-xl`, padding `--space-8`. Fundo da página `--color-neutral-100`.
+
+### Conteúdo
+Título: "Vamos começar seu cadastro" — font-size-xl, bold, `--color-primary-800`.
+Subtítulo: "Leva menos de 2 minutos." — font-size-sm, `--color-neutral-500`.
+
+Campos obrigatórios:
+- Nome completo — classe `.input`
+- E-mail — classe `.input`, validação de formato
+- Número OAB + select de seccional lado a lado — classe `.input`
+
+Verificação OAB simulada: ao sair do campo (blur), checar se número tem entre 3 e 6 dígitos. Se sim: ícone de confirmação verde ao lado. Se não: mensagem "Não encontramos essa inscrição na OAB. Verifique o número e a seccional." Incluir comentário no código indicando onde, em produção, a chamada ao webservice público da OAB deve ser conectada.
+
+Botão "Continuar" — `.btn-primary`, largura 100%. Desabilitado até todos os campos válidos.
+
+### Banner de retomada
+Ao carregar, checar `localStorage` pela chave `mcj_lead`. Se existir com e-mail preenchido, exibir banner no topo do card em `--color-primary-50`: "Encontramos um cadastro em andamento. Continuar de onde parei" — link clicável que avança direto para a etapa salva.
+
+### Comportamento ao avançar
+Salvar em `localStorage` sob a chave `mcj_lead`:
+```javascript
+{
+  "leadId": "timestamp + random string",
+  "nome": "...",
+  "email": "...",
+  "oab": "...",
+  "seccional": "...",
+  "plano_escolhido": "mensal|anual|null",
+  "etapa_atual": 2,
+  "criado_em": "ISO timestamp",
+  "atualizado_em": "ISO timestamp"
+}
+```
+
+O campo `plano_escolhido` é preenchido com o valor lido do parâmetro `?plano=` da URL, ou `null` se não existir.
+
+Avançar para Etapa 2.
+
+---
+
+## Etapa 2 — Localização e área de atuação
+
+### Layout
+Card centralizado, largura máxima 560px, mesma estrutura da Etapa 1.
+
+### Conteúdo
+Título: "Onde você atende?" — font-size-xl, bold, `--color-primary-800`.
+
+**Barra de prova social** (acima dos campos):
+Card pequeno, fundo `--color-primary-50`, `--radius-md`, padding `--space-3`, centralizado.
+Número gerado via JavaScript dentro da faixa 180 a 240, variando discretamente a cada carregamento:
+"Mais de [N] pessoas buscaram um advogado na Minha Causa Justa esta semana."
+
+**Campos:**
+- Select de estado (27 estados, ordem alfabética com sigla e nome)
+- Autocomplete de cidade via API do IBGE — reutilizar a lógica já especificada na task de Cidade de Atuação
+- Badges de categorias — reutilizar o objeto `CATEGORIAS` de `main.js`
+
+Mínimo obrigatório: 1 cidade e 1 categoria selecionadas para avançar.
+
+**Feedback personalizado de concorrência:**
+Aparece com fade-in assim que cidade e ao menos 1 categoria estão preenchidas.
+
+Lógica determinística (mesma combinação sempre gera o mesmo resultado na sessão):
+```javascript
+function calcularConcorrencia(cidade, categoria) {
+  const seed = (cidade + categoria).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return seed % 12;
+}
+```
+
+Textos por resultado:
+- 0 a 2: "Ótima notícia! Apenas [N] advogados de [Categoria] estão cadastrados em [Cidade]. Seu perfil terá grande visibilidade."
+- 3 a 7: "Hoje [N] advogados de [Categoria] atendem em [Cidade] pela plataforma. Ainda há bastante espaço para você se destacar."
+- 8 a 11: "[Cidade] já tem [N] advogados de [Categoria] cadastrados. É uma região com bastante busca por [Categoria], vale aparecer também."
+
+Nunca usar tom negativo. Fundo do card de feedback em `#E8F5EE` para resultados 0 a 2, em `--color-primary-50` para os demais.
+
+**Rodapé fixo de transparência de preço** (obrigatório por exigência do CDC):
+"Cadastro com assinatura mensal a partir de R$ 39,90" — font-size-xs, `--color-neutral-500`, centralizado, sempre visível.
+
+Botão "Continuar" — `.btn-primary`, largura 100%.
+
+### Comportamento ao avançar
+Atualizar `mcj_lead` com cidade, estado, categorias e `etapa_atual`.
+
+Se `plano_escolhido` não for nulo (veio da landing page): avançar para Etapa 4 diretamente, pulando a Etapa 3.
+Se `plano_escolhido` for nulo: avançar para Etapa 3.
+
+Incluir comentário no código: ponto de integração futura para envio dos dados parciais ao backend para remarketing por e-mail.
+
+---
+
+## Etapa 3 — Escolha do plano (condicional)
+
+Esta etapa só é exibida se o advogado chegou ao fluxo sem ter selecionado um plano na landing page (sem parâmetro `?plano=` na URL).
+
+### Layout
+Card centralizado, largura máxima 640px.
+
+### Conteúdo
+Título: "Seu perfil está quase pronto" — font-size-xl, bold, `--color-primary-800`.
+
+Subtítulo personalizado com dado do localStorage:
+"Para publicar e aparecer nas buscas em [Cidade], escolha seu plano." — font-size-md, `--color-neutral-700`.
+
+Cards de plano: reutilizar exatamente os mesmos cards da landing page (Plano Mensal e Plano Anual), com os mesmos textos, benefícios e estilos visuais.
+
+Ao clicar em qualquer plano: salvar `plano_escolhido` no `mcj_lead` e avançar automaticamente para Etapa 4 sem botão "Continuar" adicional.
+
+---
+
+## Etapa 4 — Pagamento
+
+### Layout
+Card centralizado, largura máxima 480px.
+
+### Conteúdo
+Título: "Finalize seu cadastro" — font-size-xl, bold, `--color-primary-800`.
+
+**Resumo do pedido** (card cinza claro acima do formulário):
+- Nome do plano e valor
+- "Cidade: [Cidade], [UF]" com link "Editar" que volta à Etapa 2
+- "Áreas: [categorias]" com link "Editar" que volta à Etapa 2
+- "Plano: [nome do plano]" com link "Editar" que volta à Etapa 3 (ou Etapa 0 — landing page — se o plano veio de lá)
+
+Links "Editar" preservam todos os dados já preenchidos ao voltar.
+
+**Formulário de pagamento** (simulado):
+Campos: número do cartão, validade, CVV, nome no cartão. Classe `.input` em todos.
+Incluir comentário no código: em produção, estes campos são substituídos pelo checkout transparente do Asaas, integrado via a API key configurada como variável de ambiente `ASAAS_API_KEY`.
+
+**Selo de segurança:**
+"Pagamento processado de forma segura pelo Asaas, instituição autorizada pelo Banco Central." — font-size-sm, `--color-neutral-500`, centralizado.
+
+Botão "Confirmar pagamento e ativar perfil" — `.btn-primary`, largura 100%.
+
+**Comportamento ao confirmar (simulado):**
+Loading de 2 segundos. Atualizar `mcj_lead` com `pagamento_confirmado: true` e `etapa_atual: 5`. Avançar para Etapa 5.
+
+---
+
+## Etapa 5 — Completar perfil (pós-pagamento)
+
+Sem barra de progresso. Layout muda para o mesmo padrão do `painel-perfil.html`.
+
+**Banner de boas-vindas:**
+Fundo `--color-success`, texto branco, padding `--space-5`, `--radius-lg`.
+"Perfil ativado com sucesso! Complete as informações abaixo para seu perfil aparecer da melhor forma possível."
+
+**Pré-preenchimento automático:**
+Nome, OAB, cidade, estado e categorias vindos do `mcj_lead` já aparecem preenchidos. Campos somente leitura onde aplicável.
+
+**Campos restantes:**
+Foto de perfil, texto "Sobre mim" (máximo 500 caracteres), links (Instagram, LinkedIn, site, outro), WhatsApp de contato. Mesma estrutura já especificada na task do painel do advogado.
+
+**Botão final:**
+"Salvar e ir para o painel" — `.btn-primary`. Ao salvar: limpar `mcj_lead` do localStorage, simular login automático, redirecionar para `painel-perfil.html` com dados completos.
+
+---
+
+## Lógica de abandono e retomada
+
+Em qualquer etapa entre 1 e 4, se o usuário sair, o `mcj_lead` permanece no localStorage. Ao retornar ao `cadastro-fluxo.html` e preencher o mesmo e-mail na Etapa 1, o banner de retomada oferece continuar de onde parou.
+
+Incluir comentário no código em todos os pontos de atualização do `mcj_lead`: em produção, cada atualização deve disparar também uma chamada ao backend associando os dados ao e-mail, possibilitando remarketing via sequência de e-mails ("Você começou seu cadastro, finalize agora e apareça para clientes em [Cidade]").
+
+---
+
+## Instruções técnicas gerais
+
+- `cadastro.html` é a landing page — recriar fielmente conforme o PDF de referência, com a única exceção dos botões dos planos descritos acima.
+- `cadastro-fluxo.html` é o arquivo novo do funil progressivo — SPA simples sem reload entre etapas.
+- Usar o objeto `CATEGORIAS` e a lógica de autocomplete de cidades já existentes em `main.js`.
+- Usar `localStorage` para persistência durante o funil. Sem backend real nesta fase.
+- Botão "Voltar" discreto em todas as etapas (exceto Etapa 1), preservando todos os dados já preenchidos.
+- Responsivo obrigatório em todas as etapas.
+- Validação inline com foco automático no primeiro campo inválido ao tentar avançar.
+- Código limpo, organizado por etapa, com comentários claros nos pontos de integração futura (OAB, backend de leads, Asaas).
+- Não usar nenhuma biblioteca externa além da fonte Inter já importada.
+
+---
+
+## Checklist de verificação
+
+- [ ] `cadastro.html` idêntico ao PDF, com exceção dos botões dos planos
+- [ ] Botão Plano Mensal leva para `cadastro-fluxo.html?plano=mensal`
+- [ ] Botão Plano Anual leva para `cadastro-fluxo.html?plano=anual`
+- [ ] Etapa 1: verificação OAB simulada funcionando
+- [ ] Etapa 1: banner de retomada aparece se lead salvo no localStorage
+- [ ] Etapa 1: parâmetro `?plano=` lido da URL e salvo no mcj_lead
+- [ ] Etapa 2: autocomplete de cidade via API do IBGE funcionando
+- [ ] Etapa 2: feedback de concorrência determinístico e nunca desmotivador
+- [ ] Etapa 2: texto de transparência de preço sempre visível
+- [ ] Etapa 2: se plano pré-selecionado, pula Etapa 3 e vai direto para Etapa 4
+- [ ] Etapa 3: só aparece se plano não foi pré-selecionado
+- [ ] Etapa 3: subtítulo personalizado com cidade do usuário
+- [ ] Etapa 4: resumo reflete dados reais do mcj_lead
+- [ ] Etapa 4: links "Editar" funcionam preservando demais dados
+- [ ] Etapa 5: dados das etapas anteriores pré-preenchidos
+- [ ] Etapa 5: localStorage do lead limpo ao salvar
+- [ ] Fluxo completo responsivo em mobile
+- [ ] Barra de progresso mostra 3 etapas se plano pré-selecionado, 4 se não
