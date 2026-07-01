@@ -14,7 +14,6 @@ import {
   type Plano,
 } from "@/lib/cadastro-funnel";
 import {
-  ArrowRight,
   ArrowLeft,
   Loader2,
   ShieldCheck,
@@ -182,7 +181,6 @@ export function StepConta({
 
 function PagamentoBloco({
   data,
-  onNext,
   onBack,
   onEditar,
   onEditarPlano,
@@ -391,15 +389,6 @@ function PagamentoBloco({
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
-        {state && (
-          <Button
-            onClick={onNext}
-            className="h-12 px-7 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium"
-            data-testid="button-avancar"
-          >
-            Concluir perfil <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        )}
       </div>
     </div>
   );
