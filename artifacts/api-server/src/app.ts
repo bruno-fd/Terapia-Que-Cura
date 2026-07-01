@@ -37,8 +37,11 @@ app.use(
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// A foto de perfil é enviada como data URL (base64) dentro do JSON. Uma imagem
+// de até 5MB (limite do frontend) vira ~6,7MB em base64, então elevamos o limite
+// do parser (padrão 100kb) para 8mb, evitando o erro 413 (Payload Too Large).
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 
 // Resolve a publishable key a partir do host da requisição, permitindo que o
 // mesmo servidor atenda múltiplos domínios Clerk. Em dev, cai no
