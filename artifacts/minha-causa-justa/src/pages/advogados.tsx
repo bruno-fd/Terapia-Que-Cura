@@ -296,9 +296,6 @@ export default function Advogados() {
               </div>
             ) : (
               <>
-                <p className="text-sm text-neutral-500 mb-6" data-testid="text-ordem-alternada">
-                  A ordem dos profissionais é alternada a cada visita para dar a mesma visibilidade a todos.
-                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredLawyers.map((lawyer) => (
                   <div key={lawyer.id} className="bg-white p-6 md:p-8 rounded-[28px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow flex flex-col h-full" data-testid={`lawyer-card-${lawyer.id}`}>

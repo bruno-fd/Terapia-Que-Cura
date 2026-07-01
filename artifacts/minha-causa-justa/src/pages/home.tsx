@@ -360,7 +360,7 @@ export default function Home() {
           <div className="container mx-auto px-6 max-w-[800px]">
             <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Você é advogado?</h2>
             <p className="text-xl text-neutral-600 mb-10 leading-relaxed">Cadastre seu perfil e apareça para pessoas que estão exatamente com o problema que você resolve.</p>
-            <Button asChild variant="outline" size="lg" className="border-primary-200 text-primary-700 hover:bg-primary-50 h-16 px-10 text-lg rounded-full hover:border-primary-300 transition-all">
+            <Button asChild size="lg" className="bg-accent-500 hover:bg-accent-600 text-white h-16 px-10 text-lg rounded-full transition-all">
               <Link href="/cadastro" data-testid="button-cta-cadastro">
                 Quero cadastrar meu perfil
               </Link>
