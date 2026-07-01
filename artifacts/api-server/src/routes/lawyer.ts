@@ -20,6 +20,7 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { getAuth, clerkClient } from "@clerk/express";
 import type { Request } from "express";
 import type { Logger } from "pino";
+import { claimSubscriptionForUser } from "../lib/subscriptionClaim";
 import { verificarInscricaoOab } from "../lib/oab";
 import { verificarOabToken, tokenCombinaComOab } from "../lib/oabToken";
 
@@ -101,14 +102,13 @@ async function buildPrefillFromLead(
   const userId = getAuth(req).userId;
   if (!userId) return {};
 
-  // Vincula o prefill ao lead EXATO que gerou o pagamento (subscriptions.leadId),
-  // não ao "último lead com este e-mail". Isso impede que um upsert público de
-  // lead (rota aberta) injete dados de terceiros no primeiro acesso.
-  const [sub] = await db
-    .select({ leadId: subscriptionsTable.leadId })
-    .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.lawyerRef, userId))
-    .limit(1);
+  // Casa (e vincula atomicamente) a assinatura paga a este usuário. No modelo
+  // "checkout primeiro" a assinatura nasce anônima (lawyerRef nulo); no primeiro
+  // acesso ela é vinculada aqui pelo e-mail da conta (= e-mail do pagamento).
+  // Vinculamos o prefill ao lead EXATO que gerou esse pagamento
+  // (subscriptions.leadId), não ao "último lead com este e-mail", para que um
+  // upsert público de lead não injete dados de terceiros no primeiro acesso.
+  const sub = await claimSubscriptionForUser(userId, email);
   if (!sub?.leadId) return {};
 
   const [lead] = await db

@@ -30,6 +30,7 @@ import {
 } from "../lib/asaas";
 import { requireAuth } from "../middlewares/requireAuth";
 import { getAuth, clerkClient } from "@clerk/express";
+import { claimSubscriptionForUser } from "../lib/subscriptionClaim";
 import { sendEmail } from "../lib/email";
 import {
   subscriptionCreatedEmail,
@@ -256,35 +257,7 @@ async function getAuthedEmail(req: Request): Promise<string | null> {
 async function resolveRowForUser(
   req: Request,
 ): Promise<SubscriptionRow | undefined> {
-  const userId = req.userId!;
-  const owned = await findRow(userId);
-  if (owned) return owned;
-
-  const email = await getAuthedEmail(req);
-  if (!email) return undefined;
-
-  const [candidate] = await db
-    .select()
-    .from(subscriptionsTable)
-    .where(
-      and(
-        eq(subscriptionsTable.customerEmail, email),
-        isNull(subscriptionsTable.lawyerRef),
-      ),
-    );
-  if (!candidate) return undefined;
-
-  const [claimed] = await db
-    .update(subscriptionsTable)
-    .set({ lawyerRef: userId, updatedAt: new Date() })
-    .where(
-      and(
-        eq(subscriptionsTable.id, candidate.id),
-        isNull(subscriptionsTable.lawyerRef),
-      ),
-    )
-    .returning();
-  return claimed ?? candidate;
+  return claimSubscriptionForUser(req.userId!, await getAuthedEmail(req));
 }
 
 // Base pública da aplicação, usada para construir o link de convite (criação de
@@ -782,6 +755,23 @@ router.post("/checkout", async (req, res): Promise<void> => {
       .where(eq(subscriptionsTable.leadId, leadId));
 
     if (existing) {
+      // Re-checkout do mesmo lead: cancela a assinatura Asaas anterior (ainda
+      // pendente) antes de sobrescrever o vínculo. Sem isso, um pagamento feito
+      // no link antigo dispararia webhooks para um asaasSubscriptionId que não
+      // existe mais na linha, e a conta nunca seria provisionada.
+      if (
+        existing.asaasSubscriptionId &&
+        existing.asaasSubscriptionId !== subscription.id
+      ) {
+        try {
+          await deleteSubscription(existing.asaasSubscriptionId);
+        } catch (err) {
+          req.log.error(
+            { err, previous: existing.asaasSubscriptionId },
+            "Falha ao remover assinatura Asaas anterior no re-checkout",
+          );
+        }
+      }
       await db
         .update(subscriptionsTable)
         .set(values)
