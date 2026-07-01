@@ -233,9 +233,14 @@ export default function PainelAssinatura() {
           {/* Assinatura existente (ativa, pendente ou atrasada) */}
           {ativa && status !== "inativa" && state && (
             <Card data-testid={`card-status-${status}`}>
-              {status === "ativa" && (
+              {status === "ativa" && !state.canceledAt && (
                 <div className="flex items-center gap-2 text-lg font-bold" style={{ color: SUCCESS_COLOR }}>
                   <CheckCircle2 className="h-5 w-5" /> Assinatura Ativa
+                </div>
+              )}
+              {status === "ativa" && state.canceledAt && (
+                <div className="flex items-center gap-2 text-lg font-bold" style={{ color: WARNING_COLOR }}>
+                  <Clock className="h-5 w-5" /> Renovação cancelada
                 </div>
               )}
               {status === "pendente" && (
@@ -266,7 +271,18 @@ export default function PainelAssinatura() {
                     Regularize o pagamento para manter seu perfil visível.
                   </p>
                 )}
-                {state.nextDueDate && (
+                {status === "ativa" && state.canceledAt && state.accessUntil && (
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: WARNING_COLOR }}
+                    data-testid="aviso-cancelamento"
+                  >
+                    A renovação automática foi cancelada. Seu perfil continua
+                    ativo e visível até {formatDate(state.accessUntil)}. Depois
+                    dessa data, ele deixa de aparecer nas buscas.
+                  </p>
+                )}
+                {state.nextDueDate && !(status === "ativa" && state.canceledAt) && (
                   <p className="text-sm">
                     Próxima cobrança: {formatDate(state.nextDueDate)}
                   </p>
@@ -286,14 +302,16 @@ export default function PainelAssinatura() {
                     </Button>
                   </a>
                 )}
-                <button
-                  onClick={() => setShowCancelar(true)}
-                  className="text-sm hover:underline"
-                  style={{ color: ERROR_COLOR }}
-                  data-testid="button-cancelar"
-                >
-                  Cancelar assinatura
-                </button>
+                {!(status === "ativa" && state.canceledAt) && (
+                  <button
+                    onClick={() => setShowCancelar(true)}
+                    className="text-sm hover:underline"
+                    style={{ color: ERROR_COLOR }}
+                    data-testid="button-cancelar"
+                  >
+                    Cancelar assinatura
+                  </button>
+                )}
               </div>
             </Card>
           )}
@@ -392,8 +410,9 @@ export default function PainelAssinatura() {
               Tem certeza que deseja cancelar?
             </h3>
             <p className="mt-2 text-sm text-neutral-600">
-              Ao cancelar, seu perfil será desativado e não aparecerá mais nas
-              buscas da plataforma.
+              Você está cancelando apenas a renovação automática. Seu perfil
+              continua ativo e visível nas buscas até o fim do período já pago,
+              e você não será cobrado novamente.
             </p>
             <div className="mt-6 flex w-full gap-3">
               <Button

@@ -624,6 +624,12 @@ components:
         nextDueDate:
           type: string
           nullable: true
+        canceledAt:
+          type: string
+          nullable: true
+        accessUntil:
+          type: string
+          nullable: true
         invoiceUrl:
           type: string
           nullable: true

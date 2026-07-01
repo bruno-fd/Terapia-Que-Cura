@@ -15,3 +15,9 @@ description: How Asaas recurring credit-card subscriptions and env key scoping w
 - Both the sandbox key and the prod key authenticate against the SAME real Asaas account (confirmed via `/myAccount`). Sandbox is just the test environment of that account.
 
 - To live-verify without leaving test data: create a customer + CREDIT_CARD subscription on `https://sandbox.asaas.com/api/v3` (header `access_token`), read `/subscriptions/{id}/payments`, then DELETE the subscription and customer. Sandbox needs a valid-checksum CPF.
+
+## Cancel = stop future renewals, keep access until end of paid period
+
+- Cancelling a subscription must NOT deactivate the profile immediately. The lawyer keeps a paid grace period until the end of the already-paid cycle (paid 01/03 monthly -> visible through 31/03 even if cancelled 15/03). Two columns drive this: `subscriptions.canceledAt` + `accessUntil` (ISO yyyy-mm-dd text). On cancel: compute `accessUntil` = latest PAID payment dueDate + one cycle; if still in the future keep status `ativa` and stamp both fields, else `inativa`.
+  - **Why:** Deleting the Asaas subscription only stops future charges; the customer already paid for the current cycle and has a right to it.
+  - **How to apply:** The canceled-grace rule is AUTHORITATIVE and date-based, so it must be evaluated (a) at the very top of `deriveStatus`, before the persisted-status short-circuit; (b) in the public directory filter (`assinaturaVisivel`: `status='ativa' AND (canceledAt IS NULL OR accessUntil > today)`) so expiry is enforced at read time even if no GET has re-persisted the flip; (c) the webhook update must carry `isNull(canceledAt)` so a late Asaas event can never downgrade a canceled-but-still-paid row. On re-subscribe, reset `canceledAt`/`accessUntil` to null. If the payments fetch fails during cancel while status was `ativa`, fall back conservatively (nextDueDate or one cycle from today) rather than deactivating.

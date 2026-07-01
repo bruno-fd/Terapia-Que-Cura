@@ -1,1 +1,2 @@
 - [Pre-auth verified-status tokens](preauth-verified-tokens.md) — how to make a pre-auth funnel verification (OAB) unforgeable when saved post-auth, and the residual replay tradeoff.
+- [Asaas recurring card billing](asaas-billing.md) — CREDIT_CARD recurring setup, env key scoping, and cancel-keeps-access-until-paid-period-end grace rule.

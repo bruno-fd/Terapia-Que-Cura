@@ -17,6 +17,8 @@ export interface SubscriptionState {
   cycle?: string | null;
   customerName?: string | null;
   nextDueDate?: string | null;
+  canceledAt?: string | null;
+  accessUntil?: string | null;
   invoiceUrl?: string | null;
   payments: SubscriptionPayment[];
 }

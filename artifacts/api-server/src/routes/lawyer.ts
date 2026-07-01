@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and, or, isNull, gt } from "drizzle-orm";
 import {
   db,
   advogadosTable,
@@ -91,14 +91,46 @@ function toProfile(
   };
 }
 
+// Data de hoje em ISO yyyy-mm-dd (para comparar com accessUntil, texto ISO).
+function hojeIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Filtro de visibilidade pública: assinatura "ativa" que, se cancelada, ainda
+// esteja dentro do período já pago (accessUntil no futuro). Um cancelamento só
+// interrompe cobranças futuras: o perfil permanece visível até accessUntil.
+function assinaturaVisivel() {
+  return and(
+    eq(subscriptionsTable.status, "ativa"),
+    or(
+      isNull(subscriptionsTable.canceledAt),
+      gt(subscriptionsTable.accessUntil, hojeIso()),
+    ),
+  );
+}
+
 async function getSubscriptionStatus(
   userId: string,
 ): Promise<SubStatus | null> {
   const [sub] = await db
-    .select({ status: subscriptionsTable.status })
+    .select({
+      status: subscriptionsTable.status,
+      canceledAt: subscriptionsTable.canceledAt,
+      accessUntil: subscriptionsTable.accessUntil,
+    })
     .from(subscriptionsTable)
     .where(eq(subscriptionsTable.lawyerRef, userId));
-  return (sub?.status as SubStatus | undefined) ?? null;
+  if (!sub) return null;
+  // Assinatura cancelada cujo período pago já venceu conta como inativa, mesmo
+  // que o status persistido ainda não tenha sido recalculado por um GET.
+  if (
+    sub.status === "ativa" &&
+    sub.canceledAt &&
+    (!sub.accessUntil || sub.accessUntil <= hojeIso())
+  ) {
+    return "inativa";
+  }
+  return (sub.status as SubStatus | undefined) ?? null;
 }
 
 // Diretório público: somente advogados pagantes (assinatura "ativa") com
@@ -114,7 +146,7 @@ router.get("/advogados", async (_req, res): Promise<void> => {
       subscriptionsTable,
       eq(subscriptionsTable.lawyerRef, advogadosTable.userId),
     )
-    .where(eq(subscriptionsTable.status, "ativa"));
+    .where(assinaturaVisivel());
 
   const visible = rows
     .filter(({ advogado }) => isComplete(advogado))
@@ -167,7 +199,7 @@ router.get("/advogados/contagem", async (req, res): Promise<void> => {
       subscriptionsTable,
       eq(subscriptionsTable.lawyerRef, advogadosTable.userId),
     )
-    .where(eq(subscriptionsTable.status, "ativa"));
+    .where(assinaturaVisivel());
 
   const visiveis = rows
     .map(({ advogado }) => advogado)

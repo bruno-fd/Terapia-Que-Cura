@@ -426,6 +426,8 @@ export const GetAssinaturaResponse = zod.object({
   "cycle": zod.string().nullish(),
   "customerName": zod.string().nullish(),
   "nextDueDate": zod.string().nullish(),
+  "canceledAt": zod.string().nullish(),
+  "accessUntil": zod.string().nullish(),
   "invoiceUrl": zod.string().nullish(),
   "payments": zod.array(zod.object({
   "id": zod.string(),
@@ -460,6 +462,8 @@ export const CreateAssinaturaResponse = zod.object({
   "cycle": zod.string().nullish(),
   "customerName": zod.string().nullish(),
   "nextDueDate": zod.string().nullish(),
+  "canceledAt": zod.string().nullish(),
+  "accessUntil": zod.string().nullish(),
   "invoiceUrl": zod.string().nullish(),
   "payments": zod.array(zod.object({
   "id": zod.string(),
@@ -483,6 +487,8 @@ export const CancelAssinaturaResponse = zod.object({
   "cycle": zod.string().nullish(),
   "customerName": zod.string().nullish(),
   "nextDueDate": zod.string().nullish(),
+  "canceledAt": zod.string().nullish(),
+  "accessUntil": zod.string().nullish(),
   "invoiceUrl": zod.string().nullish(),
   "payments": zod.array(zod.object({
   "id": zod.string(),

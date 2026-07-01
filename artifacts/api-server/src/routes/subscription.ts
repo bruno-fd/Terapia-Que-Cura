@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, isNull } from "drizzle-orm";
 import { db, subscriptionsTable, type SubscriptionRow } from "@workspace/db";
 import {
   GetAssinaturaResponse,
@@ -77,6 +77,30 @@ function paymentDisplayStatus(
   return "Falhou";
 }
 
+// Soma um ciclo (mês ou ano) a uma data ISO yyyy-mm-dd.
+function addCycle(dateIso: string, cycle: string): string {
+  const d = new Date(`${dateIso}T00:00:00Z`);
+  if (cycle === "YEARLY") d.setUTCFullYear(d.getUTCFullYear() + 1);
+  else d.setUTCMonth(d.getUTCMonth() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// Data até quando o período já pago é válido: pega o pagamento pago mais
+// recente e soma um ciclo. Ex.: pagamento mensal com vencimento 01/03 cobre
+// o acesso até 01/04 (o perfil fica ativo durante todo o mês de março).
+function computeAccessUntil(
+  payments: AsaasPayment[],
+  cycle: string,
+): string | null {
+  const paidDates = payments
+    .filter((p) => PAID_STATUSES.has(p.status))
+    .map((p) => p.dueDate ?? p.paymentDate)
+    .filter((d): d is string => !!d)
+    .sort();
+  const last = paidDates[paidDates.length - 1];
+  return last ? addCycle(last, cycle) : null;
+}
+
 // Estado geral da assinatura, derivado dos pagamentos da Asaas. O webhook
 // também atualiza o status; aqui derivamos ao vivo para o painel funcionar
 // mesmo antes de qualquer webhook chegar.
@@ -84,6 +108,17 @@ function deriveStatus(
   row: SubscriptionRow,
   payments: AsaasPayment[],
 ): SubStatus {
+  // Assinatura cancelada: regra AUTORITATIVA e baseada em data, avaliada antes
+  // de qualquer status persistido. O cancelamento só interrompe cobranças
+  // futuras. O perfil permanece ativo até o fim do período já pago
+  // (accessUntil); depois dessa data, torna-se inativa. Não depende de novos
+  // pagamentos nem deixa que um status persistido desatualizado sobreponha as
+  // datas de carência.
+  if (row.canceledAt) {
+    return row.accessUntil && todayIso() < row.accessUntil
+      ? "ativa"
+      : "inativa";
+  }
   if (row.status === "inativa") return "inativa";
   const hasOverdue = payments.some((p) => p.status === "OVERDUE");
   if (hasOverdue) return "atrasada";
@@ -125,6 +160,8 @@ function buildState(
     cycle: row.cycle,
     customerName: row.customerName,
     nextDueDate: row.nextDueDate,
+    canceledAt: row.canceledAt ? row.canceledAt.toISOString() : null,
+    accessUntil: row.accessUntil ?? null,
     invoiceUrl: openInvoiceUrl(payments),
     payments: visible,
   };
@@ -138,6 +175,8 @@ const EMPTY_STATE = {
   cycle: null,
   customerName: null,
   nextDueDate: null,
+  canceledAt: null,
+  accessUntil: null,
   invoiceUrl: null,
   payments: [],
 };
@@ -169,13 +208,16 @@ router.get("/assinatura", requireAuth, async (req, res): Promise<void> => {
     req.log.error({ err }, "Falha ao listar pagamentos da Asaas");
   }
 
-  // Só recalcula/persiste o status quando os pagamentos foram obtidos com
-  // sucesso. Numa falha temporária da Asaas, mantemos o status persistido
-  // para não rebaixar uma assinatura ativa por engano.
-  const status = fetched
+  // Assinatura cancelada é derivada por data (accessUntil), sem depender da
+  // Asaas, então podemos recalcular mesmo se a listagem de pagamentos falhar.
+  // Caso contrário, só recalculamos/persistimos quando os pagamentos foram
+  // obtidos com sucesso: numa falha temporária da Asaas, mantemos o status
+  // persistido para não rebaixar uma assinatura ativa por engano.
+  const canDerive = fetched || !!row.canceledAt;
+  const status = canDerive
     ? deriveStatus(row, payments)
     : (row.status as SubStatus);
-  if (fetched && status !== row.status) {
+  if (canDerive && status !== row.status) {
     await db
       .update(subscriptionsTable)
       .set({ status, updatedAt: new Date() })
@@ -259,6 +301,10 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
       customerName: nome,
       customerEmail: email,
       nextDueDate: subscription.nextDueDate ?? todayIso(),
+      // Reassinatura: limpa qualquer cancelamento anterior para não herdar o
+      // período de carência da assinatura antiga.
+      canceledAt: null,
+      accessUntil: null,
       updatedAt: new Date(),
     };
 
@@ -309,6 +355,31 @@ router.post(
     return;
   }
 
+  // Antes de cancelar, descobre até quando o período já pago é válido, para
+  // manter o perfil ativo até o fim do ciclo. O cancelamento só interrompe as
+  // renovações futuras, não encerra o direito ao período já pago.
+  let payments: AsaasPayment[] = [];
+  let fetchOk = false;
+  try {
+    payments = await listSubscriptionPayments(row.asaasSubscriptionId);
+    fetchOk = true;
+  } catch (err) {
+    req.log.error({ err }, "Falha ao listar pagamentos ao cancelar");
+  }
+  let accessUntil = computeAccessUntil(payments, row.cycle);
+
+  // Fallback conservador: se a leitura de pagamentos falhou e o perfil estava
+  // ativo, NÃO desativamos na hora (o advogado tem período pago vigente).
+  // Preservamos a carência usando a próxima cobrança conhecida ou, na falta
+  // dela, um ciclo a partir de hoje, para nunca rebaixar quem já pagou por
+  // uma falha temporária da Asaas.
+  if (!fetchOk && !accessUntil && row.status === "ativa") {
+    accessUntil =
+      row.nextDueDate && row.nextDueDate > todayIso()
+        ? row.nextDueDate
+        : addCycle(todayIso(), row.cycle);
+  }
+
   try {
     await deleteSubscription(row.asaasSubscriptionId);
   } catch (err) {
@@ -320,13 +391,26 @@ router.post(
     }
   }
 
+  // Se ainda há período pago vigente, o perfil permanece "ativa" até
+  // accessUntil; caso contrário, torna-se "inativa" imediatamente.
+  const now = new Date();
+  const aindaVigente = !!accessUntil && todayIso() < accessUntil;
+  const novoStatus: SubStatus = aindaVigente ? "ativa" : "inativa";
+
   const [updated] = await db
     .update(subscriptionsTable)
-    .set({ status: "inativa", updatedAt: new Date() })
+    .set({
+      status: novoStatus,
+      canceledAt: now,
+      accessUntil: aindaVigente ? accessUntil : null,
+      updatedAt: now,
+    })
     .where(eq(subscriptionsTable.id, row.id))
     .returning();
 
-  res.json(CancelAssinaturaResponse.parse(buildState(updated, [], "inativa")));
+  res.json(
+    CancelAssinaturaResponse.parse(buildState(updated, payments, novoStatus)),
+  );
   },
 );
 
@@ -368,6 +452,9 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
     // devolve a linha se ela foi alterada, tornando a deduplicação segura
     // mesmo sob entregas concorrentes ou repetidas do webhook (a Asaas
     // dispara PAYMENT_CONFIRMED e PAYMENT_RECEIVED para o mesmo pagamento).
+    // Assinaturas canceladas NÃO são tocadas pelo webhook: o status delas é
+    // autoritativamente baseado em data (accessUntil), então um evento tardio
+    // da Asaas nunca deve rebaixar quem ainda está no período pago.
     const [changed] = await db
       .update(subscriptionsTable)
       .set({ status: newStatus, updatedAt: new Date() })
@@ -375,6 +462,7 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
         and(
           eq(subscriptionsTable.asaasSubscriptionId, subscriptionId),
           ne(subscriptionsTable.status, newStatus),
+          isNull(subscriptionsTable.canceledAt),
         ),
       )
       .returning();

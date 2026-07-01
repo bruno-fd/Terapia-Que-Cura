@@ -22,6 +22,13 @@ export const subscriptionsTable = pgTable("subscriptions", {
   customerEmail: text("customer_email").notNull(),
   // Data da próxima cobrança (ISO yyyy-mm-dd), conforme a Asaas.
   nextDueDate: text("next_due_date"),
+  // Momento em que o advogado cancelou a renovação automática. Nulo enquanto
+  // a assinatura não foi cancelada.
+  canceledAt: timestamp("canceled_at", { withTimezone: true }),
+  // Data (ISO yyyy-mm-dd) até quando o perfil permanece ativo após o
+  // cancelamento, referente ao período já pago. O cancelamento só interrompe
+  // cobranças futuras: o perfil continua visível até esta data.
+  accessUntil: text("access_until"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
