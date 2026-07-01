@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
-import { useUser } from "@clerk/react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { StepIdentificacao } from "@/components/cadastro/StepIdentificacao";
 import { StepAtuacao } from "@/components/cadastro/StepAtuacao";
-import { StepPlano } from "@/components/cadastro/StepPlano";
-import { StepConta } from "@/components/cadastro/StepConta";
-import { StepPerfil } from "@/components/cadastro/StepPerfil";
+import { StepCheckout } from "@/components/cadastro/StepCheckout";
 import {
   emptyFunnel,
   loadFunnel,
@@ -22,17 +18,11 @@ import {
 } from "@/lib/cadastro-funnel";
 import { RotateCcw } from "lucide-react";
 
-const STEP_LABELS = [
-  "Identificação",
-  "Atuação",
-  "Plano",
-  "Conta e pagamento",
-  "Perfil",
-];
+const STEP_LABELS = ["Identificação", "Atuação", "Pagamento"];
 
-// Lê a etapa a partir do hash (#etapa-1..5), se presente e válido.
+// Lê a etapa a partir do hash (#etapa-1..3), se presente e válido.
 function parseHashStep(): number | null {
-  const m = /^#?etapa-([1-5])$/.exec(window.location.hash);
+  const m = /^#?etapa-([1-3])$/.exec(window.location.hash);
   return m ? Number(m[1]) : null;
 }
 
@@ -43,18 +33,11 @@ function parsePlanoParam(): Plano | null {
 }
 
 export default function CadastroFluxo() {
-  const [, setLocation] = useLocation();
-  const { isSignedIn } = useUser();
-
-  // Plano vindo da landing (?plano=). Quando presente, a Etapa 3 (escolha de
-  // plano) é pulada e o plano já fica selecionado no funil.
+  // Plano vindo da landing (?plano=). É apenas a seleção inicial; o plano
+  // continua editável na etapa de pagamento.
   const [planoViaUrl] = useState<Plano | null>(() => parsePlanoParam());
-  const skipPlano = planoViaUrl !== null;
 
-  // Ordem de navegação das etapas (a 3 some quando o plano veio da landing).
-  const ordem = skipPlano ? [1, 2, 4, 5] : [1, 2, 3, 4, 5];
-  // Etapas com barra de progresso (a 5 é a conclusão do perfil, sem barra).
-  const progresso = skipPlano ? [1, 2, 4] : [1, 2, 3, 4];
+  const ordem = [1, 2, 3];
 
   const [data, setData] = useState<FunnelData>(() => emptyFunnel());
   const [mostrarBanner, setMostrarBanner] = useState(false);
@@ -68,9 +51,7 @@ export default function CadastroFluxo() {
     const base = salvo ?? emptyFunnel();
     // O plano da URL tem prioridade sobre o que estiver salvo localmente.
     const planoBase = planoViaUrl ?? base.plano;
-    let alvo = hashStep ? Math.min(hashStep, base.step) : base.step;
-    // Com plano pré-selecionado, a Etapa 3 não existe: cai direto na 4.
-    if (skipPlano && alvo === 3) alvo = 4;
+    const alvo = hashStep ? Math.min(hashStep, base.step) : base.step;
     const inicial = { ...base, plano: planoBase, step: alvo };
     setData(inicial);
     furthest.current = base.step;
@@ -81,20 +62,18 @@ export default function CadastroFluxo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Voltar/avançar do navegador: reage apenas a hashes #etapa-N (ignora os
-  // hashes internos do Clerk no signup), e nunca pula além do já alcançado.
+  // Voltar/avançar do navegador: reage apenas a hashes #etapa-N e nunca pula
+  // além do já alcançado.
   useEffect(() => {
     const onHash = () => {
       const hashStep = parseHashStep();
       if (!hashStep) return;
-      let alvo = Math.min(hashStep, furthest.current);
-      if (skipPlano && alvo === 3) alvo = 4;
+      const alvo = Math.min(hashStep, furthest.current);
       setData((d) => (d.step === alvo ? d : { ...d, step: alvo }));
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skipPlano]);
+  }, []);
 
   // Persiste localmente a cada mudança.
   useEffect(() => {
@@ -107,9 +86,7 @@ export default function CadastroFluxo() {
   // Avança/volta de etapa: persiste o lead no back-end (captura + remarketing)
   // e espelha a etapa no hash (cria uma entrada para o botão Voltar).
   const goTo = (step: number) => {
-    let clamped = Math.min(Math.max(step, 1), TOTAL_STEPS);
-    // Nunca pousa na Etapa 3 quando o plano já veio pré-selecionado.
-    if (skipPlano && clamped === 3) clamped = 4;
+    const clamped = Math.min(Math.max(step, 1), TOTAL_STEPS);
     furthest.current = Math.max(furthest.current, clamped);
     setData((d) => {
       const next = { ...d, step: clamped };
@@ -132,21 +109,12 @@ export default function CadastroFluxo() {
     goTo(ordem[Math.max(i - 1, 0)]);
   };
 
-  // "Editar" do plano no resumo: volta à Etapa 3 ou, se o plano veio da
-  // landing, à própria landing (onde a escolha do plano foi feita).
-  const editarPlano = () => {
-    if (skipPlano) {
-      setLocation("/cadastro");
-    } else {
-      goTo(3);
-    }
-  };
-
-  // Conclusão: marca o lead como concluído e limpa o estado local.
+  // Marca o lead como concluído (remarketing) ao iniciar o checkout. A conta e
+  // o perfil só existem após o pagamento confirmado, então não limpamos o funil
+  // aqui: o redirect vai para a fatura do Asaas.
   const concluir = () => {
     void syncLead({ ...data, step: TOTAL_STEPS }, true);
     clearFunnel();
-    setLocation("/painel/perfil");
   };
 
   const recomecar = () => {
@@ -159,7 +127,6 @@ export default function CadastroFluxo() {
   };
 
   const mostrarPreco = data.step >= 2;
-  const mostrarProgresso = progresso.includes(data.step);
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
@@ -167,7 +134,7 @@ export default function CadastroFluxo() {
 
       <main className={`flex-grow py-10 md:py-16 ${mostrarPreco ? "pb-28" : ""}`}>
         <div className="container mx-auto px-6 max-w-[720px]">
-          {mostrarProgresso && <ProgressBar step={data.step} steps={progresso} />}
+          <ProgressBar step={data.step} steps={ordem} />
 
           {mostrarBanner && data.step > 1 && (
             <div
@@ -202,36 +169,13 @@ export default function CadastroFluxo() {
               />
             )}
             {data.step === 3 && (
-              <StepPlano
+              <StepCheckout
                 data={data}
                 update={update}
-                onNext={next}
                 onBack={back}
+                onConcluir={concluir}
               />
             )}
-            {data.step === 4 && (
-              <StepConta
-                data={data}
-                onNext={next}
-                onBack={back}
-                onEditar={goTo}
-                onEditarPlano={editarPlano}
-                planoRedirect={planoViaUrl}
-              />
-            )}
-            {data.step === 5 &&
-              (isSignedIn ? (
-                <StepPerfil data={data} onConcluir={concluir} onBack={back} />
-              ) : (
-                <StepConta
-                  data={data}
-                  onNext={next}
-                  onBack={back}
-                  onEditar={goTo}
-                  onEditarPlano={editarPlano}
-                  planoRedirect={planoViaUrl}
-                />
-              ))}
           </div>
         </div>
       </main>

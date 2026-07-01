@@ -28,6 +28,22 @@ export const cadastroLeadsTable = pgTable("cadastro_leads", {
   nome: text("nome").notNull().default(""),
   email: text("email").notNull().default(""),
   telefone: text("telefone").notNull().default(""),
+  // Dados de identificação informados na Etapa 1 (não-oficiais até o pagamento).
+  cpf: text("cpf").notNull().default(""),
+  oab: text("oab").notNull().default(""),
+  seccional: text("seccional").notNull().default(""),
+  // Resultado da verificação real da OAB feita na Etapa 1. Persistido no lead
+  // porque o pagamento e a criação da conta acontecem bem depois, então o
+  // resultado precisa sobreviver ao token de curta duração para ser transferido
+  // ao perfil quando a conta nascer.
+  oabVerificada: boolean("oab_verificada").notNull().default(false),
+  oabSituacao: text("oab_situacao"),
+  oabNomeConfirmado: text("oab_nome_confirmado"),
+  // true quando a verificação não pôde ser concluída (serviço indisponível) e
+  // o perfil precisará de revisão manual.
+  oabVerificacaoPendente: boolean("oab_verificacao_pendente")
+    .notNull()
+    .default(false),
   // Plano escolhido: "mensal" | "anual" | null (ainda não escolhido).
   plano: text("plano"),
   // Áreas de atuação (nomes de categorias do site).

@@ -4,7 +4,9 @@ import {
   db,
   advogadosTable,
   subscriptionsTable,
+  cadastroLeadsTable,
   type AdvogadoRow,
+  type CadastroLeadRow,
   type Cidade,
 } from "@workspace/db";
 import {
@@ -17,28 +19,124 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { getAuth, clerkClient } from "@clerk/express";
 import type { Request } from "express";
-import { sendEmail } from "../lib/email";
-import { welcomeEmail } from "../lib/email-templates";
+import type { Logger } from "pino";
+import { verificarInscricaoOab } from "../lib/oab";
 import { verificarOabToken, tokenCombinaComOab } from "../lib/oabToken";
 
 const router: IRouter = Router();
 
-// Busca o e-mail do advogado no Clerk e envia as boas-vindas. Best-effort:
-// qualquer falha (Clerk indisponível, sem e-mail, Resend) apenas registra log.
-async function sendWelcomeEmail(req: Request): Promise<void> {
+// E-mail da conta autenticada (Clerk). É o mesmo do pagamento (o convite trava
+// o e-mail), então serve para casar a conta recém-criada com o lead do funil.
+async function getAuthedEmail(req: Request): Promise<string | null> {
   try {
     const clerkUserId = getAuth(req).userId;
-    if (!clerkUserId) return;
+    if (!clerkUserId) return null;
     const user = await clerkClient.users.getUser(clerkUserId);
-    const to =
+    return (
       user.primaryEmailAddress?.emailAddress ??
-      user.emailAddresses[0]?.emailAddress;
-    if (!to) return;
-    const tpl = welcomeEmail(user.firstName);
-    await sendEmail({ to, subject: tpl.subject, html: tpl.html });
+      user.emailAddresses[0]?.emailAddress ??
+      null
+    );
   } catch (err) {
-    req.log.error({ err }, "Falha ao enviar e-mail de boas-vindas");
+    req.log.error({ err }, "Falha ao obter e-mail da conta no Clerk");
+    return null;
   }
+}
+
+// Verificação da OAB para o perfil recém-criado. NÃO confiamos no booleano
+// gravado no lead (a rota de upsert do lead é pública e forjável): refazemos a
+// checagem REAL no webservice da OAB no servidor, tornando o selo "verificada"
+// inforjável. Falha de serviço vira "pendente" (revisão manual), nunca bloqueia.
+async function verificarOabDoLead(
+  lead: CadastroLeadRow,
+  log: Logger,
+): Promise<{
+  oabVerificada: boolean;
+  oabSituacao: string | null;
+  oabNomeConfirmado: string | null;
+  oabVerificadaEm: Date | null;
+  oabVerificacaoPendente: boolean;
+}> {
+  const naoVerificado = {
+    oabVerificada: false,
+    oabSituacao: null,
+    oabNomeConfirmado: null,
+    oabVerificadaEm: null,
+    oabVerificacaoPendente: true,
+  };
+  const cpf = lead.cpf.trim();
+  const oab = lead.oab.trim();
+  const seccional = lead.seccional.trim();
+  const nome = lead.nome.trim();
+  if (!cpf || !oab || !seccional || !nome) {
+    // Sem dados de identificação suficientes: deixa para revisão manual.
+    return naoVerificado;
+  }
+  try {
+    const resultado = await verificarInscricaoOab({ cpf, oab, seccional, nome });
+    if (resultado.valido) {
+      return {
+        oabVerificada: true,
+        oabSituacao: resultado.situacao,
+        oabNomeConfirmado: resultado.nomeOab,
+        oabVerificadaEm: new Date(),
+        oabVerificacaoPendente: false,
+      };
+    }
+    return naoVerificado;
+  } catch (err) {
+    log.error({ err }, "Falha ao reverificar OAB no primeiro acesso ao perfil");
+    return naoVerificado;
+  }
+}
+
+// Prefill do perfil no primeiro acesso, a partir do lead do funil casado pelo
+// e-mail da conta (que é o e-mail do pagamento). Copia apenas dados não
+// sensíveis; o selo da OAB é reverificado no servidor (ver acima).
+async function buildPrefillFromLead(
+  req: Request,
+): Promise<Partial<typeof advogadosTable.$inferInsert>> {
+  const email = await getAuthedEmail(req);
+  if (!email) return {};
+  const userId = getAuth(req).userId;
+  if (!userId) return {};
+
+  // Vincula o prefill ao lead EXATO que gerou o pagamento (subscriptions.leadId),
+  // não ao "último lead com este e-mail". Isso impede que um upsert público de
+  // lead (rota aberta) injete dados de terceiros no primeiro acesso.
+  const [sub] = await db
+    .select({ leadId: subscriptionsTable.leadId })
+    .from(subscriptionsTable)
+    .where(eq(subscriptionsTable.lawyerRef, userId))
+    .limit(1);
+  if (!sub?.leadId) return {};
+
+  const [lead] = await db
+    .select()
+    .from(cadastroLeadsTable)
+    .where(eq(cadastroLeadsTable.leadId, sub.leadId))
+    .limit(1);
+  // Só usa o lead se o e-mail dele bater com o e-mail da conta (que é o do
+  // pagamento). Garante a regra "prefill apenas se lead == pagamento".
+  if (!lead || lead.email.trim().toLowerCase() !== email.trim().toLowerCase()) {
+    return {};
+  }
+
+  const oabFormatada =
+    lead.oab.trim() && lead.seccional.trim()
+      ? `OAB/${lead.seccional.trim().toUpperCase()} ${lead.oab.trim()}`
+      : "";
+  const verificacao = await verificarOabDoLead(lead, req.log);
+
+  return {
+    nome: lead.nome,
+    oab: oabFormatada,
+    whatsapp: lead.telefone,
+    areas: lead.areas ?? [],
+    cidades: (lead.cidades ?? []) as Cidade[],
+    atendeOnline: lead.atendeOnline,
+    ...verificacao,
+  };
 }
 
 type SubStatus = "pendente" | "ativa" | "atrasada" | "inativa";
@@ -244,13 +342,15 @@ router.get("/perfil", requireAuth, async (req, res): Promise<void> => {
     .where(eq(advogadosTable.userId, userId));
 
   if (!row) {
+    // Primeiro acesso ao painel: cria o perfil já pré-preenchido com os dados
+    // do funil de cadastro (casados pelo e-mail da conta, que é o e-mail do
+    // pagamento). O selo da OAB é reverificado no servidor. Sem e-mail de
+    // boas-vindas aqui: o e-mail "Conta criada" já foi enviado no pagamento.
+    const prefill = await buildPrefillFromLead(req);
     [row] = await db
       .insert(advogadosTable)
-      .values({ userId })
+      .values({ userId, ...prefill })
       .returning();
-    // Primeiro acesso ao painel: envia boas-vindas com as instruções de
-    // cadastro (best-effort, nunca quebra a resposta).
-    await sendWelcomeEmail(req);
   }
 
   const status = await getSubscriptionStatus(userId);

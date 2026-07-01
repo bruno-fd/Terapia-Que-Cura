@@ -1,9 +1,11 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { eq, and, ne, isNull } from "drizzle-orm";
+import type { Logger } from "pino";
 import {
   db,
   subscriptionsTable,
   advogadosTable,
+  cadastroLeadsTable,
   type SubscriptionRow,
 } from "@workspace/db";
 import {
@@ -14,6 +16,8 @@ import {
   CancelAssinaturaResponse,
   SolicitarReembolsoBody,
   SolicitarReembolsoResponse,
+  IniciarCheckoutBody,
+  IniciarCheckoutResponse,
 } from "@workspace/api-zod";
 import {
   createCustomer,
@@ -29,6 +33,7 @@ import { getAuth, clerkClient } from "@clerk/express";
 import { sendEmail } from "../lib/email";
 import {
   subscriptionCreatedEmail,
+  accountCreatedEmail,
   paymentConfirmedEmail,
   paymentOverdueEmail,
 } from "../lib/email-templates";
@@ -46,9 +51,7 @@ interface PlanConfig {
 
 const PLANS: Record<Plano, PlanConfig> = {
   mensal: {
-    // TEMPORÁRIO (teste): preço reduzido para R$5,00 (mínimo aceito pelo Asaas)
-    // para permitir cobranças reais com custo mínimo. Valor normal: 4990 (R$49,90).
-    valueCents: 500,
+    valueCents: 4990,
     cycle: "MONTHLY",
     description: "Plano Mensal, Minha Causa Justa",
   },
@@ -227,9 +230,102 @@ async function findRow(
   return row;
 }
 
+// E-mail da conta autenticada (Clerk). Fonte da verdade para o vínculo com a
+// assinatura criada no checkout anônimo, cujo lawyerRef nasce nulo.
+async function getAuthedEmail(req: Request): Promise<string | null> {
+  try {
+    const clerkUserId = getAuth(req).userId;
+    if (!clerkUserId) return null;
+    const user = await clerkClient.users.getUser(clerkUserId);
+    return (
+      user.primaryEmailAddress?.emailAddress ??
+      user.emailAddresses[0]?.emailAddress ??
+      null
+    );
+  } catch (err) {
+    req.log.error({ err }, "Falha ao obter e-mail da conta no Clerk");
+    return null;
+  }
+}
+
+// Resolve a assinatura do advogado autenticado. No modelo "checkout primeiro" a
+// assinatura é criada de forma anônima (lawyerRef nulo, chaveada por
+// customerEmail). No primeiro acesso autenticado, casamos pelo e-mail da conta
+// (que é o mesmo do pagamento, pois o convite trava o e-mail) e vinculamos o
+// lawyerRef de forma atômica, para os acessos seguintes irem direto pelo id.
+async function resolveRowForUser(
+  req: Request,
+): Promise<SubscriptionRow | undefined> {
+  const userId = req.userId!;
+  const owned = await findRow(userId);
+  if (owned) return owned;
+
+  const email = await getAuthedEmail(req);
+  if (!email) return undefined;
+
+  const [candidate] = await db
+    .select()
+    .from(subscriptionsTable)
+    .where(
+      and(
+        eq(subscriptionsTable.customerEmail, email),
+        isNull(subscriptionsTable.lawyerRef),
+      ),
+    );
+  if (!candidate) return undefined;
+
+  const [claimed] = await db
+    .update(subscriptionsTable)
+    .set({ lawyerRef: userId, updatedAt: new Date() })
+    .where(
+      and(
+        eq(subscriptionsTable.id, candidate.id),
+        isNull(subscriptionsTable.lawyerRef),
+      ),
+    )
+    .returning();
+  return claimed ?? candidate;
+}
+
+// Base pública da aplicação, usada para construir o link de convite (criação de
+// senha) do e-mail "Conta criada". Preferimos APP_PUBLIC_URL; na ausência,
+// usamos o primeiro domínio público do Replit.
+function appPublicUrl(): string {
+  const explicit = process.env["APP_PUBLIC_URL"];
+  if (explicit) return explicit.replace(/\/$/, "");
+  const domain = (process.env["REPLIT_DOMAINS"] ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)[0];
+  return domain ? `https://${domain}` : "https://minhacausajusta.com.br";
+}
+
+// Emite um convite do Clerk (sem enviar e-mail do Clerk: notify=false) para o
+// e-mail do pagamento. O advogado clica, define a senha na nossa página
+// /sign-up (o ticket vem embutido na URL) e a conta nasce travada nesse e-mail.
+// Idempotente (ignoreExisting) para poder ser reexecutado por eventos repetidos.
+async function createAccountInvitation(
+  email: string,
+  log: Logger,
+): Promise<string> {
+  const base = appPublicUrl();
+  try {
+    const invitation = await clerkClient.invitations.createInvitation({
+      emailAddress: email,
+      redirectUrl: `${base}/sign-up`,
+      notify: false,
+      ignoreExisting: true,
+    });
+    return invitation.url ?? `${base}/sign-up`;
+  } catch (err) {
+    log.error({ err }, "Falha ao criar convite Clerk");
+    throw err;
+  }
+}
+
 // Estado atual da assinatura do advogado.
 router.get("/assinatura", requireAuth, async (req, res): Promise<void> => {
-  const row = await findRow(req.userId!);
+  const row = await resolveRowForUser(req);
   if (!row) {
     res.json(GetAssinaturaResponse.parse(EMPTY_STATE));
     return;
@@ -337,6 +433,12 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
       customerName: nome,
       customerEmail: email,
       nextDueDate: subscription.nextDueDate ?? todayIso(),
+      // Reassinatura de uma conta que JÁ existe (usuário autenticado): não há
+      // provisionamento a fazer, então marcamos accountProvisionedAt para o
+      // webhook não tentar recriar a conta nem enviar o e-mail "Conta criada".
+      // Esta rota não passa por lead, então leadId permanece nulo.
+      leadId: null,
+      accountProvisionedAt: new Date(),
       // Reassinatura: limpa qualquer cancelamento anterior para não herdar o
       // período de carência nem o motivo da assinatura antiga.
       canceledAt: null,
@@ -386,7 +488,7 @@ router.post(
   "/assinatura/cancelar",
   requireAuth,
   async (req, res): Promise<void> => {
-    const row = await findRow(req.userId!);
+    const row = await resolveRowForUser(req);
   if (!row) {
     res.status(404).json({ error: "Nenhuma assinatura encontrada." });
     return;
@@ -467,7 +569,7 @@ router.post(
   "/assinatura/reembolso",
   requireAuth,
   async (req, res): Promise<void> => {
-    const row = await findRow(req.userId!);
+    const row = await resolveRowForUser(req);
     if (!row) {
       res.status(404).json({ error: "Nenhuma assinatura encontrada." });
       return;
@@ -536,19 +638,168 @@ router.post(
     }
 
     // Exclui o perfil do advogado e a assinatura local (teardown completo).
+    // Usa o id da conta autenticada (row.lawyerRef pode ser nulo antes do
+    // vínculo, mas resolveRowForUser já o backfila para o usuário atual).
     await db
       .delete(advogadosTable)
-      .where(eq(advogadosTable.userId, row.lawyerRef));
+      .where(eq(advogadosTable.userId, req.userId!));
     await db.delete(subscriptionsTable).where(eq(subscriptionsTable.id, row.id));
 
     req.log.info(
-      { lawyerRef: row.lawyerRef, motivo, estornos: paidPayments.length },
+      { lawyerRef: req.userId, motivo, estornos: paidPayments.length },
       "Reembolso processado e perfil excluído",
     );
 
     res.json(SolicitarReembolsoResponse.parse(EMPTY_STATE));
   },
 );
+
+// Aceita apenas chamadas vindas do próprio site (mesma regra de /verificar-oab).
+// Em produção os domínios públicos estão em REPLIT_DOMAINS; sem allowlist
+// configurada (dev), libera. Protege o checkout público contra abuso externo.
+function origemPermitida(req: Request): boolean {
+  const permitidos = (process.env["REPLIT_DOMAINS"] ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!permitidos.length) return true;
+  const origem = req.get("origin") || req.get("referer") || "";
+  if (!origem) return false;
+  try {
+    const host = new URL(origem).host;
+    return permitidos.some((d) => host === d || host.endsWith(`.${d}`));
+  } catch {
+    return false;
+  }
+}
+
+// Checkout anônimo: chamado ao fim do funil de cadastro, ANTES de existir conta.
+// Cria o cliente e a assinatura recorrente na Asaas a partir dos dados do lead e
+// devolve o link da fatura hospedada (invoiceUrl) para o pagamento com cartão.
+// NENHUMA conta é criada aqui: a conta só é provisionada quando o pagamento é
+// confirmado (webhook). Chamar de novo sempre inicia um checkout novo (nova
+// assinatura Asaas), reutilizando a MESMA linha da assinatura (chaveada por
+// leadId) e zerando o provisionamento anterior.
+router.post("/checkout", async (req, res): Promise<void> => {
+  if (!origemPermitida(req)) {
+    res.status(403).json({ error: "Origem não autorizada" });
+    return;
+  }
+  const parsed = IniciarCheckoutBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { leadId, plano, nome, email, cpfCnpj, telefone } = parsed.data;
+  const plan = PLANS[plano as Plano];
+
+  // O checkout anônimo precisa corresponder a um lead real do funil, e o e-mail
+  // enviado deve ser o mesmo do lead (é ele que provisiona a conta depois do
+  // pagamento). Isso evita criar cobranças na Asaas com dados arbitrários.
+  const [lead] = await db
+    .select()
+    .from(cadastroLeadsTable)
+    .where(eq(cadastroLeadsTable.leadId, leadId))
+    .limit(1);
+  if (!lead) {
+    res
+      .status(400)
+      .json({ error: "Cadastro não encontrado. Reinicie o cadastro." });
+    return;
+  }
+  if (lead.email.trim().toLowerCase() !== email.trim().toLowerCase()) {
+    res
+      .status(400)
+      .json({ error: "O e-mail não confere com o cadastro. Reinicie o cadastro." });
+    return;
+  }
+
+  try {
+    const customer = await createCustomer({
+      name: nome,
+      cpfCnpj: cpfCnpj.replace(/\D/g, ""),
+      email,
+      mobilePhone: telefone ? telefone.replace(/\D/g, "") : undefined,
+    });
+
+    const subscription = await createSubscription({
+      customer: customer.id,
+      value: plan.valueCents / 100,
+      cycle: plan.cycle,
+      nextDueDate: todayIso(),
+      description: plan.description,
+    });
+
+    let payments: AsaasPayment[] = [];
+    try {
+      payments = await listSubscriptionPayments(subscription.id);
+    } catch (err) {
+      req.log.error(
+        { err },
+        "Falha ao listar pagamentos após criar checkout",
+      );
+    }
+
+    const invoiceUrl = openInvoiceUrl(payments);
+    if (!invoiceUrl) {
+      req.log.error(
+        { subscriptionId: subscription.id },
+        "Checkout sem invoiceUrl da Asaas",
+      );
+      res.status(502).json({
+        error:
+          "Não foi possível gerar o link de pagamento. Tente novamente em instantes.",
+      });
+      return;
+    }
+
+    const values = {
+      // Sem conta ainda: o vínculo com o advogado (lawyerRef) só acontece após
+      // o pagamento e o primeiro login. A assinatura nasce chaveada pelo e-mail.
+      lawyerRef: null,
+      leadId,
+      asaasCustomerId: customer.id,
+      asaasSubscriptionId: subscription.id,
+      plan: plano,
+      status: "pendente",
+      valueCents: plan.valueCents,
+      cycle: plan.cycle,
+      customerName: nome,
+      customerEmail: email,
+      nextDueDate: subscription.nextDueDate ?? todayIso(),
+      // Checkout novo: zera qualquer provisionamento/cancelamento anterior desta
+      // mesma tentativa de cadastro (o advogado voltou ao funil).
+      accountProvisionedAt: null,
+      canceledAt: null,
+      accessUntil: null,
+      cancelReason: null,
+      updatedAt: new Date(),
+    };
+
+    const [existing] = await db
+      .select()
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.leadId, leadId));
+
+    if (existing) {
+      await db
+        .update(subscriptionsTable)
+        .set(values)
+        .where(eq(subscriptionsTable.id, existing.id));
+    } else {
+      await db.insert(subscriptionsTable).values(values);
+    }
+
+    res.status(201).json(IniciarCheckoutResponse.parse({ invoiceUrl }));
+  } catch (err) {
+    if (err instanceof AsaasError) {
+      req.log.error({ err }, "Erro Asaas ao iniciar checkout");
+      res.status(502).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
+});
 
 // Webhook da Asaas (configurado no painel Asaas). Atualiza o status conforme
 // os eventos de pagamento. Não faz parte do contrato OpenAPI (rota externa).
@@ -583,6 +834,63 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
     newStatus = "inativa";
   }
 
+  // Provisionamento da conta no PRIMEIRO pagamento confirmado (checkout
+  // primeiro). Desacoplado da transição de status para poder ser reexecutado
+  // por eventos posteriores caso o Clerk falhe. A "reivindicação" de
+  // accountProvisionedAt é atômica (condicional a isNull), evitando e-mails
+  // duplicados sob entregas concorrentes/repetidas. Se o provisionamento
+  // falhar, desfazemos a reivindicação para uma nova tentativa depois.
+  let justProvisioned = false;
+  if (newStatus === "ativa") {
+    const [row] = await db
+      .select()
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.asaasSubscriptionId, subscriptionId));
+    if (row && !row.accountProvisionedAt && row.customerEmail?.trim()) {
+      const [claimed] = await db
+        .update(subscriptionsTable)
+        .set({ accountProvisionedAt: new Date(), updatedAt: new Date() })
+        .where(
+          and(
+            eq(subscriptionsTable.id, row.id),
+            isNull(subscriptionsTable.accountProvisionedAt),
+          ),
+        )
+        .returning();
+      if (claimed && claimed.customerEmail) {
+        try {
+          const entrarUrl = await createAccountInvitation(
+            claimed.customerEmail,
+            req.log,
+          );
+          const tpl = accountCreatedEmail({
+            nome: claimed.customerName,
+            entrarUrl,
+          });
+          await sendEmail({
+            to: claimed.customerEmail,
+            subject: tpl.subject,
+            html: tpl.html,
+          });
+          justProvisioned = true;
+          req.log.info(
+            { subscriptionId },
+            "Conta provisionada após pagamento confirmado",
+          );
+        } catch (err) {
+          req.log.error(
+            { err, subscriptionId },
+            "Falha ao provisionar conta; desfazendo reivindicação",
+          );
+          await db
+            .update(subscriptionsTable)
+            .set({ accountProvisionedAt: null })
+            .where(eq(subscriptionsTable.id, claimed.id));
+        }
+      }
+    }
+  }
+
   if (newStatus) {
     // Atualiza apenas quando há mudança real de status. O .returning() só
     // devolve a linha se ela foi alterada, tornando a deduplicação segura
@@ -610,7 +918,10 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
       );
 
       if (changed.customerEmail) {
-        if (newStatus === "ativa") {
+        if (newStatus === "ativa" && !justProvisioned) {
+          // Pagamento confirmado de uma conta que já existe (renovação ou
+          // recuperação de atraso). No primeiro pagamento não enviamos este
+          // e-mail: o de "Conta criada" já foi enviado no provisionamento.
           const tpl = paymentConfirmedEmail(changed.customerName);
           await sendEmail({
             to: changed.customerEmail,

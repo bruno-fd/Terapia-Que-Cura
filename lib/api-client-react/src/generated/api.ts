@@ -27,6 +27,8 @@ import type {
   BlogPostInput,
   CadastroLead,
   CancelSubscriptionInput,
+  CheckoutInput,
+  CheckoutResult,
   ConcorrenciaResult,
   ContarAdvogadosParams,
   CreateSubscriptionInput,
@@ -1396,5 +1398,76 @@ export const useSolicitarReembolso = <TError = ErrorType<ApiErrorResponse>,
         TContext
       > => {
       return useMutation(getSolicitarReembolsoMutationOptions(options));
+    }
+
+export const getIniciarCheckoutUrl = () => {
+
+
+
+
+  return `/api/checkout`
+}
+
+/**
+ * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the lawyer pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
+ * @summary Start an anonymous checkout (no account required)
+ */
+export const iniciarCheckout = async (checkoutInput: CheckoutInput, options?: RequestInit): Promise<CheckoutResult> => {
+
+  return customFetch<CheckoutResult>(getIniciarCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(checkoutInput)
+  }
+);}
+
+
+
+
+export const getIniciarCheckoutMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof iniciarCheckout>>, TError,{data: BodyType<CheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof iniciarCheckout>>, TError,{data: BodyType<CheckoutInput>}, TContext> => {
+
+const mutationKey = ['iniciarCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof iniciarCheckout>>, {data: BodyType<CheckoutInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  iniciarCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IniciarCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof iniciarCheckout>>>
+    export type IniciarCheckoutMutationBody = BodyType<CheckoutInput>
+    export type IniciarCheckoutMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Start an anonymous checkout (no account required)
+ */
+export const useIniciarCheckout = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof iniciarCheckout>>, TError,{data: BodyType<CheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof iniciarCheckout>>,
+        TError,
+        {data: BodyType<CheckoutInput>},
+        TContext
+      > => {
+      return useMutation(getIniciarCheckoutMutationOptions(options));
     }
 

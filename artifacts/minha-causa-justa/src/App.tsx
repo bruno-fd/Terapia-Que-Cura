@@ -97,8 +97,12 @@ const clerkAppearance = {
     alertText: "text-neutral-700",
     logoBox: "justify-center",
     logoImage: "h-10 w-auto",
+    // Login/cadastro por e-mail e senha apenas: ocultamos os provedores sociais
+    // (Google/SSO) e o divisor "ou".
+    socialButtons: "hidden",
     socialButtonsBlockButton:
       "border border-neutral-300 hover:bg-neutral-100",
+    dividerRow: "hidden",
     formButtonPrimary: "bg-primary-600 hover:bg-primary-700 text-white",
     formFieldInput:
       "border border-neutral-300 focus:ring-2 focus:ring-primary-500",
@@ -136,7 +140,8 @@ function SignUpPage() {
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
-        fallbackRedirectUrl={`${basePath}/painel/assinatura`}
+        fallbackRedirectUrl={`${basePath}/painel/perfil`}
+        forceRedirectUrl={`${basePath}/painel/perfil`}
       />
     </div>
   );

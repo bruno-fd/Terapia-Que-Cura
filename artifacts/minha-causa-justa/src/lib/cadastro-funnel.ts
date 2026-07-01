@@ -22,8 +22,9 @@ export interface FunnelData {
   // cobrança (Asaas). Fica apenas no localStorage do funil e NUNCA aparece no
   // perfil público. Em produção, considerar hash/criptografia em repouso.
   cpf: string;
-  // OAB e seccional ficam apenas no localStorage (não no lead do back-end):
-  // a retomada é no mesmo navegador e o remarketing só precisa do e-mail.
+  // OAB e seccional são salvos no localStorage e também no lead do back-end,
+  // pois a conta só é criada após o pagamento e o perfil é pré-preenchido a
+  // partir do lead (com re-verificação real da OAB no lado servidor).
   oab: string;
   seccional: string;
   // Resultado da verificação real da inscrição na OAB (webservice CNA da OAB).
@@ -43,7 +44,7 @@ export interface FunnelData {
   step: number;
 }
 
-export const TOTAL_STEPS = 5;
+export const TOTAL_STEPS = 3;
 
 export const STORAGE_KEY = "mcj_cadastro_lead";
 
@@ -173,6 +174,18 @@ export async function syncLead(
     nome: data.nome,
     email: data.email,
     telefone: data.telefone,
+    // CPF/OAB/seccional e o resultado da verificação são enviados ao back-end
+    // para que, APÓS o pagamento confirmado (conta criada só então), o perfil
+    // seja pré-preenchido a partir do lead. A flag oabVerificada é apenas
+    // informativa: o back-end re-verifica a inscrição na OAB pelo lado servidor
+    // (nunca confia no booleano do cliente).
+    cpf: data.cpf,
+    oab: data.oab,
+    seccional: data.seccional,
+    oabVerificada: data.oabVerificada,
+    oabSituacao: data.oabSituacao,
+    oabNomeConfirmado: data.oabNomeConfirmado,
+    oabVerificacaoPendente: data.oabVerificacaoPendente,
     plano: data.plano,
     areas: data.areas,
     cidades: data.cidades,
@@ -197,16 +210,17 @@ export async function fetchLead(leadId: string): Promise<FunnelData | null> {
       nome: r.nome,
       email: r.email,
       telefone: r.telefone,
-      // CPF/OAB/verificação não são persistidos no lead do back-end; ao retomar
-      // por aqui, a etapa 1 refaz a verificação real da OAB.
-      cpf: "",
-      oab: "",
-      seccional: "",
-      oabVerificada: false,
-      oabSituacao: null,
-      oabNomeConfirmado: null,
+      // CPF/OAB/verificação agora são persistidos no lead (necessários para o
+      // pré-preenchimento do perfil após o pagamento). O token assinado NÃO é
+      // persistido; ao retomar por aqui, a etapa 1 refaz a verificação real.
+      cpf: r.cpf ?? "",
+      oab: r.oab ?? "",
+      seccional: r.seccional ?? "",
+      oabVerificada: r.oabVerificada === true,
+      oabSituacao: r.oabSituacao ?? null,
+      oabNomeConfirmado: r.oabNomeConfirmado ?? null,
       oabVerificadaEm: null,
-      oabVerificacaoPendente: false,
+      oabVerificacaoPendente: r.oabVerificacaoPendente === true,
       oabToken: null,
       plano: r.plano === "mensal" || r.plano === "anual" ? r.plano : null,
       areas: r.areas,

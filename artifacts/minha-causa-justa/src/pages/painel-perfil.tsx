@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, Instagram, Linkedin, Globe, Link2, Phone, X, MapPin } from "lucide-react";
+import { Check, Loader2, Instagram, Linkedin, Globe, Link2, Phone, X, MapPin, PartyPopper, ArrowDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetPerfil,
@@ -149,6 +149,15 @@ export default function PainelPerfil() {
 
   const aboutOver = profile.about.length > ABOUT_LIMIT;
 
+  // Perfil ainda não pronto para ser encontrado: usado para dar as boas-vindas
+  // e incentivar quem acabou de criar a conta (pós-pagamento) a concluir o
+  // preenchimento. O aviso some sozinho quando o perfil fica completo.
+  const perfilIncompleto =
+    !profile.about.trim() ||
+    profile.areas.length === 0 ||
+    !profile.whatsapp.trim();
+  const primeiroNome = profile.nome.trim().split(/\s+/).filter(Boolean)[0] ?? "";
+
   const focusField = (id: string) => {
     const el = document.getElementById(id);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -232,6 +241,38 @@ export default function PainelPerfil() {
 
   return (
     <DashboardLayout active="perfil">
+      {/* Boas-vindas comemorativas: aparece enquanto o perfil não está pronto
+          para ser encontrado (ex.: logo após criar a conta pós-pagamento). */}
+      {perfilIncompleto && !showSuccess && (
+        <div
+          className="mb-6 overflow-hidden rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-accent-50 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+          data-testid="banner-boas-vindas"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700">
+              <PartyPopper className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-primary-900">
+                {primeiroNome
+                  ? `Bem-vindo(a), ${primeiroNome}!`
+                  : "Bem-vindo(a) à Minha Causa Justa!"}
+              </h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-neutral-700">
+                Seu pagamento foi confirmado e sua conta já está ativa. Falta
+                pouco: complete seu perfil abaixo para começar a aparecer para
+                quem procura um advogado. Quanto mais completo, mais clientes
+                você atrai.
+              </p>
+              <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary-700">
+                <ArrowDown className="h-4 w-4" /> Comece pela sua foto e pelo
+                &ldquo;Sobre mim&rdquo;
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Banner de sucesso */}
       {showSuccess && (
         <div

@@ -115,6 +115,26 @@ export function subscriptionCreatedEmail(p: {
   };
 }
 
+// 2b. Conta criada após a confirmação do pagamento (checkout primeiro). Leva o
+// advogado a criar a senha e, em seguida, cair no perfil. O link "Entrar" é o
+// convite do Clerk (define a senha e vincula a conta ao e-mail do pagamento).
+export function accountCreatedEmail(p: {
+  nome?: string | null;
+  entrarUrl: string;
+}): EmailContent {
+  const body = `
+    <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Sua conta foi criada com sucesso</h1>
+    ${paragraph(`${greeting(p.nome)} recebemos a confirmação do seu pagamento e já criamos a sua conta na Minha Causa Justa.`)}
+    ${paragraph("Para acessar, defina a sua senha no botão abaixo:")}
+    ${button(p.entrarUrl, "Entrar")}
+    ${paragraph(`<span style="font-size:13px;color:${MUTED};">P.S.: logo após entrar, você poderá completar o seu perfil profissional para começar a ser encontrado por novos clientes.</span>`)}
+  `;
+  return {
+    subject: "Minha Causa Justa: Conta Criada com Sucesso",
+    html: layout(body),
+  };
+}
+
 // 3. Pagamento confirmado, perfil ativo.
 export function paymentConfirmedEmail(nome?: string | null): EmailContent {
   const body = `

@@ -229,6 +229,13 @@ export const UpsertCadastroLeadBody = zod.object({
   "nome": zod.string().optional(),
   "email": zod.string().optional(),
   "telefone": zod.string().optional(),
+  "cpf": zod.string().optional(),
+  "oab": zod.string().optional(),
+  "seccional": zod.string().optional(),
+  "oabVerificada": zod.boolean().optional(),
+  "oabSituacao": zod.string().nullish(),
+  "oabNomeConfirmado": zod.string().nullish(),
+  "oabVerificacaoPendente": zod.boolean().optional(),
   "plano": zod.enum(['mensal', 'anual']).nullish(),
   "areas": zod.array(zod.string()).optional(),
   "cidades": zod.array(zod.object({
@@ -251,6 +258,13 @@ export const UpsertCadastroLeadResponse = zod.object({
   "nome": zod.string(),
   "email": zod.string(),
   "telefone": zod.string(),
+  "cpf": zod.string(),
+  "oab": zod.string(),
+  "seccional": zod.string(),
+  "oabVerificada": zod.boolean(),
+  "oabSituacao": zod.string().nullish(),
+  "oabNomeConfirmado": zod.string().nullish(),
+  "oabVerificacaoPendente": zod.boolean(),
   "plano": zod.enum(['mensal', 'anual']).nullish(),
   "areas": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
@@ -281,6 +295,13 @@ export const GetCadastroLeadResponse = zod.object({
   "nome": zod.string(),
   "email": zod.string(),
   "telefone": zod.string(),
+  "cpf": zod.string(),
+  "oab": zod.string(),
+  "seccional": zod.string(),
+  "oabVerificada": zod.boolean(),
+  "oabSituacao": zod.string().nullish(),
+  "oabNomeConfirmado": zod.string().nullish(),
+  "oabVerificacaoPendente": zod.boolean(),
   "plano": zod.enum(['mensal', 'anual']).nullish(),
   "areas": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
@@ -543,6 +564,30 @@ export const SolicitarReembolsoResponse = zod.object({
   "status": zod.enum(['Pago', 'Pendente', 'Falhou']),
   "invoiceUrl": zod.string().nullish()
 }))
+})
+
+
+/**
+ * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the lawyer pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
+ * @summary Start an anonymous checkout (no account required)
+ */
+
+
+
+
+
+
+export const IniciarCheckoutBody = zod.object({
+  "leadId": zod.string().min(1),
+  "plano": zod.enum(['mensal', 'anual']),
+  "nome": zod.string().min(1),
+  "email": zod.string().min(1),
+  "cpfCnpj": zod.string().min(1),
+  "telefone": zod.string().optional()
+})
+
+export const IniciarCheckoutResponse = zod.object({
+  "invoiceUrl": zod.string()
 })
 
 

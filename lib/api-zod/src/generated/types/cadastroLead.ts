@@ -13,6 +13,13 @@ export interface CadastroLead {
   nome: string;
   email: string;
   telefone: string;
+  cpf: string;
+  oab: string;
+  seccional: string;
+  oabVerificada: boolean;
+  oabSituacao?: string | null;
+  oabNomeConfirmado?: string | null;
+  oabVerificacaoPendente: boolean;
   plano?: CadastroLeadPlano;
   areas: string[];
   cidades: Cidade[];

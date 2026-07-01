@@ -1,6 +1,9 @@
-import type {
-  SubscriptionState,
-  CreateSubscriptionInput,
+import {
+  iniciarCheckout as iniciarCheckoutApi,
+  type SubscriptionState,
+  type CreateSubscriptionInput,
+  type CheckoutInput,
+  type CheckoutResult,
 } from "@workspace/api-client-react";
 
 // ============================================================
@@ -35,7 +38,19 @@ async function apiFetch<T>(
   return (await res.json()) as T;
 }
 
-export type { SubscriptionState, CreateSubscriptionInput };
+export type {
+  SubscriptionState,
+  CreateSubscriptionInput,
+  CheckoutInput,
+  CheckoutResult,
+};
+
+// Inicia o checkout ANÔNIMO (sem conta): cria a assinatura no Asaas atrelada ao
+// lead e devolve a URL da fatura hospedada (invoiceUrl). A conta do advogado só
+// é criada pelo back-end APÓS o webhook confirmar o pagamento.
+export function iniciarCheckout(input: CheckoutInput): Promise<CheckoutResult> {
+  return iniciarCheckoutApi(input);
+}
 
 export function getAssinatura(): Promise<SubscriptionState> {
   return apiFetch("/assinatura");

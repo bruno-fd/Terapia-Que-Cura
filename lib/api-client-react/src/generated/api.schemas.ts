@@ -137,6 +137,31 @@ export interface CancelSubscriptionInput {
   motivo?: string;
 }
 
+export type CheckoutInputPlano = typeof CheckoutInputPlano[keyof typeof CheckoutInputPlano];
+
+
+export const CheckoutInputPlano = {
+  mensal: 'mensal',
+  anual: 'anual',
+} as const;
+
+export interface CheckoutInput {
+  /** @minLength 1 */
+  leadId: string;
+  plano: CheckoutInputPlano;
+  /** @minLength 1 */
+  nome: string;
+  /** @minLength 1 */
+  email: string;
+  /** @minLength 1 */
+  cpfCnpj: string;
+  telefone?: string;
+}
+
+export interface CheckoutResult {
+  invoiceUrl: string;
+}
+
 export interface Cidade {
   /** @minLength 1 */
   nome: string;
@@ -258,6 +283,13 @@ export interface CadastroLead {
   nome: string;
   email: string;
   telefone: string;
+  cpf: string;
+  oab: string;
+  seccional: string;
+  oabVerificada: boolean;
+  oabSituacao?: string | null;
+  oabNomeConfirmado?: string | null;
+  oabVerificacaoPendente: boolean;
   plano?: CadastroLeadPlano;
   areas: string[];
   cidades: Cidade[];
@@ -280,6 +312,13 @@ export interface UpsertCadastroLeadInput {
   nome?: string;
   email?: string;
   telefone?: string;
+  cpf?: string;
+  oab?: string;
+  seccional?: string;
+  oabVerificada?: boolean;
+  oabSituacao?: string | null;
+  oabNomeConfirmado?: string | null;
+  oabVerificacaoPendente?: boolean;
   plano?: UpsertCadastroLeadInputPlano;
   areas?: string[];
   cidades?: Cidade[];

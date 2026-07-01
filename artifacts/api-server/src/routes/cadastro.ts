@@ -28,6 +28,13 @@ function toLead(row: CadastroLeadRow) {
     nome: row.nome,
     email: row.email,
     telefone: row.telefone,
+    cpf: row.cpf,
+    oab: row.oab,
+    seccional: row.seccional,
+    oabVerificada: row.oabVerificada,
+    oabSituacao: row.oabSituacao ?? null,
+    oabNomeConfirmado: row.oabNomeConfirmado ?? null,
+    oabVerificacaoPendente: row.oabVerificacaoPendente,
     plano: (row.plano as "mensal" | "anual" | null) ?? null,
     areas: row.areas ?? [],
     cidades: row.cidades ?? [],
@@ -109,6 +116,13 @@ router.post("/cadastro/lead", async (req, res): Promise<void> => {
     nome: data.nome ?? "",
     email: data.email ?? "",
     telefone: data.telefone ?? "",
+    cpf: data.cpf ?? "",
+    oab: data.oab ?? "",
+    seccional: data.seccional ?? "",
+    oabVerificada: data.oabVerificada ?? false,
+    oabSituacao: data.oabSituacao ?? null,
+    oabNomeConfirmado: data.oabNomeConfirmado ?? null,
+    oabVerificacaoPendente: data.oabVerificacaoPendente ?? false,
     plano: data.plano ?? null,
     areas: data.areas ?? [],
     cidades: (data.cidades ?? []) as LeadCidade[],
@@ -122,6 +136,17 @@ router.post("/cadastro/lead", async (req, res): Promise<void> => {
   if (data.nome !== undefined) updateSet["nome"] = data.nome;
   if (data.email !== undefined) updateSet["email"] = data.email;
   if (data.telefone !== undefined) updateSet["telefone"] = data.telefone;
+  if (data.cpf !== undefined) updateSet["cpf"] = data.cpf;
+  if (data.oab !== undefined) updateSet["oab"] = data.oab;
+  if (data.seccional !== undefined) updateSet["seccional"] = data.seccional;
+  if (data.oabVerificada !== undefined)
+    updateSet["oabVerificada"] = data.oabVerificada;
+  if (data.oabSituacao !== undefined)
+    updateSet["oabSituacao"] = data.oabSituacao;
+  if (data.oabNomeConfirmado !== undefined)
+    updateSet["oabNomeConfirmado"] = data.oabNomeConfirmado;
+  if (data.oabVerificacaoPendente !== undefined)
+    updateSet["oabVerificacaoPendente"] = data.oabVerificacaoPendente;
   if (data.plano !== undefined) updateSet["plano"] = data.plano;
   if (data.areas !== undefined) updateSet["areas"] = data.areas;
   if (data.cidades !== undefined)

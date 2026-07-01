@@ -490,6 +490,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+  /checkout:
+    post:
+      operationId: iniciarCheckout
+      tags: [subscription]
+      summary: Start an anonymous checkout (no account required)
+      description: >-
+        Public (no auth): called at the end of the registration funnel. Creates
+        the Asaas customer and recurring subscription from the lead data and
+        returns the hosted invoice URL where the lawyer pays by card. NO account
+        is created here: the account is provisioned only after the payment is
+        confirmed (Asaas webhook). Calling again always starts a fresh checkout
+        instead of reopening a previous pending one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "201":
+          description: Checkout started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "502":
+          description: Asaas error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -710,6 +747,40 @@ components:
           type: string
           maxLength: 300
       additionalProperties: false
+    CheckoutInput:
+      type: object
+      properties:
+        leadId:
+          type: string
+          minLength: 1
+        plano:
+          type: string
+          enum: [mensal, anual]
+        nome:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          minLength: 1
+        cpfCnpj:
+          type: string
+          minLength: 1
+        telefone:
+          type: string
+      required:
+        - leadId
+        - plano
+        - nome
+        - email
+        - cpfCnpj
+      additionalProperties: false
+    CheckoutResult:
+      type: object
+      properties:
+        invoiceUrl:
+          type: string
+      required:
+        - invoiceUrl
     Cidade:
       type: object
       properties:
@@ -965,6 +1036,22 @@ components:
           type: string
         telefone:
           type: string
+        cpf:
+          type: string
+        oab:
+          type: string
+        seccional:
+          type: string
+        oabVerificada:
+          type: boolean
+        oabSituacao:
+          type: string
+          nullable: true
+        oabNomeConfirmado:
+          type: string
+          nullable: true
+        oabVerificacaoPendente:
+          type: boolean
         plano:
           type: string
           enum: [mensal, anual]
@@ -988,6 +1075,11 @@ components:
         - nome
         - email
         - telefone
+        - cpf
+        - oab
+        - seccional
+        - oabVerificada
+        - oabVerificacaoPendente
         - areas
         - cidades
         - atendeOnline
@@ -1005,6 +1097,22 @@ components:
           type: string
         telefone:
           type: string
+        cpf:
+          type: string
+        oab:
+          type: string
+        seccional:
+          type: string
+        oabVerificada:
+          type: boolean
+        oabSituacao:
+          type: string
+          nullable: true
+        oabNomeConfirmado:
+          type: string
+          nullable: true
+        oabVerificacaoPendente:
+          type: boolean
         plano:
           type: string
           enum: [mensal, anual]
