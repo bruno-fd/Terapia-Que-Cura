@@ -2,20 +2,19 @@ import { logger } from "./logger";
 
 // ---------------------------------------------------------------------------
 // Cliente mínimo da API Asaas (https://docs.asaas.com).
-// A URL base e a chave variam por ambiente:
-//   - Sandbox:   https://sandbox.asaas.com/api/v3  (chave $aact_hmlg_...)
-//   - Produção:  https://api.asaas.com/v3          (chave $aact_prod_...)
-// A base vem de ASAAS_BASE_URL (definida por ambiente: dev=sandbox,
-// prod=produção). A chave do Asaas é diferente entre sandbox e produção, e
-// segredos no Replit são globais (não separados por ambiente), então mantemos
-// duas secrets e escolhemos pela URL base:
-//   - Produção  -> ASAAS_API_KEY_PROD
-//   - Sandbox   -> ASAAS_API_KEY
+// A base vem de ASAAS_BASE_URL. Hoje TANTO desenvolvimento quanto produção
+// apontam para a API REAL do Asaas (https://api.asaas.com/v3): o sandbox foi
+// removido do ambiente de desenvolvimento a pedido, para facilitar o teste com
+// dados reais. O código ainda seleciona a chave pela URL base (segredos no
+// Replit são globais, não separados por ambiente), então continua compatível
+// caso ASAAS_BASE_URL volte a apontar para o sandbox:
+//   - Produção (api.asaas.com)     -> ASAAS_API_KEY_PROD ($aact_prod_...)
+//   - Sandbox  (sandbox.asaas.com) -> ASAAS_API_KEY      ($aact_hmlg_...)
 // Nunca logamos a chave.
 // ---------------------------------------------------------------------------
 
 const ASAAS_BASE_URL =
-  process.env["ASAAS_BASE_URL"] ?? "https://sandbox.asaas.com/api/v3";
+  process.env["ASAAS_BASE_URL"] ?? "https://api.asaas.com/v3";
 
 // true quando apontamos para a API de produção do Asaas.
 const IS_PRODUCTION_ASAAS = /(^|\/\/)api\.asaas\.com/i.test(ASAAS_BASE_URL);
