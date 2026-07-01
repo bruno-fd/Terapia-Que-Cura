@@ -172,6 +172,7 @@ export interface LawyerProfile {
   oabNomeConfirmado?: string | null;
   oabVerificadaEm?: string | null;
   oabVerificacaoPendente: boolean;
+  createdAt?: string | null;
 }
 
 export interface UpdateProfileInput {

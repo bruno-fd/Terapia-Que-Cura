@@ -724,6 +724,9 @@ components:
           nullable: true
         oabVerificacaoPendente:
           type: boolean
+        createdAt:
+          type: string
+          nullable: true
       required:
         - nome
         - oab

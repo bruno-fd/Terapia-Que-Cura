@@ -87,6 +87,7 @@ function toProfile(
       ? row.oabVerificadaEm.toISOString()
       : null,
     oabVerificacaoPendente: row.oabVerificacaoPendente,
+    createdAt: row.createdAt ? row.createdAt.toISOString() : null,
   };
 }
 

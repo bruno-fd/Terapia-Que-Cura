@@ -4,8 +4,19 @@ import { Eye, Phone, Target, TrendingUp, ArrowUp, Rocket, Check } from "lucide-r
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useGetPerfil } from "@workspace/api-client-react";
 
-type DemoState = "primeiro" | "tres";
 type Period = "mes" | "trimestre" | "total";
+
+// Janela inicial de indexação: nos primeiros 15 dias de cadastro o advogado vê
+// a tela de boas-vindas; depois disso as métricas passam a aparecer sozinhas.
+const DIAS_INDEXACAO = 15;
+
+function diasDesde(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const criado = new Date(iso).getTime();
+  if (Number.isNaN(criado)) return null;
+  const ms = Date.now() - criado;
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
 
 // Dados fictícios por período (Estado B)
 const PERIOD_DATA: Record<Period, { views: number; viewsTrend: number; contacts: number; contactsTrend: number }> = {
@@ -28,44 +39,21 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 }
 
 export default function PainelMetricas() {
-  const [demo, setDemo] = useState<DemoState>("tres");
   const [period, setPeriod] = useState<Period>("mes");
   const { data: profile } = useGetPerfil();
   const hasPhoto = !!profile?.photo;
   const areasCount = profile?.areas.length ?? 0;
+
+  // Ainda dentro dos primeiros 15 dias de cadastro: mostra a tela de indexação.
+  // Depois disso, as métricas aparecem automaticamente.
+  const dias = diasDesde(profile?.createdAt);
+  const indexando = dias !== null && dias < DIAS_INDEXACAO;
 
   const data = PERIOD_DATA[period];
   const conversion = data.views > 0 ? Math.round((data.contacts / data.views) * 100) : 0;
 
   return (
     <DashboardLayout active="metricas">
-      {/* Toggle de demonstração */}
-      <div className="mb-6 flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-neutral-500">Demonstração:</span>
-        <button
-          onClick={() => setDemo("primeiro")}
-          className={`px-3 py-1 rounded-full border transition-colors ${
-            demo === "primeiro"
-              ? "bg-primary-500 text-white border-primary-500"
-              : "bg-white text-neutral-600 border-neutral-300 hover:bg-primary-50"
-          }`}
-          data-testid="demo-primeiro-mes"
-        >
-          Primeiro mês
-        </button>
-        <button
-          onClick={() => setDemo("tres")}
-          className={`px-3 py-1 rounded-full border transition-colors ${
-            demo === "tres"
-              ? "bg-primary-500 text-white border-primary-500"
-              : "bg-white text-neutral-600 border-neutral-300 hover:bg-primary-50"
-          }`}
-          data-testid="demo-tres-meses"
-        >
-          3 meses de cadastro
-        </button>
-      </div>
-
       {/* Cabeçalho */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
@@ -74,7 +62,7 @@ export default function PainelMetricas() {
             Veja como seu perfil está sendo encontrado na plataforma.
           </p>
         </div>
-        {demo === "tres" && (
+        {!indexando && (
           <div className="flex items-center gap-3 text-sm shrink-0">
             {([
               ["mes", "Este mês"],
@@ -96,7 +84,7 @@ export default function PainelMetricas() {
         )}
       </div>
 
-      {demo === "primeiro" ? (
+      {indexando ? (
         <WelcomeState hasPhoto={hasPhoto} />
       ) : (
         <MetricsState
@@ -110,7 +98,7 @@ export default function PainelMetricas() {
   );
 }
 
-// Estado A — primeiro mês
+// Estado A — primeiros quinze dias (indexação)
 function WelcomeState({ hasPhoto }: { hasPhoto: boolean }) {
   void hasPhoto;
   return (
@@ -120,7 +108,7 @@ function WelcomeState({ hasPhoto }: { hasPhoto: boolean }) {
       </div>
       <h2 className="text-xl font-bold text-primary-800">Seu perfil está sendo indexado</h2>
       <p className="mt-2 text-neutral-700">
-        Os dados de visualização ficam disponíveis após o primeiro mês. Nesse período, a plataforma está
+        Os dados de visualização ficam disponíveis após os primeiros quinze dias. Nesse período, a plataforma está
         distribuindo seu perfil nas buscas e o Google está indexando suas informações.
       </p>
 

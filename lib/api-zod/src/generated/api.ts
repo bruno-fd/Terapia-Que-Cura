@@ -347,7 +347,8 @@ export const GetPerfilResponse = zod.object({
   "oabSituacao": zod.string().nullish(),
   "oabNomeConfirmado": zod.string().nullish(),
   "oabVerificadaEm": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean()
+  "oabVerificacaoPendente": zod.boolean(),
+  "createdAt": zod.string().nullish()
 })
 
 
@@ -409,7 +410,8 @@ export const UpdatePerfilResponse = zod.object({
   "oabSituacao": zod.string().nullish(),
   "oabNomeConfirmado": zod.string().nullish(),
   "oabVerificadaEm": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean()
+  "oabVerificacaoPendente": zod.boolean(),
+  "createdAt": zod.string().nullish()
 })
 
 
