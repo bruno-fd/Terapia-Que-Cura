@@ -37,16 +37,9 @@ interface Props {
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-// Resumo do pedido com link "Editar" por linha, levando de volta à etapa certa.
-function ResumoPedido({
-  data,
-  onEditar,
-  onEditarPlano,
-}: {
-  data: FunnelData;
-  onEditar: (step: number) => void;
-  onEditarPlano: () => void;
-}) {
+// Resumo do pedido (somente leitura): as informações são editáveis no painel
+// após o pagamento, então não há links "Editar" aqui.
+function ResumoPedido({ data }: { data: FunnelData }) {
   const plano = data.plano ?? "mensal";
   const info = PLANOS[plano];
   const primeiraCidade = data.cidades[0];
@@ -61,45 +54,30 @@ function ResumoPedido({
     ? data.areas.join(", ")
     : "Não informado";
 
-  const linha = (
-    rotulo: string,
-    valor: string,
-    onEdit: () => void,
-    testid: string,
-  ) => (
-    <div
-      className="flex items-start justify-between gap-4 py-3"
-      data-testid={`resumo-${testid}`}
-    >
-      <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-          {rotulo}
-        </p>
-        <p className="text-sm font-medium text-neutral-800 break-words">
-          {valor}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="shrink-0 text-sm font-medium text-primary-700 underline-offset-2 hover:underline"
-        data-testid={`button-editar-${testid}`}
-      >
-        Editar
-      </button>
+  const linha = (rotulo: string, valor: string, testid: string) => (
+    <div className="py-3" data-testid={`resumo-${testid}`}>
+      <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        {rotulo}
+      </p>
+      <p className="text-sm font-medium text-neutral-800 break-words">{valor}</p>
     </div>
   );
 
   return (
-    <div
-      className="mb-8 rounded-2xl border border-neutral-200 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] divide-y divide-neutral-100"
-      data-testid="resumo-pedido"
-    >
-      {linha("Plano", info.label, onEditarPlano, "plano")}
-      {linha("Valor", `${info.precoMes}/mês`, onEditarPlano, "valor")}
-      {linha("Cidade e UF", localLabel, () => onEditar(2), "local")}
-      {linha("Áreas de atuação", areasLabel, () => onEditar(2), "areas")}
-    </div>
+    <>
+      <div
+        className="mb-3 rounded-2xl border border-neutral-200 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] divide-y divide-neutral-100"
+        data-testid="resumo-pedido"
+      >
+        {linha("Plano", info.label, "plano")}
+        {linha("Valor", `${info.precoMes}/mês`, "valor")}
+        {linha("Cidade e UF", localLabel, "local")}
+        {linha("Áreas de atuação", areasLabel, "areas")}
+      </div>
+      <p className="mb-8 text-sm text-neutral-500" data-testid="resumo-editar-aviso">
+        As informações do seu perfil poderão ser editadas após o pagamento.
+      </p>
+    </>
   );
 }
 
@@ -174,13 +152,7 @@ export function StepConta({
   );
 }
 
-function PagamentoBloco({
-  data,
-  onNext,
-  onBack,
-  onEditar,
-  onEditarPlano,
-}: Props) {
+function PagamentoBloco({ data, onNext, onBack }: Props) {
   const [state, setState] = useState<SubscriptionState | null>(null);
   const [carregando, setCarregando] = useState(true);
   // Pré-preenche com o CPF informado na etapa 1 (evita digitar de novo).
@@ -303,13 +275,7 @@ function PagamentoBloco({
           : `Você escolheu o ${info.label} (${info.precoMes}/mês).`}
       </p>
 
-      {!state && (
-        <ResumoPedido
-          data={data}
-          onEditar={onEditar}
-          onEditarPlano={onEditarPlano}
-        />
-      )}
+      {!state && <ResumoPedido data={data} />}
 
       {!state && (
         <>
