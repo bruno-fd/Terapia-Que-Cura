@@ -492,7 +492,6 @@ function AssinarDialog({
 }) {
   const [nome, setNome] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
-  const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -505,8 +504,8 @@ function AssinarDialog({
 
   async function submit() {
     setErro(null);
-    if (!nome.trim() || !cpfCnpj.trim() || !email.trim()) {
-      setErro("Preencha nome, CPF/CNPJ e e-mail.");
+    if (!nome.trim() || !cpfCnpj.trim()) {
+      setErro("Preencha nome e CPF/CNPJ.");
       return;
     }
     setEnviando(true);
@@ -515,7 +514,6 @@ function AssinarDialog({
         plano,
         nome: nome.trim(),
         cpfCnpj: cpfCnpj.trim(),
-        email: email.trim(),
         telefone: telefone.trim() || undefined,
       });
       onCriada(novo);
@@ -572,19 +570,6 @@ function AssinarDialog({
               onChange={(e) => setCpfCnpj(e.target.value)}
               placeholder="000.000.000-00"
               data-testid="input-cpf"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
-              E-mail <span style={{ color: ERROR_COLOR }}>*</span>
-            </label>
-            <input
-              className={inputCls}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com.br"
-              data-testid="input-email"
             />
           </div>
           <div>

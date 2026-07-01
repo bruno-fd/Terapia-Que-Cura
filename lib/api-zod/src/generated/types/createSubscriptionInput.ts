@@ -13,7 +13,5 @@ export interface CreateSubscriptionInput {
   nome: string;
   /** @minLength 1 */
   cpfCnpj: string;
-  /** @minLength 1 */
-  email: string;
   telefone?: string;
 }

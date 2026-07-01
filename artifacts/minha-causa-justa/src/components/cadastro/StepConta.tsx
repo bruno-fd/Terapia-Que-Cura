@@ -228,7 +228,6 @@ function PagamentoBloco({
         plano,
         nome: data.nome.trim(),
         cpfCnpj: cpfCnpj.trim(),
-        email: data.email.trim(),
         telefone: data.telefone.trim() || undefined,
       });
       setState(novo);

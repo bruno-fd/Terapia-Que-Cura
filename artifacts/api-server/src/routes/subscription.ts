@@ -16,6 +16,7 @@ import {
   type AsaasPayment,
 } from "../lib/asaas";
 import { requireAuth } from "../middlewares/requireAuth";
+import { getAuth, clerkClient } from "@clerk/express";
 import { sendEmail } from "../lib/email";
 import {
   subscriptionCreatedEmail,
@@ -192,8 +193,31 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { plano, nome, cpfCnpj, email, telefone } = parsed.data;
+  const { plano, nome, cpfCnpj, telefone } = parsed.data;
   const plan = PLANS[plano as Plano];
+
+  // A cobrança usa SEMPRE o e-mail da conta autenticada (Clerk), nunca o
+  // e-mail digitado no funil (que pode divergir, ex.: login Google com outro
+  // e-mail). Se o e-mail da conta não puder ser obtido, falha com erro claro.
+  let email: string | undefined;
+  try {
+    const clerkUserId = getAuth(req).userId;
+    if (clerkUserId) {
+      const user = await clerkClient.users.getUser(clerkUserId);
+      email =
+        user.primaryEmailAddress?.emailAddress ??
+        user.emailAddresses[0]?.emailAddress;
+    }
+  } catch (err) {
+    req.log.error({ err }, "Falha ao obter e-mail da conta no Clerk");
+  }
+  if (!email) {
+    res.status(400).json({
+      error:
+        "Não foi possível obter o e-mail da sua conta. Recarregue a página e tente novamente.",
+    });
+    return;
+  }
 
   const existing = await findRow(req.userId!);
   if (existing && existing.status !== "inativa") {

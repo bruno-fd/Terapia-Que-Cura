@@ -646,16 +646,12 @@ components:
         cpfCnpj:
           type: string
           minLength: 1
-        email:
-          type: string
-          minLength: 1
         telefone:
           type: string
       required:
         - plano
         - nome
         - cpfCnpj
-        - email
       additionalProperties: false
     Cidade:
       type: object

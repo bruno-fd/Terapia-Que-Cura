@@ -445,12 +445,10 @@ export const GetAssinaturaResponse = zod.object({
 
 
 
-
 export const CreateAssinaturaBody = zod.object({
   "plano": zod.enum(['mensal', 'anual']),
   "nome": zod.string().min(1),
   "cpfCnpj": zod.string().min(1),
-  "email": zod.string().min(1),
   "telefone": zod.string().optional()
 })
 
