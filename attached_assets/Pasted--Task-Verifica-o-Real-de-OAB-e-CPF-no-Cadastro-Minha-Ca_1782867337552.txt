@@ -1,0 +1,231 @@
+# Task — Verificação Real de OAB e CPF no Cadastro
+## Minha Causa Justa
+
+---
+
+## Contexto
+
+Atualmente a verificação de OAB no fluxo de cadastro (`cadastro-fluxo.html`) é simulada em JavaScript puro, aceitando qualquer número com 3 a 6 dígitos como válido. Esta task substitui essa simulação por verificação real em duas camadas:
+
+1. Consulta ao webservice público da OAB Federal — confirma que o número existe, está ativo e o nome bate
+2. CPF obrigatório no cadastro — segunda camada de identificação que inviabiliza fraude sem exposição de dados sensíveis no perfil público
+
+---
+
+## O que muda no formulário da Etapa 1
+
+### Campo CPF — novo, obrigatório
+
+Adicionar campo CPF imediatamente abaixo do campo de e-mail, antes do campo de número OAB.
+
+Label: "CPF"
+Placeholder: "000.000.000-00"
+Máscara automática ao digitar: formatar como 000.000.000-00
+Validação de formato: 11 dígitos numéricos, com validação do dígito verificador via algoritmo padrão da Receita Federal
+Validação de CPFs inválidos conhecidos: rejeitar sequências como 111.111.111-11, 000.000.000-00, etc.
+Classe `.input`
+Obrigatório — cadastro não avança sem CPF válido
+
+O CPF nunca é exibido no perfil público do advogado. É usado apenas internamente para identificação e cruzamento. Incluir nota discreta abaixo do campo: "Seu CPF é usado apenas para verificação. Não aparece no seu perfil." — font-size-xs, `--color-neutral-500`.
+
+### Campo número OAB — ajuste
+
+Manter o campo como está (número + select de seccional). Remover a validação simulada atual (checar se tem entre 3 e 6 dígitos).
+
+A validação real acontece via chamada ao webservice da OAB após o preenchimento de todos os campos obrigatórios, no momento em que o usuário clica em "Continuar".
+
+---
+
+## Verificação via webservice da OAB Federal
+
+### Endpoint
+
+```
+https://www5.oab.org.br/cnaws/service.asmx
+```
+
+O webservice aceita chamadas SOAP e retorna XML. Os dois métodos relevantes são:
+
+`ConsultaAdvogado` — parâmetros: `inscricao` (número OAB), `uf` (seccional), `nome` (nome do advogado)
+`ConsultaAdvogadoPorCpf` — parâmetro: `cpf` (CPF do advogado)
+
+### Estratégia de chamada recomendada
+
+Usar `ConsultaAdvogadoPorCpf` como chamada principal, passando o CPF informado pelo advogado. O retorno incluirá o número de inscrição e o nome associados a esse CPF na base da OAB.
+
+Cruzar o retorno com os dados informados pelo advogado no formulário:
+- O número OAB retornado bate com o número informado?
+- O nome retornado bate com o nome informado? (comparação case-insensitive, ignorando acentos, tolerando diferença de um token — ex: nome do meio abreviado)
+- A situação está ativa?
+
+Se todos os três cruzamentos passarem: cadastro liberado.
+Se qualquer um falhar: bloquear com mensagem específica por tipo de falha.
+
+### Como fazer a chamada SOAP em JavaScript / Node
+
+O webservice é SOAP antigo (ASP.NET), que não aceita chamada direta do navegador por CORS. A chamada deve ser feita pelo backend (servidor Node.js no Replit), que serve como proxy entre o frontend e o webservice da OAB.
+
+Criar um endpoint interno no servidor do Replit:
+
+```
+POST /api/verificar-oab
+Body: { cpf, numero_oab, seccional, nome }
+```
+
+O servidor faz a chamada SOAP ao webservice da OAB, processa o XML de retorno, cruza os dados e responde ao frontend com:
+
+```json
+{
+  "valido": true,
+  "situacao": "ativo",
+  "nome_oab": "Carlos Eduardo Mendes",
+  "numero_oab": "123456",
+  "seccional": "SP"
+}
+```
+
+Ou em caso de falha:
+
+```json
+{
+  "valido": false,
+  "motivo": "cpf_nao_encontrado" | "dados_divergentes" | "inscricao_inativa" | "erro_servico"
+}
+```
+
+### Biblioteca recomendada para chamada SOAP no Node
+
+Usar o pacote `node-soap` (npm):
+
+```bash
+npm install node-soap
+```
+
+Exemplo de chamada:
+
+```javascript
+const soap = require('node-soap');
+
+const url = 'https://www5.oab.org.br/cnaws/service.asmx?WSDL';
+
+soap.createClient(url, (err, client) => {
+  client.ConsultaAdvogadoPorCpf({ cpf: '12345678901' }, (err, result) => {
+    // processar result
+  });
+});
+```
+
+### Tratamento do XML de retorno
+
+O webservice retorna XML que deve ser parseado para extrair: nome, número de inscrição, seccional e situação (ativo/suspenso/cancelado). Implementar parsing robusto que tolera variações de formatação do XML.
+
+### Fallback obrigatório se o webservice estiver indisponível
+
+O webservice da OAB tem histórico de instabilidade ocasional. Se a chamada falhar por timeout ou erro de conexão (após 1 tentativa com timeout de 8 segundos):
+
+Exibir mensagem ao advogado: "Não foi possível verificar sua inscrição na OAB agora. Tente novamente em alguns minutos."
+
+Não bloquear definitivamente o cadastro por falha técnica do serviço externo. Salvar no registro do lead o campo `oab_verificada: false` e `oab_verificacao_pendente: true` para revisão posterior.
+
+Incluir comentário no código: em produção, leads com verificação pendente devem ser revisados manualmente antes da ativação do perfil.
+
+---
+
+## Mensagens de erro por cenário
+
+Implementar mensagens específicas e claras, sem juridiquês, para cada tipo de falha:
+
+**CPF não encontrado na base da OAB:**
+"Não encontramos um advogado com esse CPF na base da OAB. Verifique se o CPF informado está correto."
+
+**Número OAB divergente do CPF:**
+"O número de OAB informado não corresponde ao CPF cadastrado. Verifique os dados e tente novamente."
+
+**Nome divergente:**
+"O nome informado não confere com o cadastro da OAB. Use o nome exatamente como está registrado na sua inscrição."
+
+**Inscrição inativa, suspensa ou cancelada:**
+"Sua inscrição na OAB consta como inativa no momento. Apenas advogados com inscrição ativa podem se cadastrar na plataforma."
+
+**Erro de serviço (fallback):**
+"Não foi possível verificar sua inscrição agora. Tente novamente em alguns minutos."
+
+Todas as mensagens devem aparecer como erro inline abaixo dos campos correspondentes, em `--color-error`, com foco automático no campo com problema.
+
+---
+
+## Fluxo de verificação no frontend (Etapa 1)
+
+O botão "Continuar" permanece desabilitado até todos os campos estarem preenchidos e com formato válido localmente (CPF com dígito verificador válido, e-mail com formato correto, nome com ao menos 2 palavras, número OAB numérico).
+
+Ao clicar em "Continuar" com todos os campos válidos localmente:
+
+1. Botão muda para estado de loading: "Verificando..." com spinner
+2. Frontend chama `POST /api/verificar-oab` com os dados
+3. Se retorno `valido: true`: salvar dados no `mcj_lead` e avançar para Etapa 2
+4. Se retorno `valido: false`: exibir mensagem de erro correspondente, reabilitar o botão, manter o usuário na Etapa 1
+5. Se erro de rede: exibir mensagem de fallback, registrar `oab_verificacao_pendente: true` e avançar para Etapa 2 com aviso discreto
+
+---
+
+## O que salvar no mcj_lead após verificação bem-sucedida
+
+Atualizar o objeto `mcj_lead` no localStorage com:
+
+```javascript
+{
+  // campos já existentes
+  "nome": "...",
+  "email": "...",
+  "cpf": "...", // novo campo
+  "oab": "...",
+  "seccional": "...",
+  // campos novos de verificação
+  "oab_verificada": true,
+  "oab_situacao": "ativo",
+  "oab_nome_confirmado": "Carlos Eduardo Mendes",
+  "oab_verificada_em": "ISO timestamp"
+}
+```
+
+O CPF é salvo no localStorage apenas para uso interno no fluxo. Incluir comentário no código: em produção, o CPF não deve ser armazenado em texto puro no banco — deve ser hasheado ou criptografado antes do armazenamento.
+
+---
+
+## Atualização no painel do advogado
+
+### painel-perfil.html — seção de dados cadastrais
+
+A seção "Dados cadastrais" (somente leitura) atualmente exibe nome e OAB. Adicionar linha de verificação:
+
+- "OAB/SP 123.456" com selo verde "✓ Verificado pela OAB" se `oab_verificada: true`
+- "OAB/SP 123.456" com selo amarelo "⚠ Verificação pendente" se `oab_verificacao_pendente: true`
+
+O CPF não é exibido nessa seção nem em nenhuma outra parte do painel visível ao advogado ou ao público.
+
+---
+
+## Segurança — variáveis de ambiente
+
+O endpoint `/api/verificar-oab` no servidor do Replit não expõe nenhuma credencial. O webservice da OAB é público e não requer autenticação.
+
+Porém, para evitar abuso do endpoint interno (alguém chamando `/api/verificar-oab` diretamente sem passar pelo fluxo de cadastro), adicionar verificação simples de origem: o endpoint só responde a requisições vindas do próprio domínio do Replit (verificar header `Origin` ou `Referer`).
+
+---
+
+## Checklist de verificação
+
+- [ ] Campo CPF adicionado na Etapa 1, com máscara e validação de dígito verificador
+- [ ] Nota de privacidade do CPF visível abaixo do campo
+- [ ] Validação local de CPF rejeita sequências inválidas conhecidas
+- [ ] Endpoint `/api/verificar-oab` criado no servidor Node do Replit
+- [ ] Chamada SOAP ao webservice da OAB via `node-soap` funcionando
+- [ ] Cruzamento de CPF, número OAB, seccional e nome implementado
+- [ ] Mensagens de erro específicas por tipo de falha
+- [ ] Fallback implementado para indisponibilidade do webservice
+- [ ] Botão "Continuar" em estado de loading durante a verificação
+- [ ] Lead com verificação pendente salvo com flag `oab_verificacao_pendente: true`
+- [ ] CPF salvo no mcj_lead mas não exibido em nenhuma tela pública
+- [ ] Selo de verificação no painel do advogado (verde ou amarelo conforme status)
+- [ ] Endpoint protegido contra chamadas externas por verificação de origem
+- [ ] Comentários no código indicando onde CPF deve ser criptografado em produção
