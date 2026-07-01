@@ -7,6 +7,8 @@ import {
   Lock,
   Clock,
   Loader2,
+  Eye,
+  TrendingUp,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -83,7 +85,6 @@ export default function PainelAssinatura() {
   const [planoEscolhido, setPlanoEscolhido] = useState<Plano>("mensal");
   const [pendingPlano, setPendingPlano] = useState<Plano | null>(null);
   const [showCancelar, setShowCancelar] = useState(false);
-  const [canceling, setCanceling] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -135,20 +136,6 @@ export default function PainelAssinatura() {
   function abrirAssinar(plano: Plano) {
     setPlanoEscolhido(plano);
     setShowAssinar(true);
-  }
-
-  async function confirmarCancelamento() {
-    setCanceling(true);
-    try {
-      setState(await cancelAssinatura());
-      setShowCancelar(false);
-    } catch (err) {
-      setLoadError(
-        err instanceof Error ? err.message : "Não foi possível cancelar.",
-      );
-    } finally {
-      setCanceling(false);
-    }
   }
 
   const status = state?.status ?? null;
@@ -390,53 +377,193 @@ export default function PainelAssinatura() {
         }}
       />
 
-      {/* Modal cancelar */}
-      <Dialog open={showCancelar} onOpenChange={setShowCancelar}>
-        <DialogContent
-          className="sm:max-w-[440px] bg-white rounded-2xl text-center"
-          data-testid="modal-cancelar"
-        >
-          <DialogHeader>
-            <DialogTitle className="sr-only">Cancelar assinatura</DialogTitle>
-            <DialogDescription className="sr-only">
-              Confirme o cancelamento da assinatura.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center">
-            <div className="h-14 w-14 rounded-full bg-[#B97D00]/10 flex items-center justify-center">
-              <AlertTriangle className="h-7 w-7 text-[#B97D00]" />
-            </div>
-            <h3 className="mt-4 text-lg font-bold text-neutral-900">
-              Tem certeza que deseja cancelar?
+      {/* Modal cancelar (pesquisa de motivo + retenção de visibilidade) */}
+      <CancelarDialog
+        open={showCancelar}
+        onOpenChange={setShowCancelar}
+        onCancelada={(novo) => {
+          setState(novo);
+          setShowCancelar(false);
+        }}
+      />
+    </DashboardLayout>
+  );
+}
+
+const MOTIVOS_CANCELAMENTO = [
+  "O valor está acima do meu orçamento",
+  "Não recebi contatos suficientes",
+  "Não estou usando a plataforma",
+  "Encontrei outra plataforma melhor",
+  "Vou pausar minha atuação por um tempo",
+  "Tive problemas técnicos ou dificuldades de uso",
+  "As funcionalidades não atenderam minhas expectativas",
+  "Prefiro não informar",
+];
+
+function CancelarDialog({
+  open,
+  onOpenChange,
+  onCancelada,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onCancelada: (state: SubscriptionState) => void;
+}) {
+  const [etapa, setEtapa] = useState<"motivo" | "visibilidade">("motivo");
+  const [motivo, setMotivo] = useState<string | null>(null);
+  const [canceling, setCanceling] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  // Reinicia o fluxo sempre que o modal abre.
+  useEffect(() => {
+    if (open) {
+      setEtapa("motivo");
+      setMotivo(null);
+      setCanceling(false);
+      setErro(null);
+    }
+  }, [open]);
+
+  async function confirmar() {
+    setCanceling(true);
+    setErro(null);
+    try {
+      onCancelada(await cancelAssinatura(motivo ?? undefined));
+    } catch (err) {
+      setErro(
+        err instanceof Error ? err.message : "Não foi possível cancelar.",
+      );
+      setCanceling(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="sm:max-w-[460px] bg-white rounded-2xl"
+        data-testid="modal-cancelar"
+      >
+        <DialogHeader>
+          <DialogTitle className="sr-only">Cancelar assinatura</DialogTitle>
+          <DialogDescription className="sr-only">
+            Pesquisa de cancelamento e confirmação.
+          </DialogDescription>
+        </DialogHeader>
+
+        {etapa === "motivo" ? (
+          <div>
+            <h3 className="text-lg font-bold text-neutral-900">
+              Antes de cancelar, conte pra gente o motivo
             </h3>
-            <p className="mt-2 text-sm text-neutral-600">
-              Você está cancelando apenas a renovação automática. Seu perfil
-              continua ativo e visível nas buscas até o fim do período já pago,
-              e você não será cobrado novamente.
+            <p className="mt-1 text-sm text-neutral-500">
+              Sua resposta nos ajuda a melhorar a plataforma. Leva menos de um
+              minuto.
             </p>
-            <div className="mt-6 flex w-full gap-3">
+
+            <div className="mt-4 space-y-2">
+              {MOTIVOS_CANCELAMENTO.map((m) => {
+                const selecionado = motivo === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMotivo(m)}
+                    className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors ${
+                      selecionado
+                        ? "border-primary-500 bg-primary-50 text-primary-800"
+                        : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                    }`}
+                    data-testid={`motivo-${MOTIVOS_CANCELAMENTO.indexOf(m)}`}
+                  >
+                    <span
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                        selecionado
+                          ? "border-primary-600 bg-primary-600"
+                          : "border-neutral-300"
+                      }`}
+                    >
+                      {selecionado && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                      )}
+                    </span>
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 flex gap-3">
               <Button
                 variant="outline"
                 className="flex-1 border-primary-300 text-primary-700 hover:bg-primary-50"
-                onClick={() => setShowCancelar(false)}
+                onClick={() => onOpenChange(false)}
                 data-testid="button-voltar-cancelar"
               >
                 Voltar
               </Button>
               <Button
-                className="flex-1 text-white"
-                style={{ background: ERROR_COLOR }}
-                disabled={canceling}
-                onClick={confirmarCancelamento}
-                data-testid="button-confirmar-cancelar"
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
+                disabled={!motivo}
+                onClick={() => setEtapa("visibilidade")}
+                data-testid="button-continuar-cancelar"
               >
-                {canceling ? "Cancelando..." : "Confirmar cancelamento"}
+                Continuar
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </DashboardLayout>
+        ) : (
+          <div className="text-center">
+            <div className="mx-auto h-14 w-14 rounded-full bg-primary-50 flex items-center justify-center">
+              <Eye className="h-7 w-7 text-primary-600" />
+            </div>
+            <h3 className="mt-4 text-lg font-bold text-neutral-900">
+              Você deseja retirar a visibilidade do seu perfil?
+            </h3>
+            <p className="mt-2 text-sm text-neutral-600">
+              Ao cancelar, seu perfil deixa de aparecer nas buscas ao fim do
+              período já pago. Você pode estar abrindo mão de novos clientes.
+            </p>
+
+            <div className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-primary-50 border border-primary-100 px-4 py-3">
+              <TrendingUp className="h-5 w-5 text-primary-600 shrink-0" />
+              <p className="text-sm font-semibold text-primary-800">
+                Mais de 7.500 visitações/mês na plataforma
+              </p>
+            </div>
+
+            {erro && (
+              <p
+                className="mt-3 text-sm"
+                style={{ color: ERROR_COLOR }}
+                data-testid="erro-cancelar"
+              >
+                {erro}
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-col gap-3">
+              <Button
+                className="w-full bg-primary-600 hover:bg-primary-700 text-white"
+                onClick={() => onOpenChange(false)}
+                data-testid="button-manter-perfil"
+              >
+                Manter meu perfil visível
+              </Button>
+              <button
+                onClick={confirmar}
+                disabled={canceling}
+                className="text-sm hover:underline disabled:opacity-60"
+                style={{ color: ERROR_COLOR }}
+                data-testid="button-confirmar-cancelar"
+              >
+                {canceling ? "Cancelando..." : "Sim, cancelar assinatura"}
+              </button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

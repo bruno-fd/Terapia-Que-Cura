@@ -26,6 +26,7 @@ import type {
   BlogPost,
   BlogPostInput,
   CadastroLead,
+  CancelSubscriptionInput,
   ConcorrenciaResult,
   ContarAdvogadosParams,
   CreateSubscriptionInput,
@@ -1268,14 +1269,14 @@ export const getCancelAssinaturaUrl = () => {
 /**
  * @summary Cancel the lawyer's subscription
  */
-export const cancelAssinatura = async ( options?: RequestInit): Promise<SubscriptionState> => {
+export const cancelAssinatura = async (cancelSubscriptionInput?: CancelSubscriptionInput, options?: RequestInit): Promise<SubscriptionState> => {
 
   return customFetch<SubscriptionState>(getCancelAssinaturaUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cancelSubscriptionInput)
   }
 );}
 
@@ -1283,8 +1284,8 @@ export const cancelAssinatura = async ( options?: RequestInit): Promise<Subscrip
 
 
 export const getCancelAssinaturaMutationOptions = <TError = ErrorType<ApiErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext> => {
 
 const mutationKey = ['cancelAssinatura'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1296,10 +1297,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelAssinatura>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelAssinatura>>, {data?: BodyType<CancelSubscriptionInput>}> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  cancelAssinatura(requestOptions)
+          return  cancelAssinatura(data,requestOptions)
         }
 
 
@@ -1310,18 +1311,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CancelAssinaturaMutationResult = NonNullable<Awaited<ReturnType<typeof cancelAssinatura>>>
-
+    export type CancelAssinaturaMutationBody = BodyType<CancelSubscriptionInput> | undefined
     export type CancelAssinaturaMutationError = ErrorType<ApiErrorResponse>
 
     /**
  * @summary Cancel the lawyer's subscription
  */
 export const useCancelAssinatura = <TError = ErrorType<ApiErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof cancelAssinatura>>,
         TError,
-        void,
+        {data?: BodyType<CancelSubscriptionInput>},
         TContext
       > => {
       return useMutation(getCancelAssinaturaMutationOptions(options));

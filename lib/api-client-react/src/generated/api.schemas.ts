@@ -131,6 +131,11 @@ export interface CreateSubscriptionInput {
   telefone?: string;
 }
 
+export interface CancelSubscriptionInput {
+  /** @maxLength 300 */
+  motivo?: string;
+}
+
 export interface Cidade {
   /** @minLength 1 */
   nome: string;

@@ -429,6 +429,12 @@ paths:
       operationId: cancelAssinatura
       tags: [subscription]
       summary: Cancel the lawyer's subscription
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelSubscriptionInput"
       responses:
         "200":
           description: Subscription cancelled
@@ -658,6 +664,13 @@ components:
         - plano
         - nome
         - cpfCnpj
+      additionalProperties: false
+    CancelSubscriptionInput:
+      type: object
+      properties:
+        motivo:
+          type: string
+          maxLength: 300
       additionalProperties: false
     Cidade:
       type: object

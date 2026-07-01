@@ -29,6 +29,9 @@ export const subscriptionsTable = pgTable("subscriptions", {
   // cancelamento, referente ao período já pago. O cancelamento só interrompe
   // cobranças futuras: o perfil continua visível até esta data.
   accessUntil: text("access_until"),
+  // Motivo informado pelo advogado na pesquisa de cancelamento (opcional).
+  // Nulo enquanto a assinatura não foi cancelada ou se não informado.
+  cancelReason: text("cancel_reason"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

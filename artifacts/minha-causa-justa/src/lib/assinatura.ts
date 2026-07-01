@@ -47,6 +47,11 @@ export function createAssinatura(
   return apiFetch("/assinatura", { method: "POST", body: input });
 }
 
-export function cancelAssinatura(): Promise<SubscriptionState> {
-  return apiFetch("/assinatura/cancelar", { method: "POST" });
+export function cancelAssinatura(
+  motivo?: string,
+): Promise<SubscriptionState> {
+  return apiFetch("/assinatura/cancelar", {
+    method: "POST",
+    body: motivo ? { motivo } : {},
+  });
 }

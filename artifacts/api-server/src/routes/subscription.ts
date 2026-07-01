@@ -5,6 +5,7 @@ import {
   GetAssinaturaResponse,
   CreateAssinaturaBody,
   CreateAssinaturaResponse,
+  CancelAssinaturaBody,
   CancelAssinaturaResponse,
 } from "@workspace/api-zod";
 import {
@@ -302,9 +303,10 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
       customerEmail: email,
       nextDueDate: subscription.nextDueDate ?? todayIso(),
       // Reassinatura: limpa qualquer cancelamento anterior para não herdar o
-      // período de carência da assinatura antiga.
+      // período de carência nem o motivo da assinatura antiga.
       canceledAt: null,
       accessUntil: null,
+      cancelReason: null,
       updatedAt: new Date(),
     };
 
@@ -355,6 +357,14 @@ router.post(
     return;
   }
 
+  // Motivo da pesquisa de cancelamento (opcional). Corpo ausente é aceito.
+  const parsedBody = CancelAssinaturaBody.safeParse(req.body ?? {});
+  if (!parsedBody.success) {
+    res.status(400).json({ error: "Dados de cancelamento inválidos." });
+    return;
+  }
+  const motivo = parsedBody.data.motivo?.trim() || null;
+
   // Antes de cancelar, descobre até quando o período já pago é válido, para
   // manter o perfil ativo até o fim do ciclo. O cancelamento só interrompe as
   // renovações futuras, não encerra o direito ao período já pago.
@@ -403,6 +413,7 @@ router.post(
       status: novoStatus,
       canceledAt: now,
       accessUntil: aindaVigente ? accessUntil : null,
+      cancelReason: motivo,
       updatedAt: now,
     })
     .where(eq(subscriptionsTable.id, row.id))

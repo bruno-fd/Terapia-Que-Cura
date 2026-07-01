@@ -14,6 +14,7 @@ export * from './blogPostInput';
 export * from './blogPostSection';
 export * from './cadastroLead';
 export * from './cadastroLeadPlano';
+export * from './cancelSubscriptionInput';
 export * from './cidade';
 export * from './concorrenciaResult';
 export * from './contarAdvogadosParams';

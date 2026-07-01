@@ -479,6 +479,14 @@ export const CreateAssinaturaResponse = zod.object({
 /**
  * @summary Cancel the lawyer's subscription
  */
+export const cancelAssinaturaBodyMotivoMax = 300;
+
+
+
+export const CancelAssinaturaBody = zod.object({
+  "motivo": zod.string().max(cancelAssinaturaBodyMotivoMax).optional()
+})
+
 export const CancelAssinaturaResponse = zod.object({
   "hasSubscription": zod.boolean(),
   "status": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
