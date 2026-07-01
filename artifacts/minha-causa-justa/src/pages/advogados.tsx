@@ -4,7 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle, Loader2 } from "lucide-react";
@@ -304,6 +304,9 @@ export default function Advogados() {
                   <div key={lawyer.id} className="bg-white p-6 md:p-8 rounded-[28px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow flex flex-col h-full" data-testid={`lawyer-card-${lawyer.id}`}>
                     <div className="flex gap-4 mb-5">
                       <Avatar className="h-20 w-20 shrink-0 bg-primary-100 border-2 border-white shadow-sm">
+                        {lawyer.photo && (
+                          <AvatarImage src={lawyer.photo} alt={lawyer.name} className="object-cover" />
+                        )}
                         <AvatarFallback className="text-primary-800 font-bold text-xl">{getInitials(lawyer.name)}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
@@ -394,6 +397,9 @@ export default function Advogados() {
               <div className="bg-primary-50 px-6 md:px-8 pt-8 pb-6 rounded-t-[28px]">
                 <div className="flex flex-col sm:flex-row gap-5 items-start">
                   <Avatar className="h-24 w-24 shrink-0 bg-primary-100 border-4 border-white shadow-md">
+                    {detailLawyer.photo && (
+                      <AvatarImage src={detailLawyer.photo} alt={detailLawyer.name} className="object-cover" />
+                    )}
                     <AvatarFallback className="text-primary-800 font-bold text-2xl">{getInitials(detailLawyer.name)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
