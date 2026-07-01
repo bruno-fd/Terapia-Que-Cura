@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SignUp, useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
   type Plano,
 } from "@/lib/cadastro-funnel";
 import {
+  ArrowRight,
   ArrowLeft,
   Loader2,
   ShieldCheck,
@@ -181,6 +182,7 @@ export function StepConta({
 
 function PagamentoBloco({
   data,
+  onNext,
   onBack,
   onEditar,
   onEditarPlano,
@@ -194,6 +196,16 @@ function PagamentoBloco({
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
 
+  const status = state?.status ?? null;
+  const ativa = status === "ativa";
+
+  // Mantém a referência mais recente de onNext sem re-disparar os efeitos.
+  const onNextRef = useRef(onNext);
+  onNextRef.current = onNext;
+  // Garante que o avanço automático aconteça apenas uma vez.
+  const avancouRef = useRef(false);
+
+  // Carrega o estado inicial da assinatura.
   useEffect(() => {
     let ativo = true;
     getAssinatura()
@@ -210,6 +222,43 @@ function PagamentoBloco({
       ativo = false;
     };
   }, []);
+
+  // Enquanto o pagamento não está confirmado, verifica o status na Asaas
+  // automaticamente: em intervalo fixo e sempre que o usuário volta para esta
+  // aba (após pagar no checkout da Asaas aberto em outra guia).
+  const deveVerificar = !!state && !ativa;
+  useEffect(() => {
+    if (!deveVerificar) return;
+    let vivo = true;
+    const atualizar = async () => {
+      try {
+        const s = await getAssinatura();
+        if (vivo && s.hasSubscription) setState(s);
+      } catch {
+        // Falha pontual de rede: a próxima verificação tenta novamente.
+      }
+    };
+    const intervalo = window.setInterval(atualizar, 4000);
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible") atualizar();
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
+    window.addEventListener("focus", atualizar);
+    return () => {
+      vivo = false;
+      window.clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", aoVoltar);
+      window.removeEventListener("focus", atualizar);
+    };
+  }, [deveVerificar]);
+
+  // Ao confirmar o pagamento, leva o usuário para concluir o perfil.
+  useEffect(() => {
+    if (!ativa || avancouRef.current) return;
+    avancouRef.current = true;
+    const t = window.setTimeout(() => onNextRef.current(), 2200);
+    return () => window.clearTimeout(t);
+  }, [ativa]);
 
   const plano = data.plano ?? "mensal";
   const info = PLANOS[plano];
@@ -247,9 +296,6 @@ function PagamentoBloco({
       </div>
     );
   }
-
-  const status = state?.status ?? null;
-  const ativa = status === "ativa";
 
   return (
     <div data-testid="step-conta-pagamento">
@@ -340,42 +386,66 @@ function PagamentoBloco({
           data-testid={`bloco-status-${status ?? "pendente"}`}
         >
           {ativa ? (
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-6 w-6 shrink-0 text-[#1E7D4F]" />
-              <div>
-                <p className="font-bold text-primary-900">
-                  Pagamento confirmado
-                </p>
-                <p className="text-sm text-neutral-600">
-                  Sua assinatura está ativa. Conclua seu perfil para publicar.
-                </p>
+            <>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 shrink-0 text-[#1E7D4F]" />
+                <div>
+                  <p className="font-bold text-primary-900">
+                    Pagamento recebido!
+                  </p>
+                  <p className="text-sm text-neutral-600">
+                    Sua assinatura está ativa. Vamos concluir seu perfil para
+                    publicar.
+                  </p>
+                </div>
               </div>
-            </div>
+              <Button
+                onClick={() => onNext()}
+                className="mt-5 w-full h-12 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium"
+                data-testid="button-concluir-cadastro"
+              >
+                Concluir cadastro <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <p className="mt-2 flex items-center justify-center gap-2 text-sm text-neutral-500">
+                <Loader2 className="h-4 w-4 animate-spin" /> Redirecionando para
+                concluir seu perfil...
+              </p>
+            </>
           ) : (
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="h-6 w-6 shrink-0 text-[#B97D00]" />
-              <div>
-                <p className="font-bold text-primary-900">
-                  Aguardando confirmação do pagamento
-                </p>
-                <p className="text-sm text-neutral-600">
-                  Assim que o pagamento for confirmado, seu perfil fica
-                  publicado. Você pode concluir o cadastro enquanto isso.
-                </p>
+            <>
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="h-6 w-6 shrink-0 text-[#B97D00]" />
+                <div>
+                  <p className="font-bold text-primary-900">
+                    Aguardando confirmação do pagamento
+                  </p>
+                  <p className="text-sm text-neutral-600">
+                    Assim que o pagamento for confirmado, avisamos aqui
+                    automaticamente e seu perfil fica publicado.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
 
-          {state.invoiceUrl && !ativa && (
-            <a
-              href={state.invoiceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent-500 px-6 font-medium text-white transition-colors hover:bg-accent-600"
-              data-testid="link-pagar"
-            >
-              Pagar agora <ExternalLink className="h-4 w-4" />
-            </a>
+              {state.invoiceUrl && (
+                <a
+                  href={state.invoiceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent-500 px-6 font-medium text-white transition-colors hover:bg-accent-600"
+                  data-testid="link-pagar"
+                >
+                  Pagar agora <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+
+              <p
+                className="mt-3 flex items-center justify-center gap-2 text-sm text-neutral-500"
+                data-testid="verificando-pagamento"
+              >
+                <Loader2 className="h-4 w-4 animate-spin" /> Verificando o
+                pagamento automaticamente...
+              </p>
+            </>
           )}
         </div>
       )}
