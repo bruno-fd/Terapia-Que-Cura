@@ -6,6 +6,7 @@ import {
   createAssinatura,
   type SubscriptionState,
 } from "@/lib/assinatura";
+import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 import {
   PLANOS,
   maskCpfCnpj,
@@ -128,6 +129,7 @@ export function StepConta({
   if (!isSignedIn) {
     return (
       <div data-testid="step-conta-signup">
+        <ProvaSocial>{PROVA_SOCIAL.conta}</ProvaSocial>
         <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-2">
           Crie sua conta para continuar
         </h2>
@@ -251,6 +253,7 @@ function PagamentoBloco({
 
   return (
     <div data-testid="step-conta-pagamento">
+      {!state && <ProvaSocial>{PROVA_SOCIAL.pagamento}</ProvaSocial>}
       <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-2">
         {state ? "Sua assinatura" : "Finalize o pagamento"}
       </h2>

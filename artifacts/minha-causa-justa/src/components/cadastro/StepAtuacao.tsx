@@ -10,6 +10,7 @@ import {
 import { AREAS } from "@/lib/dashboard";
 import type { FunnelData } from "@/lib/cadastro-funnel";
 import { ArrowRight, ArrowLeft, X, Loader2, Users } from "lucide-react";
+import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 
 interface Props {
   data: FunnelData;
@@ -123,6 +124,7 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
 
   return (
     <div data-testid="step-atuacao">
+      <ProvaSocial>{PROVA_SOCIAL.atuacao}</ProvaSocial>
       <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-2">
         Onde e em que você atua
       </h2>

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { PLANOS, type FunnelData, type Plano } from "@/lib/cadastro-funnel";
 import { ArrowLeft, Check } from "lucide-react";
+import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 
 interface Props {
   data: FunnelData;
@@ -18,6 +19,7 @@ export function StepPlano({ data, update, onNext, onBack }: Props) {
 
   return (
     <div data-testid="step-plano">
+      <ProvaSocial>{PROVA_SOCIAL.plano}</ProvaSocial>
       <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-2">
         Escolha seu plano
       </h2>

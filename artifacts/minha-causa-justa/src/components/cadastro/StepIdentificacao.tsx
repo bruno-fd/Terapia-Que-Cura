@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { isEmailValido, type FunnelData } from "@/lib/cadastro-funnel";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 
 interface Props {
   data: FunnelData;
@@ -71,6 +72,7 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
 
   return (
     <div data-testid="step-identificacao">
+      <ProvaSocial>{PROVA_SOCIAL.identificacao}</ProvaSocial>
       <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-2">
         Vamos começar pelo básico
       </h2>

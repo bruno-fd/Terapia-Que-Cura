@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { getInitial, maskPhone } from "@/lib/dashboard";
+import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 import type { FunnelData } from "@/lib/cadastro-funnel";
 import {
   getAssinatura,
@@ -146,6 +147,7 @@ export function StepPerfil({ data, onConcluir, onBack }: Props) {
 
   return (
     <div data-testid="step-perfil">
+      <ProvaSocial>{PROVA_SOCIAL.perfil}</ProvaSocial>
       <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-2">
         Conclua seu perfil
       </h2>
