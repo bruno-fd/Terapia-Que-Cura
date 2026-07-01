@@ -36,9 +36,9 @@ interface PlanConfig {
 
 const PLANS: Record<Plano, PlanConfig> = {
   mensal: {
-    // TEMPORÁRIO (teste): preço reduzido para R$1,00 para permitir cobranças
-    // reais com custo mínimo no Asaas. Valor normal: 4990 (R$49,90).
-    valueCents: 100,
+    // TEMPORÁRIO (teste): preço reduzido para R$5,00 (mínimo aceito pelo Asaas)
+    // para permitir cobranças reais com custo mínimo. Valor normal: 4990 (R$49,90).
+    valueCents: 500,
     cycle: "MONTHLY",
     description: "Plano Mensal, Minha Causa Justa",
   },
