@@ -4,8 +4,9 @@ import type {
 } from "@workspace/api-client-react";
 
 // ============================================================
-// Chamadas à API de assinatura (Asaas). Modo demonstração: o
-// back-end usa um advogado fixo, sem login real ainda.
+// Chamadas à API de assinatura (Asaas). O advogado é
+// identificado pela sessão autenticada (Clerk) no back-end;
+// o cookie de sessão vai junto por ser mesma origem (/api).
 // ============================================================
 
 const API_BASE = "/api";

@@ -161,8 +161,11 @@ export function createSubscription(
     method: "POST",
     body: {
       ...input,
-      // UNDEFINED deixa o cliente escolher PIX, Boleto ou Cartão na fatura.
-      billingType: "UNDEFINED",
+      // Cartão de crédito: assinatura recorrente. Sem enviar os dados do
+      // cartão, a Asaas gera uma fatura hospedada (invoiceUrl) onde o cliente
+      // informa o cartão; ele fica tokenizado e as próximas cobranças de cada
+      // ciclo são automáticas.
+      billingType: "CREDIT_CARD",
     },
   });
 }

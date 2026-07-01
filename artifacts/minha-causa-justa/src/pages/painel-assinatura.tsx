@@ -257,8 +257,8 @@ export default function PainelAssinatura() {
                 </p>
                 {status === "pendente" && (
                   <p className="text-sm">
-                    Finalize o pagamento para ativar seu perfil. Você pode pagar
-                    com PIX, boleto ou cartão.
+                    Finalize o pagamento com cartão de crédito para ativar seu
+                    perfil. A assinatura é recorrente e renova automaticamente.
                   </p>
                 )}
                 {status === "atrasada" && (
@@ -544,8 +544,8 @@ function AssinarDialog({
             Assinar {PLAN_LABEL[plano]}
           </DialogTitle>
           <DialogDescription className="text-neutral-500">
-            Informe seus dados para gerar a cobrança. Você escolhe pagar com
-            PIX, boleto ou cartão na próxima etapa.
+            Informe seus dados para continuar. O pagamento é com cartão de
+            crédito, em uma assinatura recorrente, na próxima etapa.
           </DialogDescription>
         </DialogHeader>
 

@@ -70,7 +70,7 @@ function paragraph(text: string): string {
 export function welcomeEmail(nome?: string | null): EmailContent {
   const steps = [
     "Escolha o seu plano (Mensal ou Anual).",
-    "Realize o pagamento via PIX, Boleto ou Cartão.",
+    "Pague com cartão de crédito (assinatura recorrente).",
     "Complete o seu perfil profissional.",
     "Pronto: seu perfil aparece no diretório público.",
   ]
@@ -105,7 +105,7 @@ export function subscriptionCreatedEmail(p: {
   const body = `
     <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Falta pouco para ativar o seu perfil</h1>
     ${paragraph(`${greeting(p.nome)} recebemos a sua assinatura do ${escapeHtml(p.planoLabel)} no valor de ${escapeHtml(p.valorLabel)}.`)}
-    ${paragraph("Para ativar o seu perfil no diretório, conclua o pagamento. Você pode pagar por PIX, Boleto ou Cartão:")}
+    ${paragraph("Para ativar o seu perfil no diretório, conclua o pagamento com cartão de crédito. A assinatura é recorrente e renova automaticamente:")}
     ${cta}
     ${paragraph(`<span style="font-size:13px;color:${MUTED};">Assim que o pagamento for confirmado, avisamos você por e-mail.</span>`)}
   `;

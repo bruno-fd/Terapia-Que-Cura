@@ -231,7 +231,7 @@ function PagamentoBloco({
       setErro(
         e instanceof Error
           ? e.message
-          : "Não foi possível gerar a cobrança. Tente novamente.",
+          : "Não foi possível iniciar o pagamento. Tente novamente.",
       );
     } finally {
       setEnviando(false);
@@ -299,8 +299,8 @@ function PagamentoBloco({
             )}
 
             <p className="mt-3 text-sm text-neutral-600">
-              Na próxima tela você escolhe pagar com PIX, boleto ou cartão de
-              crédito.
+              Na próxima tela você paga com cartão de crédito. A assinatura é
+              recorrente e renova automaticamente a cada ciclo.
             </p>
 
             <Button
@@ -311,11 +311,11 @@ function PagamentoBloco({
             >
               {enviando ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando
-                  cobrança...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparando
+                  pagamento...
                 </>
               ) : (
-                "Gerar cobrança"
+                "Ir para o pagamento com cartão"
               )}
             </Button>
           </div>

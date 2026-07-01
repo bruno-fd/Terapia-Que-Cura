@@ -89,7 +89,7 @@ function deriveStatus(
   return "pendente";
 }
 
-// Link da fatura em aberto (PIX/Boleto/Cartão) para o botão "Pagar agora".
+// Link da fatura hospedada de cartão de crédito para o botão "Pagar agora".
 function openInvoiceUrl(payments: AsaasPayment[]): string | null {
   const open = payments.find(
     (p) =>

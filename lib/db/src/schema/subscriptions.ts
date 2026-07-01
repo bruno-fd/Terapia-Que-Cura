@@ -3,9 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 // Assinaturas dos advogados, vinculadas ao cliente/assinatura na Asaas.
-// Nesta etapa (modo demonstração) usamos um advogado fixo (lawyerRef), sem
-// login real. Quando houver cadastro real, lawyerRef passa a ser o id do
-// advogado autenticado.
+// lawyerRef é o id do advogado autenticado (Clerk), único por advogado.
 export const subscriptionsTable = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   // Identificador do advogado dono da assinatura (único por advogado).
