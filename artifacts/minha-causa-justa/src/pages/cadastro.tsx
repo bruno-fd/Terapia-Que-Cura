@@ -143,7 +143,7 @@ export default function Cadastro() {
                 </div>
 
                 <Button
-                  onClick={irParaFluxo}
+                  onClick={scrollToPlans}
                   className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
                   data-testid="button-hero-cadastro"
                 >
