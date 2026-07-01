@@ -52,6 +52,10 @@ export function StepPerfil({ data, onConcluir, onBack }: Props) {
     linkedin: "",
     website: "",
     outro: "",
+    // Verificação da OAB (etapa 1): o token assinado prova o status ao servidor,
+    // que grava oabVerificada com segurança. A flag "pendente" cobre o fallback.
+    oabToken: data.oabToken,
+    oabVerificacaoPendente: data.oabVerificacaoPendente,
   });
   const [oabErro, setOabErro] = useState("");
   const [photoErro, setPhotoErro] = useState("");

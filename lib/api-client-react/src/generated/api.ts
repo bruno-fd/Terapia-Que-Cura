@@ -35,7 +35,9 @@ import type {
   SubscriptionState,
   UpdateBlogPostInput,
   UpdateProfileInput,
-  UpsertCadastroLeadInput
+  UpsertCadastroLeadInput,
+  VerificarOabInput,
+  VerificarOabResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -889,6 +891,77 @@ export function useGetCadastroLead<TData = Awaited<ReturnType<typeof getCadastro
 
 
 
+
+export const getVerificarOabUrl = () => {
+
+
+
+
+  return `/api/verificar-oab`
+}
+
+/**
+ * Public (no auth): called at the end of funnel step 1. Looks up the CPF on the OAB CNA SOAP webservice (ConsultaAdvogadoPorCpf) and cross-checks the returned inscricao, name and status against the submitted data. Requires the OAB_CNA_KEY secret; without a valid key the OAB rejects the call and the response is motivo=erro_servico, so the funnel marks verification as pending for manual review.
+ * @summary Verify a lawyer's OAB registration against the OAB Federal webservice
+ */
+export const verificarOab = async (verificarOabInput: VerificarOabInput, options?: RequestInit): Promise<VerificarOabResult> => {
+
+  return customFetch<VerificarOabResult>(getVerificarOabUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(verificarOabInput)
+  }
+);}
+
+
+
+
+export const getVerificarOabMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verificarOab>>, TError,{data: BodyType<VerificarOabInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verificarOab>>, TError,{data: BodyType<VerificarOabInput>}, TContext> => {
+
+const mutationKey = ['verificarOab'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verificarOab>>, {data: BodyType<VerificarOabInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verificarOab(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerificarOabMutationResult = NonNullable<Awaited<ReturnType<typeof verificarOab>>>
+    export type VerificarOabMutationBody = BodyType<VerificarOabInput>
+    export type VerificarOabMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Verify a lawyer's OAB registration against the OAB Federal webservice
+ */
+export const useVerificarOab = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verificarOab>>, TError,{data: BodyType<VerificarOabInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verificarOab>>,
+        TError,
+        {data: BodyType<VerificarOabInput>},
+        TContext
+      > => {
+      return useMutation(getVerificarOabMutationOptions(options));
+    }
 
 export const getGetPerfilUrl = () => {
 

@@ -18,10 +18,24 @@ export interface FunnelData {
   nome: string;
   email: string;
   telefone: string;
+  // CPF: coletado na etapa 1 para verificar a inscrição na OAB e para a
+  // cobrança (Asaas). Fica apenas no localStorage do funil e NUNCA aparece no
+  // perfil público. Em produção, considerar hash/criptografia em repouso.
+  cpf: string;
   // OAB e seccional ficam apenas no localStorage (não no lead do back-end):
   // a retomada é no mesmo navegador e o remarketing só precisa do e-mail.
   oab: string;
   seccional: string;
+  // Resultado da verificação real da inscrição na OAB (webservice CNA da OAB).
+  // Preenchido ao concluir a etapa 1 e carregado para o perfil ao publicar.
+  oabVerificada: boolean;
+  oabSituacao: string | null;
+  oabNomeConfirmado: string | null;
+  oabVerificadaEm: string | null;
+  oabVerificacaoPendente: boolean;
+  // Token assinado pelo servidor que comprova a verificação; enviado em
+  // PUT /perfil para que o back-end marque oabVerificada de forma confiável.
+  oabToken: string | null;
   plano: Plano | null;
   areas: string[];
   cidades: Cidade[];
@@ -75,8 +89,15 @@ export function emptyFunnel(): FunnelData {
     nome: "",
     email: "",
     telefone: "",
+    cpf: "",
     oab: "",
     seccional: "",
+    oabVerificada: false,
+    oabSituacao: null,
+    oabNomeConfirmado: null,
+    oabVerificadaEm: null,
+    oabVerificacaoPendente: false,
+    oabToken: null,
     plano: null,
     areas: [],
     cidades: [],
@@ -98,8 +119,15 @@ export function loadFunnel(): FunnelData | null {
       nome: parsed.nome ?? "",
       email: parsed.email ?? "",
       telefone: parsed.telefone ?? "",
+      cpf: parsed.cpf ?? "",
       oab: parsed.oab ?? "",
       seccional: parsed.seccional ?? "",
+      oabVerificada: parsed.oabVerificada === true,
+      oabSituacao: parsed.oabSituacao ?? null,
+      oabNomeConfirmado: parsed.oabNomeConfirmado ?? null,
+      oabVerificadaEm: parsed.oabVerificadaEm ?? null,
+      oabVerificacaoPendente: parsed.oabVerificacaoPendente === true,
+      oabToken: parsed.oabToken ?? null,
       plano:
         parsed.plano === "mensal" || parsed.plano === "anual"
           ? parsed.plano
@@ -169,9 +197,17 @@ export async function fetchLead(leadId: string): Promise<FunnelData | null> {
       nome: r.nome,
       email: r.email,
       telefone: r.telefone,
-      // OAB/seccional não são persistidos no lead do back-end.
+      // CPF/OAB/verificação não são persistidos no lead do back-end; ao retomar
+      // por aqui, a etapa 1 refaz a verificação real da OAB.
+      cpf: "",
       oab: "",
       seccional: "",
+      oabVerificada: false,
+      oabSituacao: null,
+      oabNomeConfirmado: null,
+      oabVerificadaEm: null,
+      oabVerificacaoPendente: false,
+      oabToken: null,
       plano: r.plano === "mensal" || r.plano === "anual" ? r.plano : null,
       areas: r.areas,
       cidades: r.cidades,
@@ -201,4 +237,31 @@ export function maskCpfCnpj(value: string): string {
 
 export function isEmailValido(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+// Máscara de CPF (000.000.000-00). Limita a 11 dígitos.
+export function maskCpf(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  return d
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2");
+}
+
+// Validação real de CPF: 11 dígitos, rejeita sequências repetidas conhecidas
+// (000..., 111..., etc.) e confere os dois dígitos verificadores.
+export function isCpfValido(value: string): boolean {
+  const cpf = value.replace(/\D/g, "");
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += Number(cpf[i]) * (10 - i);
+  let d1 = (soma * 10) % 11;
+  if (d1 === 10) d1 = 0;
+  if (d1 !== Number(cpf[9])) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += Number(cpf[i]) * (11 - i);
+  let d2 = (soma * 10) % 11;
+  if (d2 === 10) d2 = 0;
+  return d2 === Number(cpf[10]);
 }

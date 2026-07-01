@@ -20,4 +20,6 @@ export interface UpdateProfileInput {
   linkedin: string;
   website: string;
   outro: string;
+  oabToken?: string | null;
+  oabVerificacaoPendente?: boolean;
 }

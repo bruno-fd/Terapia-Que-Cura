@@ -167,6 +167,11 @@ export interface LawyerProfile {
   complete: boolean;
   subscriptionStatus?: LawyerProfileSubscriptionStatus;
   visivel: boolean;
+  oabVerificada: boolean;
+  oabSituacao?: string | null;
+  oabNomeConfirmado?: string | null;
+  oabVerificadaEm?: string | null;
+  oabVerificacaoPendente: boolean;
 }
 
 export interface UpdateProfileInput {
@@ -182,6 +187,8 @@ export interface UpdateProfileInput {
   linkedin: string;
   website: string;
   outro: string;
+  oabToken?: string | null;
+  oabVerificacaoPendente?: boolean;
 }
 
 export interface PublicLawyer {
@@ -201,6 +208,34 @@ export interface ConcorrenciaResult {
   naArea: number;
   naCidade: number;
   naAreaECidade: number;
+}
+
+export interface VerificarOabInput {
+  cpf: string;
+  oab: string;
+  seccional: string;
+  nome: string;
+}
+
+export type VerificarOabResultMotivo = typeof VerificarOabResultMotivo[keyof typeof VerificarOabResultMotivo] | null;
+
+
+export const VerificarOabResultMotivo = {
+  cpf_nao_encontrado: 'cpf_nao_encontrado',
+  oab_divergente: 'oab_divergente',
+  nome_divergente: 'nome_divergente',
+  inscricao_inativa: 'inscricao_inativa',
+  erro_servico: 'erro_servico',
+} as const;
+
+export interface VerificarOabResult {
+  valido: boolean;
+  motivo?: VerificarOabResultMotivo;
+  situacao?: string | null;
+  nomeOab?: string | null;
+  numeroOab?: string | null;
+  seccional?: string | null;
+  token?: string | null;
 }
 
 export type CadastroLeadPlano = typeof CadastroLeadPlano[keyof typeof CadastroLeadPlano] | null;

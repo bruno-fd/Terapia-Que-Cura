@@ -189,7 +189,10 @@ function PagamentoBloco({
 }: Props) {
   const [state, setState] = useState<SubscriptionState | null>(null);
   const [carregando, setCarregando] = useState(true);
-  const [cpfCnpj, setCpfCnpj] = useState("");
+  // Pré-preenche com o CPF informado na etapa 1 (evita digitar de novo).
+  const [cpfCnpj, setCpfCnpj] = useState(
+    data.cpf ? maskCpfCnpj(data.cpf) : "",
+  );
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
 

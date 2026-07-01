@@ -19,6 +19,7 @@ import { getAuth, clerkClient } from "@clerk/express";
 import type { Request } from "express";
 import { sendEmail } from "../lib/email";
 import { welcomeEmail } from "../lib/email-templates";
+import { verificarOabToken, tokenCombinaComOab } from "../lib/oabToken";
 
 const router: IRouter = Router();
 
@@ -79,6 +80,13 @@ function toProfile(
     complete,
     subscriptionStatus,
     visivel: complete && subscriptionStatus === "ativa",
+    oabVerificada: row.oabVerificada,
+    oabSituacao: row.oabSituacao ?? null,
+    oabNomeConfirmado: row.oabNomeConfirmado ?? null,
+    oabVerificadaEm: row.oabVerificadaEm
+      ? row.oabVerificadaEm.toISOString()
+      : null,
+    oabVerificacaoPendente: row.oabVerificacaoPendente,
   };
 }
 
@@ -226,6 +234,37 @@ router.put("/perfil", requireAuth, async (req, res): Promise<void> => {
   }
   const data = parsed.data;
 
+  // Status de verificação da OAB é server-managed: só marcamos oabVerificada a
+  // partir de um token assinado por /verificar-oab (impede o cliente forjar o
+  // status). "Pendente" é o estado de menor privilégio e pode vir do cliente.
+  // Edições comuns no painel (sem token nem flag) preservam o valor persistido.
+  let oabPatch: {
+    oabVerificada?: boolean;
+    oabSituacao?: string | null;
+    oabNomeConfirmado?: string | null;
+    oabVerificadaEm?: Date;
+    oabVerificacaoPendente?: boolean;
+  } = {};
+  const tokenPayload = data.oabToken ? verificarOabToken(data.oabToken) : null;
+  // O perfil grava a OAB no formato "OAB/UF 123456"; extraímos a seccional para
+  // exigir que o token bata também na UF (não só no número da inscrição).
+  const ufMatch = data.oab.match(/OAB\/([A-Za-z]{2})/i);
+  const seccionalPerfil = ufMatch?.[1];
+  if (
+    tokenPayload &&
+    tokenCombinaComOab(tokenPayload, data.oab, seccionalPerfil)
+  ) {
+    oabPatch = {
+      oabVerificada: true,
+      oabSituacao: tokenPayload.situacao,
+      oabNomeConfirmado: tokenPayload.nomeOab,
+      oabVerificadaEm: new Date(),
+      oabVerificacaoPendente: false,
+    };
+  } else if (data.oabVerificacaoPendente !== undefined) {
+    oabPatch = { oabVerificacaoPendente: data.oabVerificacaoPendente };
+  }
+
   const values = {
     userId,
     nome: data.nome,
@@ -241,6 +280,7 @@ router.put("/perfil", requireAuth, async (req, res): Promise<void> => {
     website: data.website,
     outro: data.outro,
     updatedAt: new Date(),
+    ...oabPatch,
   };
 
   const [row] = await db

@@ -1,4 +1,1 @@
-- [Clerk embedded SignUp](clerk-embedded-signup.md) — to keep Clerk's `<SignUp>` inline on a page use `routing="hash"` (no `routing="virtual"` available); see file for version observed.
-- [Funnel lead sync](funnel-lead-sync.md) — out-of-order lead upserts need server-side monotonic guards on step/completed or completed leads get re-marked abandoned.
-- [Cadastro funnel skip-step](cadastro-funnel-skip-step.md) — `?plano=` on /cadastro/fluxo skips Etapa 3; Clerk signup redirect MUST preserve the param or skip mode resets on remount.
-- [Asaas recurring card billing](asaas-billing.md) — use billingType CREDIT_CARD (no card data) for recurring card via hosted invoiceUrl; sandbox/prod key picked by env-scoped ASAAS_BASE_URL.
+- [Pre-auth verified-status tokens](preauth-verified-tokens.md) — how to make a pre-auth funnel verification (OAB) unforgeable when saved post-auth, and the residual replay tradeoff.

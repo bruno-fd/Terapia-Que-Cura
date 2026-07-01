@@ -294,6 +294,28 @@ export const GetCadastroLeadResponse = zod.object({
 
 
 /**
+ * Public (no auth): called at the end of funnel step 1. Looks up the CPF on the OAB CNA SOAP webservice (ConsultaAdvogadoPorCpf) and cross-checks the returned inscricao, name and status against the submitted data. Requires the OAB_CNA_KEY secret; without a valid key the OAB rejects the call and the response is motivo=erro_servico, so the funnel marks verification as pending for manual review.
+ * @summary Verify a lawyer's OAB registration against the OAB Federal webservice
+ */
+export const VerificarOabBody = zod.object({
+  "cpf": zod.string(),
+  "oab": zod.string(),
+  "seccional": zod.string(),
+  "nome": zod.string()
+})
+
+export const VerificarOabResponse = zod.object({
+  "valido": zod.boolean(),
+  "motivo": zod.enum(['cpf_nao_encontrado', 'oab_divergente', 'nome_divergente', 'inscricao_inativa', 'erro_servico']).nullish(),
+  "situacao": zod.string().nullish(),
+  "nomeOab": zod.string().nullish(),
+  "numeroOab": zod.string().nullish(),
+  "seccional": zod.string().nullish(),
+  "token": zod.string().nullish()
+})
+
+
+/**
  * @summary Get the authenticated lawyer's profile
  */
 
@@ -320,7 +342,12 @@ export const GetPerfilResponse = zod.object({
   "outro": zod.string(),
   "complete": zod.boolean(),
   "subscriptionStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
-  "visivel": zod.boolean()
+  "visivel": zod.boolean(),
+  "oabVerificada": zod.boolean(),
+  "oabSituacao": zod.string().nullish(),
+  "oabNomeConfirmado": zod.string().nullish(),
+  "oabVerificadaEm": zod.string().nullish(),
+  "oabVerificacaoPendente": zod.boolean()
 })
 
 
@@ -348,7 +375,9 @@ export const UpdatePerfilBody = zod.object({
   "instagram": zod.string(),
   "linkedin": zod.string(),
   "website": zod.string(),
-  "outro": zod.string()
+  "outro": zod.string(),
+  "oabToken": zod.string().nullish(),
+  "oabVerificacaoPendente": zod.boolean().optional()
 })
 
 
@@ -375,7 +404,12 @@ export const UpdatePerfilResponse = zod.object({
   "outro": zod.string(),
   "complete": zod.boolean(),
   "subscriptionStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
-  "visivel": zod.boolean()
+  "visivel": zod.boolean(),
+  "oabVerificada": zod.boolean(),
+  "oabSituacao": zod.string().nullish(),
+  "oabNomeConfirmado": zod.string().nullish(),
+  "oabVerificadaEm": zod.string().nullish(),
+  "oabVerificacaoPendente": zod.boolean()
 })
 
 

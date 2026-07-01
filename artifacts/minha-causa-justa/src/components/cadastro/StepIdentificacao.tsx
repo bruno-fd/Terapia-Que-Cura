@@ -1,8 +1,14 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { verificarOab as verificarOabApi } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
-import { isEmailValido, type FunnelData } from "@/lib/cadastro-funnel";
-import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  isEmailValido,
+  isCpfValido,
+  maskCpf,
+  type FunnelData,
+} from "@/lib/cadastro-funnel";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 
 interface Props {
@@ -11,58 +17,127 @@ interface Props {
   onNext: () => void;
 }
 
-type VerifStatus = "idle" | "verificando" | "ok";
-
 export function StepIdentificacao({ data, update, onNext }: Props) {
   const [nomeErro, setNomeErro] = useState("");
   const [emailErro, setEmailErro] = useState("");
+  const [cpfErro, setCpfErro] = useState("");
   const [oabErro, setOabErro] = useState("");
-  const [verif, setVerif] = useState<VerifStatus>("idle");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [verificando, setVerificando] = useState(false);
 
   const oabDigitos = data.oab.replace(/\D/g, "");
   const oabPreenchida = oabDigitos.length >= 3 && !!data.seccional;
+  const nomeCompleto =
+    data.nome.trim().split(/\s+/).filter(Boolean).length >= 2;
 
-  // Verificação de OAB simulada (placeholder, sem webservice real), disparada
-  // no blur do número/seccional quando ambos estão preenchidos. Habilita o
-  // "Continuar" ao concluir.
-  const verificarOab = (numero: string, seccional: string) => {
-    const ok = numero.replace(/\D/g, "").length >= 3 && !!seccional;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!ok) {
-      setVerif("idle");
-      return;
-    }
-    setVerif("verificando");
-    timerRef.current = setTimeout(() => setVerif("ok"), 800);
-  };
-
-  const resetarVerif = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (verif !== "idle") setVerif("idle");
-  };
-
+  // Habilita o "Continuar" quando os campos locais estão válidos. A verificação
+  // real na OAB acontece no clique (verificarEContinuar).
   const tudoValido =
-    !!data.nome.trim() &&
+    nomeCompleto &&
     isEmailValido(data.email) &&
-    oabPreenchida &&
-    verif === "ok";
+    isCpfValido(data.cpf) &&
+    oabPreenchida;
 
-  const validar = () => {
+  const focar = (id: string) => {
+    document.getElementById(id)?.focus();
+  };
+
+  const aplicarErroMotivo = (motivo: string | null | undefined) => {
+    switch (motivo) {
+      case "cpf_nao_encontrado":
+        setCpfErro(
+          "Não encontramos esse CPF na base da OAB. Confira o número informado.",
+        );
+        focar("cad-cpf");
+        break;
+      case "oab_divergente":
+        setOabErro(
+          "O número da OAB e a seccional não conferem com esse CPF.",
+        );
+        focar("cad-oab");
+        break;
+      case "nome_divergente":
+        setNomeErro(
+          "O nome informado não confere com o registrado na OAB para esse CPF.",
+        );
+        focar("cad-nome");
+        break;
+      case "inscricao_inativa":
+        setOabErro(
+          "Sua inscrição na OAB não consta como ativa. Verifique sua situação junto à seccional.",
+        );
+        focar("cad-oab");
+        break;
+      default:
+        setOabErro(
+          "Não foi possível confirmar sua inscrição agora. Tente novamente.",
+        );
+    }
+  };
+
+  // Marca a verificação como pendente (revisão manual) e segue o funil. Usado
+  // quando o serviço da OAB está indisponível: não bloqueamos o cadastro.
+  const seguirPendente = () => {
+    update({
+      oabVerificada: false,
+      oabVerificacaoPendente: true,
+      oabVerificadaEm: null,
+      oabSituacao: null,
+      oabNomeConfirmado: null,
+      oabToken: null,
+    });
+    onNext();
+  };
+
+  const verificarEContinuar = async () => {
     let ok = true;
-    if (!data.nome.trim()) {
-      setNomeErro("Informe seu nome completo.");
+    if (!nomeCompleto) {
+      setNomeErro("Informe seu nome completo (nome e sobrenome).");
       ok = false;
     }
     if (!isEmailValido(data.email)) {
       setEmailErro("Informe um e-mail válido.");
       ok = false;
     }
+    if (!isCpfValido(data.cpf)) {
+      setCpfErro("Informe um CPF válido.");
+      ok = false;
+    }
     if (!oabPreenchida) {
       setOabErro("Informe o número da OAB e a seccional.");
       ok = false;
     }
-    if (ok && verif === "ok") onNext();
+    if (!ok) return;
+
+    setVerificando(true);
+    try {
+      const r = await verificarOabApi({
+        cpf: data.cpf,
+        oab: data.oab,
+        seccional: data.seccional,
+        nome: data.nome,
+      });
+      if (r.valido) {
+        update({
+          oabVerificada: true,
+          oabSituacao: r.situacao ?? null,
+          oabNomeConfirmado: r.nomeOab ?? null,
+          oabVerificadaEm: new Date().toISOString(),
+          oabVerificacaoPendente: false,
+          oabToken: r.token ?? null,
+        });
+        onNext();
+        return;
+      }
+      if (r.motivo === "erro_servico") {
+        seguirPendente();
+        return;
+      }
+      aplicarErroMotivo(r.motivo);
+      setVerificando(false);
+    } catch {
+      // Falha de rede/inesperada: trata como verificação pendente e segue.
+      seguirPendente();
+    }
   };
 
   const inputCls = (erro: string) =>
@@ -141,6 +216,42 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
           )}
         </div>
 
+        <div>
+          <label
+            htmlFor="cad-cpf"
+            className="block text-sm font-bold text-neutral-700 mb-1.5"
+          >
+            CPF<span className="text-[#C0392B]"> *</span>
+          </label>
+          <input
+            id="cad-cpf"
+            type="text"
+            inputMode="numeric"
+            value={data.cpf}
+            onChange={(e) => {
+              update({ cpf: maskCpf(e.target.value) });
+              if (cpfErro) setCpfErro("");
+            }}
+            onBlur={() => {
+              if (data.cpf && !isCpfValido(data.cpf)) {
+                setCpfErro("Informe um CPF válido.");
+              }
+            }}
+            placeholder="000.000.000-00"
+            className={inputCls(cpfErro)}
+            data-testid="input-cpf"
+          />
+          {cpfErro && (
+            <p className="mt-1.5 text-sm text-[#C0392B]" data-testid="erro-cpf">
+              {cpfErro}
+            </p>
+          )}
+          <p className="mt-1.5 text-xs text-neutral-500">
+            Usamos seu CPF apenas para confirmar sua inscrição na OAB. Ele nunca
+            aparece no seu perfil público.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-4">
           <div>
             <label
@@ -157,9 +268,7 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
               onChange={(e) => {
                 update({ oab: e.target.value });
                 if (oabErro) setOabErro("");
-                resetarVerif();
               }}
-              onBlur={(e) => verificarOab(e.target.value, data.seccional)}
               placeholder="Ex: 145782"
               className={inputCls(oabErro)}
               data-testid="input-oab"
@@ -174,7 +283,6 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
               onSelect={(uf) => {
                 update({ seccional: uf });
                 if (oabErro) setOabErro("");
-                verificarOab(data.oab, uf);
               }}
               placeholder="UF"
               inputClassName="w-full bg-white pr-9"
@@ -183,22 +291,13 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
           </div>
         </div>
 
-        {verif === "verificando" && (
+        {verificando && (
           <p
             className="flex items-center gap-2 text-sm text-neutral-600"
             data-testid="oab-verificando"
           >
-            <Loader2 className="h-4 w-4 animate-spin" /> Verificando inscrição na
-            OAB...
-          </p>
-        )}
-        {verif === "ok" && (
-          <p
-            className="flex items-center gap-2 text-sm font-medium text-[#1E7D4F]"
-            data-testid="oab-ok"
-          >
-            <CheckCircle2 className="h-4 w-4" /> Inscrição localizada
-            (verificação simulada).
+            <Loader2 className="h-4 w-4 animate-spin" /> Verificando sua
+            inscrição na OAB...
           </p>
         )}
         {oabErro && (
@@ -206,16 +305,27 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
             {oabErro}
           </p>
         )}
+        <p className="text-xs text-neutral-500">
+          Confirmamos seu número diretamente na base do Conselho Federal da OAB.
+        </p>
       </div>
 
       <div className="mt-8 flex justify-end">
         <Button
-          onClick={validar}
-          disabled={!tudoValido}
+          onClick={verificarEContinuar}
+          disabled={!tudoValido || verificando}
           className="h-12 px-7 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium disabled:opacity-50"
           data-testid="button-avancar"
         >
-          Continuar <ArrowRight className="ml-2 h-4 w-4" />
+          {verificando ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando...
+            </>
+          ) : (
+            <>
+              Continuar <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>

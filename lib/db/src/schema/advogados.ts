@@ -36,6 +36,17 @@ export const advogadosTable = pgTable("advogados", {
   linkedin: text("linkedin").notNull().default(""),
   website: text("website").notNull().default(""),
   outro: text("outro").notNull().default(""),
+  // Verificação da inscrição na OAB (via webservice CNA da OAB Federal).
+  // Preenchidos a partir do resultado da verificação feita no funil de cadastro.
+  oabVerificada: boolean("oab_verificada").notNull().default(false),
+  oabSituacao: text("oab_situacao"),
+  oabNomeConfirmado: text("oab_nome_confirmado"),
+  oabVerificadaEm: timestamp("oab_verificada_em", { withTimezone: true }),
+  // true quando a verificação não pôde ser concluída (serviço indisponível) e
+  // o lead precisa de revisão manual antes da ativação do perfil.
+  oabVerificacaoPendente: boolean("oab_verificacao_pendente")
+    .notNull()
+    .default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

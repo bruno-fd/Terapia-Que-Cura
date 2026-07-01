@@ -362,6 +362,22 @@ export default function PainelPerfil() {
               {oabError && (
                 <p className="mt-1.5 text-sm text-[#C0392B]" data-testid="error-oab">{oabError}</p>
               )}
+              {loaded?.oabVerificada ? (
+                <p
+                  className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-[#1E7D4F]"
+                  data-testid="oab-verificada"
+                >
+                  <Check className="h-4 w-4" /> Inscrição verificada na OAB
+                  {loaded.oabSituacao ? ` (${loaded.oabSituacao})` : ""}
+                </p>
+              ) : loaded?.oabVerificacaoPendente ? (
+                <p
+                  className="mt-1.5 text-sm font-medium text-[#B97D00]"
+                  data-testid="oab-pendente"
+                >
+                  Verificação da OAB pendente de análise manual.
+                </p>
+              ) : null}
             </div>
           </div>
         </Card>

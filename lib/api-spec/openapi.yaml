@@ -293,6 +293,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+  /verificar-oab:
+    post:
+      operationId: verificarOab
+      tags: [cadastro]
+      summary: Verify a lawyer's OAB registration against the OAB Federal webservice
+      description: >-
+        Public (no auth): called at the end of funnel step 1. Looks up the CPF on
+        the OAB CNA SOAP webservice (ConsultaAdvogadoPorCpf) and cross-checks the
+        returned inscricao, name and status against the submitted data. Requires
+        the OAB_CNA_KEY secret; without a valid key the OAB rejects the call and
+        the response is motivo=erro_servico, so the funnel marks verification as
+        pending for manual review.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerificarOabInput"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificarOabResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "403":
+          description: Forbidden origin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
   /perfil:
     get:
       operationId: getPerfil
@@ -674,6 +711,19 @@ components:
           nullable: true
         visivel:
           type: boolean
+        oabVerificada:
+          type: boolean
+        oabSituacao:
+          type: string
+          nullable: true
+        oabNomeConfirmado:
+          type: string
+          nullable: true
+        oabVerificadaEm:
+          type: string
+          nullable: true
+        oabVerificacaoPendente:
+          type: boolean
       required:
         - nome
         - oab
@@ -688,6 +738,8 @@ components:
         - outro
         - complete
         - visivel
+        - oabVerificada
+        - oabVerificacaoPendente
     UpdateProfileInput:
       type: object
       properties:
@@ -720,6 +772,17 @@ components:
           type: string
         outro:
           type: string
+        # Token de verificação da OAB assinado pelo servidor (emitido por
+        # POST /verificar-oab quando valido=true). O status "verificado" é
+        # server-managed: o cliente NÃO grava oabVerificada diretamente, apenas
+        # apresenta este token, que o servidor valida antes de marcar verificado.
+        oabToken:
+          type: string
+          nullable: true
+        # Sinaliza verificação pendente (revisão manual) quando o serviço da OAB
+        # falhou. É o estado de MENOR privilégio, então pode vir do cliente.
+        oabVerificacaoPendente:
+          type: boolean
       required:
         - nome
         - oab
@@ -784,6 +847,57 @@ components:
         - naArea
         - naCidade
         - naAreaECidade
+    VerificarOabInput:
+      type: object
+      properties:
+        cpf:
+          type: string
+        oab:
+          type: string
+        seccional:
+          type: string
+        nome:
+          type: string
+      required:
+        - cpf
+        - oab
+        - seccional
+        - nome
+      additionalProperties: false
+    VerificarOabResult:
+      type: object
+      properties:
+        valido:
+          type: boolean
+        motivo:
+          type: string
+          enum:
+            - cpf_nao_encontrado
+            - oab_divergente
+            - nome_divergente
+            - inscricao_inativa
+            - erro_servico
+          nullable: true
+        situacao:
+          type: string
+          nullable: true
+        nomeOab:
+          type: string
+          nullable: true
+        numeroOab:
+          type: string
+          nullable: true
+        seccional:
+          type: string
+          nullable: true
+        # Token assinado (HMAC) emitido quando valido=true. O cliente o guarda no
+        # funil e o envia em PUT /perfil para o servidor gravar o status como
+        # verificado de forma confiável (impede forjar oabVerificada).
+        token:
+          type: string
+          nullable: true
+      required:
+        - valido
     CadastroLead:
       type: object
       properties:

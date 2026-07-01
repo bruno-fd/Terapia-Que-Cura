@@ -32,3 +32,6 @@ export * from './updateBlogPostInput';
 export * from './updateProfileInput';
 export * from './upsertCadastroLeadInput';
 export * from './upsertCadastroLeadInputPlano';
+export * from './verificarOabInput';
+export * from './verificarOabResult';
+export * from './verificarOabResultMotivo';

@@ -24,4 +24,9 @@ export interface LawyerProfile {
   complete: boolean;
   subscriptionStatus?: LawyerProfileSubscriptionStatus;
   visivel: boolean;
+  oabVerificada: boolean;
+  oabSituacao?: string | null;
+  oabNomeConfirmado?: string | null;
+  oabVerificadaEm?: string | null;
+  oabVerificacaoPendente: boolean;
 }
