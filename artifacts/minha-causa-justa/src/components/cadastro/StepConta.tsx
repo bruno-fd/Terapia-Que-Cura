@@ -138,12 +138,6 @@ export function StepConta({
           painel.
         </p>
 
-        <ResumoPedido
-          data={data}
-          onEditar={onEditar}
-          onEditarPlano={onEditarPlano}
-        />
-
         <div className="flex justify-center">
           <SignUp
             routing="hash"
