@@ -55,3 +55,12 @@ export function cancelAssinatura(
     body: motivo ? { motivo } : {},
   });
 }
+
+export function solicitarReembolso(
+  motivo?: string,
+): Promise<SubscriptionState> {
+  return apiFetch("/assinatura/reembolso", {
+    method: "POST",
+    body: motivo ? { motivo } : {},
+  });
+}

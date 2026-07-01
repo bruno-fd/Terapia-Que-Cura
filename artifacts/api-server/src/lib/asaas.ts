@@ -186,6 +186,14 @@ export function getPayment(paymentId: string): Promise<AsaasPayment> {
   return asaasFetch<AsaasPayment>(`/payments/${paymentId}`);
 }
 
+// Estorna (reembolsa) integralmente um pagamento já pago. Sem corpo, a Asaas
+// faz o estorno total do valor. Usado no direito de arrependimento (7 dias).
+export function refundPayment(paymentId: string): Promise<AsaasPayment> {
+  return asaasFetch<AsaasPayment>(`/payments/${paymentId}/refund`, {
+    method: "POST",
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Webhooks. Registramos o webhook de forma programática (ver
 // registerAsaasWebhook) para que um pagamento confirmado atualize o status da

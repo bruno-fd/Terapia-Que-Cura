@@ -428,6 +428,7 @@ export const GetAssinaturaResponse = zod.object({
   "nextDueDate": zod.string().nullish(),
   "canceledAt": zod.string().nullish(),
   "accessUntil": zod.string().nullish(),
+  "refundEligible": zod.boolean().optional(),
   "invoiceUrl": zod.string().nullish(),
   "payments": zod.array(zod.object({
   "id": zod.string(),
@@ -464,6 +465,7 @@ export const CreateAssinaturaResponse = zod.object({
   "nextDueDate": zod.string().nullish(),
   "canceledAt": zod.string().nullish(),
   "accessUntil": zod.string().nullish(),
+  "refundEligible": zod.boolean().optional(),
   "invoiceUrl": zod.string().nullish(),
   "payments": zod.array(zod.object({
   "id": zod.string(),
@@ -497,6 +499,41 @@ export const CancelAssinaturaResponse = zod.object({
   "nextDueDate": zod.string().nullish(),
   "canceledAt": zod.string().nullish(),
   "accessUntil": zod.string().nullish(),
+  "refundEligible": zod.boolean().optional(),
+  "invoiceUrl": zod.string().nullish(),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "date": zod.string().nullish(),
+  "description": zod.string(),
+  "value": zod.number(),
+  "status": zod.enum(['Pago', 'Pendente', 'Falhou']),
+  "invoiceUrl": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Request a 7-day withdrawal refund and delete the lawyer profile
+ */
+export const solicitarReembolsoBodyMotivoMax = 300;
+
+
+
+export const SolicitarReembolsoBody = zod.object({
+  "motivo": zod.string().max(solicitarReembolsoBodyMotivoMax).optional()
+})
+
+export const SolicitarReembolsoResponse = zod.object({
+  "hasSubscription": zod.boolean(),
+  "status": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "plan": zod.enum(['mensal', 'anual']).nullish(),
+  "value": zod.number().nullish(),
+  "cycle": zod.string().nullish(),
+  "customerName": zod.string().nullish(),
+  "nextDueDate": zod.string().nullish(),
+  "canceledAt": zod.string().nullish(),
+  "accessUntil": zod.string().nullish(),
+  "refundEligible": zod.boolean().optional(),
   "invoiceUrl": zod.string().nullish(),
   "payments": zod.array(zod.object({
   "id": zod.string(),

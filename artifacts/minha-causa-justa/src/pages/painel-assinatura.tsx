@@ -23,6 +23,7 @@ import {
   getAssinatura,
   createAssinatura,
   cancelAssinatura,
+  solicitarReembolso,
   type SubscriptionState,
 } from "@/lib/assinatura";
 
@@ -84,7 +85,9 @@ export default function PainelAssinatura() {
   const [showAssinar, setShowAssinar] = useState(false);
   const [planoEscolhido, setPlanoEscolhido] = useState<Plano>("mensal");
   const [pendingPlano, setPendingPlano] = useState<Plano | null>(null);
-  const [showCancelar, setShowCancelar] = useState(false);
+  const [cancelMode, setCancelMode] = useState<
+    null | "cancelar" | "reembolso"
+  >(null);
 
   async function load() {
     setLoading(true);
@@ -291,12 +294,21 @@ export default function PainelAssinatura() {
                 )}
                 {!(status === "ativa" && state.canceledAt) && (
                   <button
-                    onClick={() => setShowCancelar(true)}
+                    onClick={() => setCancelMode("cancelar")}
                     className="text-sm hover:underline"
                     style={{ color: ERROR_COLOR }}
                     data-testid="button-cancelar"
                   >
                     Cancelar assinatura
+                  </button>
+                )}
+                {state.refundEligible && (
+                  <button
+                    onClick={() => setCancelMode("reembolso")}
+                    className="text-sm text-neutral-500 hover:underline"
+                    data-testid="button-reembolso"
+                  >
+                    Solicitar reembolso
                   </button>
                 )}
               </div>
@@ -377,13 +389,16 @@ export default function PainelAssinatura() {
         }}
       />
 
-      {/* Modal cancelar (pesquisa de motivo + retenção de visibilidade) */}
+      {/* Modal cancelar / reembolso (pesquisa de motivo + confirmação) */}
       <CancelarDialog
-        open={showCancelar}
-        onOpenChange={setShowCancelar}
-        onCancelada={(novo) => {
+        modo={cancelMode ?? "cancelar"}
+        open={cancelMode !== null}
+        onOpenChange={(v) => {
+          if (!v) setCancelMode(null);
+        }}
+        onConcluida={(novo) => {
           setState(novo);
-          setShowCancelar(false);
+          setCancelMode(null);
         }}
       />
     </DashboardLayout>
@@ -402,14 +417,17 @@ const MOTIVOS_CANCELAMENTO = [
 ];
 
 function CancelarDialog({
+  modo,
   open,
   onOpenChange,
-  onCancelada,
+  onConcluida,
 }: {
+  modo: "cancelar" | "reembolso";
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onCancelada: (state: SubscriptionState) => void;
+  onConcluida: (state: SubscriptionState) => void;
 }) {
+  const isReembolso = modo === "reembolso";
   const [etapa, setEtapa] = useState<"motivo" | "visibilidade">("motivo");
   const [motivo, setMotivo] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
@@ -429,10 +447,15 @@ function CancelarDialog({
     setCanceling(true);
     setErro(null);
     try {
-      onCancelada(await cancelAssinatura(motivo ?? undefined));
+      const acao = isReembolso ? solicitarReembolso : cancelAssinatura;
+      onConcluida(await acao(motivo ?? undefined));
     } catch (err) {
       setErro(
-        err instanceof Error ? err.message : "Não foi possível cancelar.",
+        err instanceof Error
+          ? err.message
+          : isReembolso
+            ? "Não foi possível solicitar o reembolso."
+            : "Não foi possível cancelar.",
       );
       setCanceling(false);
     }
@@ -445,16 +468,20 @@ function CancelarDialog({
         data-testid="modal-cancelar"
       >
         <DialogHeader>
-          <DialogTitle className="sr-only">Cancelar assinatura</DialogTitle>
+          <DialogTitle className="sr-only">
+            {isReembolso ? "Solicitar reembolso" : "Cancelar assinatura"}
+          </DialogTitle>
           <DialogDescription className="sr-only">
-            Pesquisa de cancelamento e confirmação.
+            Pesquisa de motivo e confirmação.
           </DialogDescription>
         </DialogHeader>
 
         {etapa === "motivo" ? (
           <div>
             <h3 className="text-lg font-bold text-neutral-900">
-              Antes de cancelar, conte pra gente o motivo
+              {isReembolso
+                ? "Antes de solicitar o reembolso, conte pra gente o motivo"
+                : "Antes de cancelar, conte pra gente o motivo"}
             </h3>
             <p className="mt-1 text-sm text-neutral-500">
               Sua resposta nos ajuda a melhorar a plataforma. Leva menos de um
@@ -518,11 +545,14 @@ function CancelarDialog({
               <Eye className="h-7 w-7 text-primary-600" />
             </div>
             <h3 className="mt-4 text-lg font-bold text-neutral-900">
-              Você deseja retirar a visibilidade do seu perfil?
+              {isReembolso
+                ? "Confirmar solicitação de reembolso?"
+                : "Você deseja retirar a visibilidade do seu perfil?"}
             </h3>
             <p className="mt-2 text-sm text-neutral-600">
-              Ao cancelar, seu perfil deixa de aparecer nas buscas ao fim do
-              período já pago. Você pode estar abrindo mão de novos clientes.
+              {isReembolso
+                ? "O valor pago será estornado e seu perfil será excluído permanentemente da plataforma. Essa ação não pode ser desfeita."
+                : "Ao cancelar, seu perfil deixa de aparecer nas buscas ao fim do período já pago. Você pode estar abrindo mão de novos clientes."}
             </p>
 
             <div className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-primary-50 border border-primary-100 px-4 py-3">
@@ -557,7 +587,13 @@ function CancelarDialog({
                 style={{ color: ERROR_COLOR }}
                 data-testid="button-confirmar-cancelar"
               >
-                {canceling ? "Cancelando..." : "Sim, cancelar assinatura"}
+                {isReembolso
+                  ? canceling
+                    ? "Processando..."
+                    : "Sim, solicitar reembolso e excluir meu perfil"
+                  : canceling
+                    ? "Cancelando..."
+                    : "Sim, cancelar assinatura"}
               </button>
             </div>
           </div>

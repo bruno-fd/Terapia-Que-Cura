@@ -454,6 +454,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+  /assinatura/reembolso:
+    post:
+      operationId: solicitarReembolso
+      tags: [subscription]
+      summary: Request a 7-day withdrawal refund and delete the lawyer profile
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelSubscriptionInput"
+      responses:
+        "200":
+          description: Refund processed and profile deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionState"
+        "404":
+          description: No subscription found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "409":
+          description: Refund window expired or no eligible payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "502":
+          description: Asaas error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -636,6 +672,8 @@ components:
         accessUntil:
           type: string
           nullable: true
+        refundEligible:
+          type: boolean
         invoiceUrl:
           type: string
           nullable: true

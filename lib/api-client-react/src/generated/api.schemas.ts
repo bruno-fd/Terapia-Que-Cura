@@ -110,6 +110,7 @@ export interface SubscriptionState {
   nextDueDate?: string | null;
   canceledAt?: string | null;
   accessUntil?: string | null;
+  refundEligible?: boolean;
   invoiceUrl?: string | null;
   payments: SubscriptionPayment[];
 }

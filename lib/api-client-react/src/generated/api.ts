@@ -1328,3 +1328,73 @@ export const useCancelAssinatura = <TError = ErrorType<ApiErrorResponse>,
       return useMutation(getCancelAssinaturaMutationOptions(options));
     }
 
+export const getSolicitarReembolsoUrl = () => {
+
+
+
+
+  return `/api/assinatura/reembolso`
+}
+
+/**
+ * @summary Request a 7-day withdrawal refund and delete the lawyer profile
+ */
+export const solicitarReembolso = async (cancelSubscriptionInput?: CancelSubscriptionInput, options?: RequestInit): Promise<SubscriptionState> => {
+
+  return customFetch<SubscriptionState>(getSolicitarReembolsoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cancelSubscriptionInput)
+  }
+);}
+
+
+
+
+export const getSolicitarReembolsoMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof solicitarReembolso>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof solicitarReembolso>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext> => {
+
+const mutationKey = ['solicitarReembolso'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof solicitarReembolso>>, {data?: BodyType<CancelSubscriptionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  solicitarReembolso(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SolicitarReembolsoMutationResult = NonNullable<Awaited<ReturnType<typeof solicitarReembolso>>>
+    export type SolicitarReembolsoMutationBody = BodyType<CancelSubscriptionInput> | undefined
+    export type SolicitarReembolsoMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Request a 7-day withdrawal refund and delete the lawyer profile
+ */
+export const useSolicitarReembolso = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof solicitarReembolso>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof solicitarReembolso>>,
+        TError,
+        {data?: BodyType<CancelSubscriptionInput>},
+        TContext
+      > => {
+      return useMutation(getSolicitarReembolsoMutationOptions(options));
+    }
+

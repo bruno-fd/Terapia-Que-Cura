@@ -1,18 +1,26 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ne, isNull } from "drizzle-orm";
-import { db, subscriptionsTable, type SubscriptionRow } from "@workspace/db";
+import {
+  db,
+  subscriptionsTable,
+  advogadosTable,
+  type SubscriptionRow,
+} from "@workspace/db";
 import {
   GetAssinaturaResponse,
   CreateAssinaturaBody,
   CreateAssinaturaResponse,
   CancelAssinaturaBody,
   CancelAssinaturaResponse,
+  SolicitarReembolsoBody,
+  SolicitarReembolsoResponse,
 } from "@workspace/api-zod";
 import {
   createCustomer,
   createSubscription,
   listSubscriptionPayments,
   deleteSubscription,
+  refundPayment,
   AsaasError,
   type AsaasPayment,
 } from "../lib/asaas";
@@ -128,6 +136,31 @@ function deriveStatus(
   return "pendente";
 }
 
+// Data (yyyy-mm-dd) do primeiro pagamento pago, usada como início do prazo
+// legal de arrependimento (7 dias). Preferimos a data efetiva de pagamento;
+// na falta dela, o vencimento.
+function firstPaidDate(payments: AsaasPayment[]): string | null {
+  const paidDates = payments
+    .filter((p) => PAID_STATUSES.has(p.status))
+    .map((p) => p.paymentDate ?? p.dueDate)
+    .filter((d): d is string => !!d)
+    .sort();
+  return paidDates[0] ?? null;
+}
+
+// Direito de arrependimento (CDC art. 49): reembolso disponível somente
+// enquanto houver um pagamento pago E hoje estiver dentro do prazo de 7 dias.
+// Contagem conforme art. 132 do Código Civil: exclui-se o dia do pagamento e
+// contam-se os 7 dias seguintes (inclusive o 7º), logo o limite é
+// primeiroPagamento + 7 dias, inclusive. Fora desse prazo, não há elegibilidade.
+function isRefundEligible(payments: AsaasPayment[]): boolean {
+  const first = firstPaidDate(payments);
+  if (!first) return false;
+  const deadline = new Date(`${first}T00:00:00Z`);
+  deadline.setUTCDate(deadline.getUTCDate() + 7);
+  return todayIso() <= deadline.toISOString().slice(0, 10);
+}
+
 // Link da fatura hospedada de cartão de crédito para o botão "Pagar agora".
 function openInvoiceUrl(payments: AsaasPayment[]): string | null {
   const open = payments.find(
@@ -163,6 +196,7 @@ function buildState(
     nextDueDate: row.nextDueDate,
     canceledAt: row.canceledAt ? row.canceledAt.toISOString() : null,
     accessUntil: row.accessUntil ?? null,
+    refundEligible: isRefundEligible(payments),
     invoiceUrl: openInvoiceUrl(payments),
     payments: visible,
   };
@@ -178,6 +212,7 @@ const EMPTY_STATE = {
   nextDueDate: null,
   canceledAt: null,
   accessUntil: null,
+  refundEligible: false,
   invoiceUrl: null,
   payments: [],
 };
@@ -422,6 +457,96 @@ router.post(
   res.json(
     CancelAssinaturaResponse.parse(buildState(updated, payments, novoStatus)),
   );
+  },
+);
+
+// Solicitação de reembolso (direito de arrependimento, 7 dias). Estorna o
+// pagamento na Asaas, cancela a assinatura recorrente e EXCLUI o perfil do
+// advogado automaticamente. Só é permitido dentro do prazo legal.
+router.post(
+  "/assinatura/reembolso",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const row = await findRow(req.userId!);
+    if (!row) {
+      res.status(404).json({ error: "Nenhuma assinatura encontrada." });
+      return;
+    }
+
+    // Motivo da pesquisa (opcional), mesmo corpo do cancelamento.
+    const parsedBody = SolicitarReembolsoBody.safeParse(req.body ?? {});
+    if (!parsedBody.success) {
+      res.status(400).json({ error: "Dados de reembolso inválidos." });
+      return;
+    }
+    const motivo = parsedBody.data.motivo?.trim() || null;
+
+    // Reembolso mexe com dinheiro: exigimos a listagem de pagamentos com
+    // sucesso para validar o prazo e saber o que estornar. Se a Asaas falhar,
+    // não prosseguimos (nunca excluímos o perfil sem confirmar o estorno).
+    let payments: AsaasPayment[];
+    try {
+      payments = await listSubscriptionPayments(row.asaasSubscriptionId);
+    } catch (err) {
+      req.log.error({ err }, "Falha ao listar pagamentos ao reembolsar");
+      res.status(502).json({
+        error: "Não foi possível consultar seus pagamentos. Tente novamente.",
+      });
+      return;
+    }
+
+    if (!isRefundEligible(payments)) {
+      res.status(409).json({
+        error:
+          "O prazo de 7 dias para reembolso já passou ou não há pagamento a estornar.",
+      });
+      return;
+    }
+
+    const paidPayments = payments.filter((p) => PAID_STATUSES.has(p.status));
+
+    // Ordem importa para manter o estado consistente e permitir novas tentativas
+    // seguras: PRIMEIRO cancelamos a assinatura recorrente (interrompe cobranças
+    // futuras), DEPOIS estornamos, e só então excluímos os dados locais. Se algo
+    // falhar no meio, nada local é apagado e o botão continua disponível (o
+    // pagamento segue pago e dentro do prazo), então o advogado pode repetir: um
+    // DELETE já feito retorna 404 (tratado como ok) e estornos já feitos não são
+    // refeitos (só estornamos pagamentos ainda em status pago).
+    try {
+      await deleteSubscription(row.asaasSubscriptionId);
+    } catch (err) {
+      if (err instanceof AsaasError && err.status !== 404) {
+        req.log.error({ err }, "Erro Asaas ao cancelar assinatura no reembolso");
+        res.status(502).json({ error: err.message });
+        return;
+      }
+    }
+
+    try {
+      for (const p of paidPayments) {
+        await refundPayment(p.id);
+      }
+    } catch (err) {
+      if (err instanceof AsaasError) {
+        req.log.error({ err }, "Erro Asaas ao estornar pagamento");
+        res.status(502).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
+
+    // Exclui o perfil do advogado e a assinatura local (teardown completo).
+    await db
+      .delete(advogadosTable)
+      .where(eq(advogadosTable.userId, row.lawyerRef));
+    await db.delete(subscriptionsTable).where(eq(subscriptionsTable.id, row.id));
+
+    req.log.info(
+      { lawyerRef: row.lawyerRef, motivo, estornos: paidPayments.length },
+      "Reembolso processado e perfil excluído",
+    );
+
+    res.json(SolicitarReembolsoResponse.parse(EMPTY_STATE));
   },
 );
 
