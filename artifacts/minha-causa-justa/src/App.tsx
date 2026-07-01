@@ -32,6 +32,7 @@ import PainelPerfil from "@/pages/painel-perfil";
 import PainelMetricas from "@/pages/painel-metricas";
 import PainelAssinatura from "@/pages/painel-assinatura";
 import Admin from "@/pages/admin";
+import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
 
 const queryClient = new QueryClient();
 
@@ -64,7 +65,7 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${window.location.origin}${logoUrl}`,
   },
   variables: {
     colorPrimary: "#2260AA",
