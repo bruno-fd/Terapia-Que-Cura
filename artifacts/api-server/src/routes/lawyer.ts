@@ -177,7 +177,7 @@ function toProfile(
     outro: row.outro,
     complete,
     subscriptionStatus,
-    visivel: complete && subscriptionStatus === "ativa",
+    visivel: complete && subscriptionStatus === "ativa" && row.adminAtivo,
     oabVerificada: row.oabVerificada,
     oabSituacao: row.oabSituacao ?? null,
     oabNomeConfirmado: row.oabNomeConfirmado ?? null,
@@ -199,6 +199,7 @@ function hojeIso(): string {
 // interrompe cobranças futuras: o perfil permanece visível até accessUntil.
 function assinaturaVisivel() {
   return and(
+    eq(advogadosTable.adminAtivo, true),
     eq(subscriptionsTable.status, "ativa"),
     or(
       isNull(subscriptionsTable.canceledAt),

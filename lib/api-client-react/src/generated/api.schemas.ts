@@ -235,6 +235,96 @@ export interface PublicLawyer {
   whatsapp: string;
 }
 
+export type AdminAdvogadoPaymentStatus = typeof AdminAdvogadoPaymentStatus[keyof typeof AdminAdvogadoPaymentStatus] | null;
+
+
+export const AdminAdvogadoPaymentStatus = {
+  pendente: 'pendente',
+  ativa: 'ativa',
+  atrasada: 'atrasada',
+  inativa: 'inativa',
+} as const;
+
+export type AdminAdvogadoSituacaoOab = typeof AdminAdvogadoSituacaoOab[keyof typeof AdminAdvogadoSituacaoOab] | null;
+
+
+export const AdminAdvogadoSituacaoOab = {
+  regular: 'regular',
+  irregular: 'irregular',
+  invalido: 'invalido',
+} as const;
+
+export interface AdminAdvogado {
+  id: number;
+  nome: string;
+  oab: string;
+  email: string;
+  createdAt?: string | null;
+  paymentStatus?: AdminAdvogadoPaymentStatus;
+  adminAtivo: boolean;
+  oabVerificada: boolean;
+  situacaoOab?: AdminAdvogadoSituacaoOab;
+}
+
+export interface AtividadeLog {
+  id: number;
+  acao: string;
+  feitoPor: string;
+  data: string;
+}
+
+export type AdminAdvogadoDetailPaymentStatus = typeof AdminAdvogadoDetailPaymentStatus[keyof typeof AdminAdvogadoDetailPaymentStatus] | null;
+
+
+export const AdminAdvogadoDetailPaymentStatus = {
+  pendente: 'pendente',
+  ativa: 'ativa',
+  atrasada: 'atrasada',
+  inativa: 'inativa',
+} as const;
+
+export type AdminAdvogadoDetailSituacaoOab = typeof AdminAdvogadoDetailSituacaoOab[keyof typeof AdminAdvogadoDetailSituacaoOab] | null;
+
+
+export const AdminAdvogadoDetailSituacaoOab = {
+  regular: 'regular',
+  irregular: 'irregular',
+  invalido: 'invalido',
+} as const;
+
+export interface AdminAdvogadoDetail {
+  id: number;
+  nome: string;
+  oab: string;
+  email: string;
+  cpf?: string | null;
+  createdAt?: string | null;
+  paymentStatus?: AdminAdvogadoDetailPaymentStatus;
+  plano?: string | null;
+  adminAtivo: boolean;
+  oabVerificada: boolean;
+  situacaoOab?: AdminAdvogadoDetailSituacaoOab;
+  areas: string[];
+  cidades: Cidade[];
+  atendeOnline: boolean;
+  atividades: AtividadeLog[];
+}
+
+export type UpdateAdminAdvogadoInputSituacaoOab = typeof UpdateAdminAdvogadoInputSituacaoOab[keyof typeof UpdateAdminAdvogadoInputSituacaoOab] | null;
+
+
+export const UpdateAdminAdvogadoInputSituacaoOab = {
+  regular: 'regular',
+  irregular: 'irregular',
+  invalido: 'invalido',
+} as const;
+
+export interface UpdateAdminAdvogadoInput {
+  adminAtivo?: boolean;
+  oabVerificada?: boolean;
+  situacaoOab?: UpdateAdminAdvogadoInputSituacaoOab;
+}
+
 export interface ConcorrenciaResult {
   total: number;
   naArea: number;

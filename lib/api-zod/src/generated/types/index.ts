@@ -6,7 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminAdvogado';
+export * from './adminAdvogadoDetail';
+export * from './adminAdvogadoDetailPaymentStatus';
+export * from './adminAdvogadoDetailSituacaoOab';
+export * from './adminAdvogadoPaymentStatus';
+export * from './adminAdvogadoSituacaoOab';
 export * from './apiErrorResponse';
+export * from './atividadeLog';
 export * from './blogIdeasInput';
 export * from './blogIdeasResult';
 export * from './blogPost';
@@ -32,6 +39,8 @@ export * from './subscriptionPaymentStatus';
 export * from './subscriptionState';
 export * from './subscriptionStatePlan';
 export * from './subscriptionStateStatus';
+export * from './updateAdminAdvogadoInput';
+export * from './updateAdminAdvogadoInputSituacaoOab';
 export * from './updateBlogPostInput';
 export * from './updateProfileInput';
 export * from './upsertCadastroLeadInput';

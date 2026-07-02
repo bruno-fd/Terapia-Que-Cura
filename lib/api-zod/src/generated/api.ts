@@ -169,6 +169,109 @@ export const DeleteBlogPostResponse = zod.void()
 
 
 /**
+ * @summary List all registered lawyers for admin verification
+ */
+export const ListAdminAdvogadosResponseItem = zod.object({
+  "id": zod.number(),
+  "nome": zod.string(),
+  "oab": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.string().nullish(),
+  "paymentStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "adminAtivo": zod.boolean(),
+  "oabVerificada": zod.boolean(),
+  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish()
+})
+export const ListAdminAdvogadosResponse = zod.array(ListAdminAdvogadosResponseItem)
+
+
+/**
+ * @summary Get full lawyer detail with activity log
+ */
+export const GetAdminAdvogadoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const getAdminAdvogadoResponseCidadesItemUfMin = 2;
+export const getAdminAdvogadoResponseCidadesItemUfMax = 2;
+
+
+
+export const GetAdminAdvogadoResponse = zod.object({
+  "id": zod.number(),
+  "nome": zod.string(),
+  "oab": zod.string(),
+  "email": zod.string(),
+  "cpf": zod.string().nullish(),
+  "createdAt": zod.string().nullish(),
+  "paymentStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "plano": zod.string().nullish(),
+  "adminAtivo": zod.boolean(),
+  "oabVerificada": zod.boolean(),
+  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(getAdminAdvogadoResponseCidadesItemUfMin).max(getAdminAdvogadoResponseCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "atividades": zod.array(zod.object({
+  "id": zod.number(),
+  "acao": zod.string(),
+  "feitoPor": zod.string(),
+  "data": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update admin controls (active toggle, verified, OAB situation)
+ */
+export const UpdateAdminAdvogadoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminAdvogadoBody = zod.object({
+  "adminAtivo": zod.boolean().optional(),
+  "oabVerificada": zod.boolean().optional(),
+  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish()
+})
+
+
+export const updateAdminAdvogadoResponseCidadesItemUfMin = 2;
+export const updateAdminAdvogadoResponseCidadesItemUfMax = 2;
+
+
+
+export const UpdateAdminAdvogadoResponse = zod.object({
+  "id": zod.number(),
+  "nome": zod.string(),
+  "oab": zod.string(),
+  "email": zod.string(),
+  "cpf": zod.string().nullish(),
+  "createdAt": zod.string().nullish(),
+  "paymentStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
+  "plano": zod.string().nullish(),
+  "adminAtivo": zod.boolean(),
+  "oabVerificada": zod.boolean(),
+  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
+  "areas": zod.array(zod.string()),
+  "cidades": zod.array(zod.object({
+  "nome": zod.string().min(1),
+  "uf": zod.string().min(updateAdminAdvogadoResponseCidadesItemUfMin).max(updateAdminAdvogadoResponseCidadesItemUfMax)
+})),
+  "atendeOnline": zod.boolean(),
+  "atividades": zod.array(zod.object({
+  "id": zod.number(),
+  "acao": zod.string(),
+  "feitoPor": zod.string(),
+  "data": zod.string()
+}))
+})
+
+
+/**
  * Returns lawyers whose subscription is active and whose profile is complete.
  * @summary List public lawyers (paying and with a complete profile)
  */

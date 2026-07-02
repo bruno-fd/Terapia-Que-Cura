@@ -195,6 +195,97 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+  /admin/advogados:
+    get:
+      operationId: listAdminAdvogados
+      tags: [admin-lawyer]
+      summary: List all registered lawyers for admin verification
+      responses:
+        "200":
+          description: List of lawyers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAdvogado"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+  /admin/advogados/{id}:
+    get:
+      operationId: getAdminAdvogado
+      tags: [admin-lawyer]
+      summary: Get full lawyer detail with activity log
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lawyer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAdvogadoDetail"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+    patch:
+      operationId: updateAdminAdvogado
+      tags: [admin-lawyer]
+      summary: Update admin controls (active toggle, verified, OAB situation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminAdvogadoInput"
+      responses:
+        "200":
+          description: Updated lawyer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAdvogadoDetail"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
   /advogados:
     get:
       operationId: listAdvogados
@@ -958,6 +1049,124 @@ components:
         - cidades
         - atendeOnline
         - whatsapp
+    AdminAdvogado:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        oab:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          nullable: true
+        paymentStatus:
+          type: string
+          enum: [pendente, ativa, atrasada, inativa]
+          nullable: true
+        adminAtivo:
+          type: boolean
+        oabVerificada:
+          type: boolean
+        situacaoOab:
+          type: string
+          enum: [regular, irregular, invalido]
+          nullable: true
+      required:
+        - id
+        - nome
+        - oab
+        - email
+        - adminAtivo
+        - oabVerificada
+    AtividadeLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        acao:
+          type: string
+        feitoPor:
+          type: string
+        data:
+          type: string
+      required:
+        - id
+        - acao
+        - feitoPor
+        - data
+    AdminAdvogadoDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        oab:
+          type: string
+        email:
+          type: string
+        cpf:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          nullable: true
+        paymentStatus:
+          type: string
+          enum: [pendente, ativa, atrasada, inativa]
+          nullable: true
+        plano:
+          type: string
+          nullable: true
+        adminAtivo:
+          type: boolean
+        oabVerificada:
+          type: boolean
+        situacaoOab:
+          type: string
+          enum: [regular, irregular, invalido]
+          nullable: true
+        areas:
+          type: array
+          items:
+            type: string
+        cidades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cidade"
+        atendeOnline:
+          type: boolean
+        atividades:
+          type: array
+          items:
+            $ref: "#/components/schemas/AtividadeLog"
+      required:
+        - id
+        - nome
+        - oab
+        - email
+        - adminAtivo
+        - oabVerificada
+        - areas
+        - cidades
+        - atendeOnline
+        - atividades
+    UpdateAdminAdvogadoInput:
+      type: object
+      properties:
+        adminAtivo:
+          type: boolean
+        oabVerificada:
+          type: boolean
+        situacaoOab:
+          type: string
+          enum: [regular, irregular, invalido]
+          nullable: true
+      additionalProperties: false
     ConcorrenciaResult:
       type: object
       properties:

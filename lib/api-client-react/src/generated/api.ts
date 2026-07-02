@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAdvogado,
+  AdminAdvogadoDetail,
   ApiErrorResponse,
   BlogIdeasInput,
   BlogIdeasResult,
@@ -36,6 +38,7 @@ import type {
   LawyerProfile,
   PublicLawyer,
   SubscriptionState,
+  UpdateAdminAdvogadoInput,
   UpdateBlogPostInput,
   UpdateProfileInput,
   UpsertCadastroLeadInput,
@@ -582,6 +585,231 @@ export const useDeleteBlogPost = <TError = ErrorType<ApiErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteBlogPostMutationOptions(options));
+    }
+
+export const getListAdminAdvogadosUrl = () => {
+
+
+
+
+  return `/api/admin/advogados`
+}
+
+/**
+ * @summary List all registered lawyers for admin verification
+ */
+export const listAdminAdvogados = async ( options?: RequestInit): Promise<AdminAdvogado[]> => {
+
+  return customFetch<AdminAdvogado[]>(getListAdminAdvogadosUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAdvogadosQueryKey = () => {
+    return [
+    `/api/admin/advogados`
+    ] as const;
+    }
+
+
+export const getListAdminAdvogadosQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAdvogados>>, TError = ErrorType<ApiErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAdvogadosQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAdvogados>>> = ({ signal }) => listAdminAdvogados({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAdvogados>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAdvogadosQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAdvogados>>>
+export type ListAdminAdvogadosQueryError = ErrorType<ApiErrorResponse>
+
+
+/**
+ * @summary List all registered lawyers for admin verification
+ */
+
+export function useListAdminAdvogados<TData = Awaited<ReturnType<typeof listAdminAdvogados>>, TError = ErrorType<ApiErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAdvogadosQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAdminAdvogadoUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/advogados/${id}`
+}
+
+/**
+ * @summary Get full lawyer detail with activity log
+ */
+export const getAdminAdvogado = async (id: number, options?: RequestInit): Promise<AdminAdvogadoDetail> => {
+
+  return customFetch<AdminAdvogadoDetail>(getGetAdminAdvogadoUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminAdvogadoQueryKey = (id: number,) => {
+    return [
+    `/api/admin/advogados/${id}`
+    ] as const;
+    }
+
+
+export const getGetAdminAdvogadoQueryOptions = <TData = Awaited<ReturnType<typeof getAdminAdvogado>>, TError = ErrorType<ApiErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAdvogado>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminAdvogadoQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminAdvogado>>> = ({ signal }) => getAdminAdvogado(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAdvogado>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminAdvogadoQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAdvogado>>>
+export type GetAdminAdvogadoQueryError = ErrorType<ApiErrorResponse>
+
+
+/**
+ * @summary Get full lawyer detail with activity log
+ */
+
+export function useGetAdminAdvogado<TData = Awaited<ReturnType<typeof getAdminAdvogado>>, TError = ErrorType<ApiErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAdvogado>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminAdvogadoQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminAdvogadoUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/advogados/${id}`
+}
+
+/**
+ * @summary Update admin controls (active toggle, verified, OAB situation)
+ */
+export const updateAdminAdvogado = async (id: number,
+    updateAdminAdvogadoInput: UpdateAdminAdvogadoInput, options?: RequestInit): Promise<AdminAdvogadoDetail> => {
+
+  return customFetch<AdminAdvogadoDetail>(getUpdateAdminAdvogadoUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAdminAdvogadoInput)
+  }
+);}
+
+
+
+
+export const getUpdateAdminAdvogadoMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAdvogado>>, TError,{id: number;data: BodyType<UpdateAdminAdvogadoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminAdvogado>>, TError,{id: number;data: BodyType<UpdateAdminAdvogadoInput>}, TContext> => {
+
+const mutationKey = ['updateAdminAdvogado'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminAdvogado>>, {id: number;data: BodyType<UpdateAdminAdvogadoInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminAdvogado(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminAdvogadoMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminAdvogado>>>
+    export type UpdateAdminAdvogadoMutationBody = BodyType<UpdateAdminAdvogadoInput>
+    export type UpdateAdminAdvogadoMutationError = ErrorType<ApiErrorResponse>
+
+    /**
+ * @summary Update admin controls (active toggle, verified, OAB situation)
+ */
+export const useUpdateAdminAdvogado = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAdvogado>>, TError,{id: number;data: BodyType<UpdateAdminAdvogadoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminAdvogado>>,
+        TError,
+        {id: number;data: BodyType<UpdateAdminAdvogadoInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminAdvogadoMutationOptions(options));
     }
 
 export const getListAdvogadosUrl = () => {

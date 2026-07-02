@@ -47,6 +47,13 @@ export const advogadosTable = pgTable("advogados", {
   oabVerificacaoPendente: boolean("oab_verificacao_pendente")
     .notNull()
     .default(false),
+  // Controle manual do admin (aba Verificação em /admin). Independente do status
+  // de pagamento: quando false, o perfil sai do diretório público mesmo pagante.
+  // Padrão true para que advogados pagantes já cadastrados sigam visíveis.
+  adminAtivo: boolean("admin_ativo").notNull().default(true),
+  // Classificação manual da OAB feita pelo admin após marcar como verificado:
+  // "regular" | "irregular" | "invalido". Nula enquanto não classificado.
+  situacaoOab: text("situacao_oab"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

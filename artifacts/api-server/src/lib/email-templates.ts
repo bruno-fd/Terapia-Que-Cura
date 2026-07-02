@@ -171,6 +171,40 @@ export function remarketingEmail(p: {
   };
 }
 
+// 6. Verificação: situação irregular. Disparado quando o admin classifica a
+// OAB do advogado como "Irregular". O perfil permanece visível por ora.
+export function situacaoIrregularEmail(nome?: string | null): EmailContent {
+  const body = `
+    <h1 style="margin:0 0 16px;font-size:22px;color:${ACCENT};">Verificação necessária no seu perfil</h1>
+    ${paragraph(`${greeting(nome)}`)}
+    ${paragraph("Verificamos os dados do seu perfil na Minha Causa Justa e identificamos uma inconsistência nas informações cadastradas. Seu perfil permanece visível na plataforma por enquanto, mas precisamos que você regularize a situação.")}
+    ${paragraph("Por favor, acesse seu painel e revise as informações cadastradas, especialmente seus dados da OAB. Se acreditar que há um erro da nossa parte, entre em contato pelo e-mail contato@minhacausajusta.com.br.")}
+    ${button(`${APP_URL}/painel/perfil`, "Revisar meu perfil")}
+    ${paragraph(`<span style="font-size:13px;color:${MUTED};">Atenciosamente, Equipe Minha Causa Justa.</span>`)}
+  `;
+  return {
+    subject: "Seu perfil na Minha Causa Justa: verificação necessária",
+    html: layout(body),
+  };
+}
+
+// 7. Verificação: dados inválidos. Disparado quando o admin classifica a OAB
+// como "Inválido". O perfil já foi desativado automaticamente antes do envio.
+export function dadosInvalidosEmail(nome?: string | null): EmailContent {
+  const body = `
+    <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Seu perfil foi suspenso</h1>
+    ${paragraph(`${greeting(nome)}`)}
+    ${paragraph("Verificamos os dados do seu perfil na Minha Causa Justa e não foi possível confirmar a validade das informações cadastradas. Por isso, seu perfil foi temporariamente suspenso da plataforma.")}
+    ${paragraph("Se você acredita que houve um engano, entre em contato pelo e-mail contato@minhacausajusta.com.br com seus dados da OAB e resolveremos o mais breve possível.")}
+    ${paragraph("Caso os dados cadastrados sejam de outra pessoa, sua conta será encerrada definitivamente.")}
+    ${paragraph(`<span style="font-size:13px;color:${MUTED};">Atenciosamente, Equipe Minha Causa Justa.</span>`)}
+  `;
+  return {
+    subject: "Seu perfil na Minha Causa Justa foi suspenso",
+    html: layout(body),
+  };
+}
+
 // 4. Pagamento em atraso.
 export function paymentOverdueEmail(p: {
   nome?: string | null;

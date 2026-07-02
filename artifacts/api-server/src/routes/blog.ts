@@ -1,11 +1,6 @@
-import {
-  Router,
-  type IRouter,
-  type Request,
-  type Response,
-  type NextFunction,
-} from "express";
+import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
+import { requireAdmin } from "../middlewares/requireAdmin";
 import { db, blogPostsTable } from "@workspace/db";
 import {
   ListPublishedPostsResponse,
@@ -29,8 +24,6 @@ import {
   htmlToPlainText,
   computeReadingMinutesFromText,
 } from "../lib/blog-generator";
-
-const ADMIN_PASSWORD = "123456";
 
 // Macrocategorias válidas: devem ser idênticas às categorias do blog público,
 // garantindo que todo post gerado caia na categoria correta do site.
@@ -64,18 +57,6 @@ router.get("/blog/posts", async (_req, res): Promise<void> => {
     .orderBy(desc(blogPostsTable.createdAt));
   res.json(ListPublishedPostsResponse.parse(posts));
 });
-
-// ---------------------------------------------------------------------------
-// Guarda simples do admin: header x-admin-password
-// ---------------------------------------------------------------------------
-function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  const provided = req.header("x-admin-password");
-  if (provided !== ADMIN_PASSWORD) {
-    res.status(401).json({ error: "Não autorizado." });
-    return;
-  }
-  next();
-}
 
 router.use("/admin/blog", requireAdmin);
 

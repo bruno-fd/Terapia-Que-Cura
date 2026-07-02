@@ -1,0 +1,275 @@
+# Task — Página de Admin: Gestão de Advogados
+## Minha Causa Justa
+
+---
+
+## Contexto
+
+Esta task cria uma página de administração (`admin.html`) acessível apenas ao administrador da plataforma. Ela permite gerenciar manualmente o status de cada advogado cadastrado, independentemente do status de pagamento processado pelo Asaas.
+
+A verificação de OAB foi decidida como processo manual por ora. Esta página é o centro de controle dessa verificação.
+
+---
+
+## Acesso e autenticação
+
+A página `admin.html` deve ser protegida por senha simples hardcoded em variável de ambiente `ADMIN_PASSWORD`. Se a senha não for fornecida corretamente, redirecionar para `login-admin.html` (página de login exclusiva para o admin, separada do login do advogado).
+
+Não usar o Clerk para o admin nesta fase — autenticação simples via sessão de servidor é suficiente.
+
+---
+
+## Layout geral
+
+Nav superior escura (`--color-primary-900`) com logo "Minha Causa Justa" à esquerda e texto "Painel Admin" à direita com botão "Sair".
+
+Área de conteúdo com fundo `--color-neutral-100`, padding `--space-7`, largura máxima 1100px centralizada.
+
+---
+
+## Cabeçalho da página
+
+Título: "Gestão de Advogados" — font-size-2xl, bold, `--color-primary-800`.
+
+Linha de resumo abaixo do título com três contadores em badges:
+- Total cadastrados
+- Ativos
+- Pendentes de verificação
+
+Atualizados em tempo real conforme os toggles são alterados.
+
+---
+
+## Barra de filtros e busca
+
+Card `--color-neutral-0`, `--shadow-sm`, `--radius-lg`, padding `--space-4`.
+
+Linha com quatro filtros lado a lado (desktop) / empilhados (mobile):
+
+**Campo de busca:**
+Input texto, placeholder "Buscar por nome, e-mail ou OAB..." — filtra a tabela em tempo real ao digitar.
+
+**Filtro de status do perfil:**
+Select: Todos · Ativo · Inativo
+
+**Filtro de verificação:**
+Select: Todos · Verificado · Não verificado
+
+**Filtro de situação OAB:**
+Select: Todos · Regular · Irregular · Inválido · Sem marcação
+
+---
+
+## Tabela de advogados
+
+Card `--color-neutral-0`, `--shadow-sm`, `--radius-lg`. Tabela responsiva com scroll horizontal em mobile.
+
+### Colunas
+
+**Nome e OAB**
+Nome completo em bold, OAB/seccional abaixo em `--color-neutral-500`, font-size-sm.
+
+**E-mail**
+Font-size-sm, `--color-neutral-700`.
+
+**Cadastro**
+Data de cadastro, font-size-sm, `--color-neutral-500`.
+
+**Pagamento**
+Badge de status vindo do Asaas:
+- "Ativo" — fundo `--color-success` claro, texto `--color-success`
+- "Atrasado" — fundo amarelo claro, texto `--color-warning`
+- "Inativo" — fundo cinza claro, texto `--color-neutral-500`
+
+**Perfil ativo** (toggle principal)
+Toggle on/off que ativa ou desativa o perfil do advogado na plataforma, independentemente do status de pagamento.
+
+Estado visual:
+- ON: toggle azul `--color-primary-500`, label "Ativo"
+- OFF: toggle cinza `--color-neutral-300`, label "Inativo"
+
+Ao desativar: perfil sai da listagem pública imediatamente. Ao ativar: perfil volta à listagem.
+
+**Verificado** (toggle secundário)
+Toggle on/off que marca se o admin já verificou os dados do advogado.
+
+Estado visual:
+- ON: toggle verde `--color-success`, label "Verificado"
+- OFF: toggle cinza, label "Não verificado"
+
+Comportamento importante: o toggle de "Verificado" só fica habilitado para interação se o perfil estiver ativo. Se o perfil estiver inativo, o toggle de verificação aparece desabilitado e acinzentado.
+
+Ao marcar como "Verificado", os três botões de situação OAB ficam habilitados para seleção.
+
+**Situação OAB** (três botões mutuamente exclusivos)
+Só habilitados após o toggle "Verificado" estar ON.
+
+Antes da verificação: exibir texto "—" em `--color-neutral-300`.
+
+Após verificação, exibir três botões compactos lado a lado:
+
+- "Regular" — ao selecionar: fundo `--color-success`, texto branco
+- "Irregular" — ao selecionar: fundo `--color-warning`, texto branco
+- "Inválido" — ao selecionar: fundo `--color-error`, texto branco
+
+Botões não selecionados: fundo `--color-neutral-100`, texto `--color-neutral-500`, border `--color-neutral-300`.
+
+Apenas um pode estar selecionado por vez. Clicar no já selecionado não deseleciona — é obrigatório ter um status após verificado.
+
+**Ações**
+Ícone de olho que abre modal com detalhes completos do advogado (ver seção abaixo).
+
+---
+
+## Fluxo de estados — lógica de negócio
+
+### Estado inicial após pagamento confirmado
+- Perfil ativo: ON (ativado automaticamente pelo webhook do Asaas)
+- Verificado: OFF
+- Situação OAB: sem marcação (exibe "—")
+- Perfil aparece na listagem pública: SIM
+
+### Após admin marcar "Verificado"
+- Toggle verificado: ON
+- Botões de situação habilitados para seleção
+- Admin deve obrigatoriamente selecionar Regular, Irregular ou Inválido
+
+### Se admin selecionar "Regular"
+- Perfil permanece ativo
+- Nenhuma ação adicional automática
+- Linha fica com indicador verde na coluna de situação
+
+### Se admin selecionar "Irregular"
+- Perfil permanece ativo por ora (admin decide se desativa manualmente)
+- Sistema dispara automaticamente o e-mail de situação irregular (ver seção de e-mails)
+- Linha fica com indicador amarelo na coluna de situação
+
+### Se admin selecionar "Inválido"
+- Perfil é desativado automaticamente (toggle de perfil ativo vai para OFF)
+- Sistema dispara automaticamente o e-mail de dados inválidos (ver seção de e-mails)
+- Linha fica com indicador vermelho na coluna de situação
+
+### Se admin desativar o toggle "Perfil ativo" manualmente
+- Perfil sai da listagem pública imediatamente
+- Status de pagamento no Asaas não é alterado
+- Toggle de verificado fica desabilitado enquanto perfil estiver inativo
+
+---
+
+## Modal de detalhes do advogado
+
+Abre ao clicar no ícone de olho. Overlay escuro. Card centralizado, largura máxima 600px.
+
+Exibe todos os dados do advogado:
+- Nome completo
+- E-mail
+- CPF (mascarado: 000.000.000-00, exibindo apenas os 3 primeiros e 2 últimos dígitos)
+- OAB e seccional
+- Cidade e estado de atendimento
+- Categorias selecionadas (badges)
+- Data de cadastro
+- Status atual de pagamento (Asaas)
+- Histórico de alterações de status (log simples: data + ação + "por admin")
+
+Botão fechar no canto superior direito.
+
+---
+
+## E-mails automáticos por situação
+
+### E-mail — Situação Irregular
+
+Disparado quando admin seleciona "Irregular".
+
+**Assunto:** Seu perfil na Minha Causa Justa — verificação necessária
+
+**Corpo:**
+"Olá, [Nome].
+
+Verificamos os dados do seu perfil na Minha Causa Justa e identificamos uma inconsistência nas informações cadastradas. Seu perfil permanece visível na plataforma por enquanto, mas precisamos que você regularize a situação.
+
+Por favor, acesse seu painel e revise as informações cadastradas, especialmente seus dados da OAB. Se acreditar que há um erro da nossa parte, entre em contato pelo e-mail contato@minhacausajusta.com.br.
+
+Atenciosamente,
+Equipe Minha Causa Justa"
+
+### E-mail — Dados Inválidos
+
+Disparado quando admin seleciona "Inválido". Perfil já foi desativado automaticamente antes do envio.
+
+**Assunto:** Seu perfil na Minha Causa Justa foi suspenso
+
+**Corpo:**
+"Olá, [Nome].
+
+Verificamos os dados do seu perfil na Minha Causa Justa e não foi possível confirmar a validade das informações cadastradas. Por isso, seu perfil foi temporariamente suspenso da plataforma.
+
+Se você acredita que houve um engano, entre em contato pelo e-mail contato@minhacausajusta.com.br com seus dados da OAB e resolveremos o mais breve possível.
+
+Caso os dados cadastrados sejam de outra pessoa, sua conta será encerrada definitivamente.
+
+Atenciosamente,
+Equipe Minha Causa Justa"
+
+Os e-mails devem ser enviados via o serviço de e-mail transacional já configurado no projeto (Nodemailer ou equivalente). Incluir comentário no código indicando onde configurar o serviço de e-mail em produção.
+
+---
+
+## Log de atividade
+
+Cada alteração feita pelo admin deve ser registrada em log simples no banco de dados:
+
+```javascript
+{
+  advogado_id: "...",
+  acao: "perfil_desativado" | "perfil_ativado" | "marcado_verificado" | "situacao_regular" | "situacao_irregular" | "situacao_invalido",
+  feito_por: "admin",
+  data: "ISO timestamp"
+}
+```
+
+Esse log é exibido no modal de detalhes do advogado em ordem cronológica decrescente.
+
+---
+
+## Dados fictícios de demonstração
+
+Popular a tabela com 8 advogados fictícios em estados variados para demonstração:
+
+- 2 com perfil ativo, não verificado, sem situação (recém cadastrados)
+- 2 com perfil ativo, verificado, Regular
+- 1 com perfil ativo, verificado, Irregular
+- 1 com perfil inativo, verificado, Inválido
+- 1 com perfil ativo, não verificado, pagamento Atrasado
+- 1 com perfil inativo, não verificado, pagamento Inativo
+
+---
+
+## Instruções técnicas
+
+- Página protegida por autenticação de sessão simples via variável de ambiente `ADMIN_PASSWORD`. Sem Clerk nesta página.
+- Todos os toggles e botões devem persistir no banco de dados ao ser alterados, com feedback visual imediato (otimistic update).
+- A desativação automática do perfil ao marcar "Inválido" deve acontecer no backend, não apenas no frontend.
+- O disparo de e-mail deve acontecer no backend imediatamente após a gravação do status no banco.
+- Filtros e busca funcionam sobre os dados já carregados (client-side filtering) — sem nova chamada ao servidor a cada filtro.
+- Responsivo: em mobile a tabela tem scroll horizontal e os três botões de situação ficam empilhados verticalmente dentro da célula.
+- Código limpo, comentado, com indicações claras dos pontos de integração futura (Asaas webhook para status de pagamento, serviço de e-mail em produção).
+
+---
+
+## Checklist de verificação
+
+- [ ] Login admin separado do login do advogado, protegido por variável de ambiente
+- [ ] Tabela carrega com 8 advogados fictícios nos estados descritos
+- [ ] Busca filtra em tempo real por nome, e-mail e OAB
+- [ ] Filtros de status, verificação e situação funcionam corretamente
+- [ ] Toggle "Perfil ativo" ativa e desativa o perfil imediatamente
+- [ ] Toggle "Verificado" só habilitado quando perfil estiver ativo
+- [ ] Botões de situação só habilitados após "Verificado" estar ON
+- [ ] Selecionar "Inválido" desativa o perfil automaticamente
+- [ ] Selecionar "Irregular" ou "Inválido" dispara e-mail correspondente
+- [ ] Modal de detalhes exibe todos os dados e o log de atividade
+- [ ] CPF mascarado no modal
+- [ ] Contadores do cabeçalho atualizam em tempo real
+- [ ] Log de cada ação gravado no banco
+- [ ] Responsivo em mobile

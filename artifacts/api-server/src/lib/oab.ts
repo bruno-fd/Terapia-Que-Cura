@@ -1,23 +1,33 @@
 // ============================================================
-// Verificação real de inscrição na OAB via webservice CNA da
-// OAB Federal (SOAP): https://www5.oab.org.br/cnaws/service.asmx
-// Método ConsultaAdvogadoPorCpf.
+// Verificação real de inscrição na OAB via API REST do
+// Consulta OAB (mesma plataforma do Consulta CRM):
+//   https://www.consultaoab.com.br/index/api
 //
-// IMPORTANTE (comprovado em teste ao vivo): o serviço NÃO é público.
-// Toda chamada exige um cabeçalho SOAP Authentication com uma Key
-// válida (chave de convênio da OAB). Sem a Key o servidor responde
-// HTTP 500 com "É preciso enviar a chave de identificação..." /
-// "Chave de identificação inválida!". A chave é lida do secret
-// OAB_CNA_KEY. Quando ausente/inválida, a chamada falha e a rota
-// devolve motivo=erro_servico, que o funil trata como verificação
-// pendente (revisão manual). Ao configurar uma Key válida, a
-// verificação passa a funcionar sem qualquer mudança de código.
+// A consulta é feita por número de inscrição + seccional (UF) e
+// devolve JSON no formato { status, total, dados: [ { nome,
+// numero, uf, tipo, situacao, ... } ] }. Requer uma chave de API
+// (parâmetro `chave`), obtida com cadastro gratuito no site (plano
+// grátis limitado a 100 consultas/mês). A chave é lida do secret
+// CONSULTA_OAB_KEY; sem ela isOabConfigured() é false e a chamada
+// falha com OabServicoError, que a rota traduz para
+// motivo=erro_servico (verificação pendente / revisão manual).
+//
+// NOTA de host: o domínio público documentado é consultaoab.com.br,
+// mas ele nem sempre resolve em DNS; a MESMA API atende em
+// consultacrm.com.br com tipo=oab. Por isso o host padrão é
+// consultacrm.com.br e pode ser sobrescrito por CONSULTA_OAB_URL.
+//
+// Diferença em relação ao antigo webservice CNA (SOAP): esta API
+// NÃO consulta por CPF. A checagem é por número da OAB + seccional
+// e confirmação de nome; o CPF continua sendo coletado e validado
+// (dígitos verificadores) no funil, mas não é conferido aqui.
 // ============================================================
 
 import { logger } from "./logger";
 
-const ENDPOINT = "https://www5.oab.org.br/cnaws/service.asmx";
-const SOAP_ACTION = "http://tempuri.org/ConsultaAdvogadoPorCpf";
+const ENDPOINT =
+  process.env["CONSULTA_OAB_URL"] ??
+  "https://www.consultacrm.com.br/api/index.php";
 const TIMEOUT_MS = 8000;
 
 export type MotivoInvalido =
@@ -51,34 +61,13 @@ interface RegistroOab {
   tipo: string;
 }
 
-// Erro de serviço: chave ausente/inválida, timeout, fault SOAP ou rede.
-// A rota traduz para motivo=erro_servico (verificação pendente).
+// Erro de serviço: chave ausente/inválida, cota excedida, timeout,
+// resposta inesperada ou rede. A rota traduz para motivo=erro_servico
+// (verificação pendente).
 export class OabServicoError extends Error {}
 
 export function isOabConfigured(): boolean {
-  return !!process.env["OAB_CNA_KEY"];
-}
-
-function escapeXml(v: string): string {
-  return v
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-function decodeEntities(v: string): string {
-  return v
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_m, d: string) => String.fromCharCode(Number(d)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_m, h: string) =>
-      String.fromCharCode(parseInt(h, 16)),
-    )
-    .replace(/&amp;/g, "&");
+  return !!process.env["CONSULTA_OAB_KEY"];
 }
 
 function soloDigitos(v: string): string {
@@ -116,7 +105,8 @@ function nomeConfere(informado: string, retornado: string): boolean {
 }
 
 // Palavras que indicam inscrição NÃO ativa. Na ausência de qualquer sinal
-// negativo, tratamos como ativa (defensivo: o CNA usa rótulos variados).
+// negativo, tratamos como ativa (defensivo: o serviço usa rótulos variados;
+// "Regular" é o rótulo típico de inscrição ativa).
 const SITUACAO_INATIVA = [
   "CANCELAD",
   "SUSPENS",
@@ -132,75 +122,90 @@ function situacaoAtiva(reg: RegistroOab): boolean {
   return !SITUACAO_INATIVA.some((s) => alvo.includes(s));
 }
 
-function extrairTag(bloco: string, nomes: string[]): string {
+// Lê a primeira propriedade presente (aceita variações de nome de campo) e
+// devolve como string. Tolerante ao shape exato do JSON da API.
+function lerCampo(obj: Record<string, unknown>, nomes: string[]): string {
   for (const nome of nomes) {
-    const re = new RegExp(`<${nome}[^>]*>([\\s\\S]*?)</${nome}>`, "i");
-    const m = re.exec(bloco);
-    if (m && m[1] !== undefined) return decodeEntities(m[1]).trim();
+    const v = obj[nome];
+    if (v !== undefined && v !== null && typeof v !== "object") {
+      return String(v).trim();
+    }
   }
   return "";
 }
 
-// Faz o parse do resultado (string XML). O shape exato só pode ser confirmado
-// com uma Key válida devolvendo dados reais; por isso o parser é tolerante
-// (aceita variações de nome de tag) e o resultado bruto é logado em debug
-// para ajuste fino quando houver chave. Cada registro é um bloco
-// <Advogado>...</Advogado> (ou variações); sem blocos, trata tudo como um.
-function parseRegistros(xmlResultado: string): RegistroOab[] {
-  const xml = decodeEntities(xmlResultado).trim();
-  if (!xml) return [];
-  const blocos =
-    xml.match(/<(?:Advogado|advogado|Registro|Item)\b[\s\S]*?<\/(?:Advogado|advogado|Registro|Item)>/g) ??
-    [];
-  const alvos = blocos.length ? blocos : [xml];
-  const registros: RegistroOab[] = [];
-  for (const bloco of alvos) {
-    const nome = extrairTag(bloco, ["Nome", "nome", "NomeAdvogado"]);
-    const inscricao = extrairTag(bloco, [
-      "Inscricao",
-      "inscricao",
-      "NumeroInscricao",
-      "Numero",
+function mapearRegistro(obj: Record<string, unknown>): RegistroOab {
+  return {
+    nome: lerCampo(obj, ["nome", "Nome", "nome_completo", "nomeAdvogado"]),
+    inscricao: lerCampo(obj, [
       "numero",
-    ]);
-    const uf = extrairTag(bloco, ["UF", "uf", "Seccional", "seccional", "Estado"]);
-    const situacao = extrairTag(bloco, [
-      "Situacao",
+      "Numero",
+      "inscricao",
+      "Inscricao",
+      "numero_inscricao",
+      "registro",
+    ]),
+    uf: lerCampo(obj, ["uf", "UF", "seccional", "Seccional", "estado"]),
+    situacao: lerCampo(obj, [
       "situacao",
-      "SituacaoInscricao",
+      "Situacao",
+      "situacao_inscricao",
+      "status",
       "Status",
-    ]);
-    const tipo = extrairTag(bloco, ["Tipo", "tipo", "TipoInscricao"]);
-    if (nome || inscricao) {
-      registros.push({ nome, inscricao, uf, situacao, tipo });
-    }
-  }
-  return registros;
+    ]),
+    tipo: lerCampo(obj, ["tipo", "Tipo", "tipo_inscricao", "categoria"]),
+  };
 }
 
-async function chamarWebservice(cpf: string, key: string): Promise<string> {
-  const envelope =
-    `<?xml version="1.0" encoding="utf-8"?>` +
-    `<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +
-    `xmlns:xsd="http://www.w3.org/2001/XMLSchema" ` +
-    `xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">` +
-    `<soap:Header><Authentication xmlns="http://tempuri.org/">` +
-    `<Key>${escapeXml(key)}</Key></Authentication></soap:Header>` +
-    `<soap:Body><ConsultaAdvogadoPorCpf xmlns="http://tempuri.org/">` +
-    `<cpf>${escapeXml(cpf)}</cpf></ConsultaAdvogadoPorCpf></soap:Body>` +
-    `</soap:Envelope>`;
+// Faz o parse tolerante da resposta JSON. Aceita { dados: [...] },
+// { data: [...] } ou um array na raiz. Respostas de erro do serviço vêm como
+// texto puro (ex.: "Chave API nao habilitada") e caem no catch => erro_servico.
+function parseRegistros(texto: string): RegistroOab[] {
+  const bruto = (texto ?? "").trim();
+  if (!bruto) return [];
+  // Erros conhecidos chegam como texto puro (não-JSON). Sinaliza serviço.
+  if (bruto[0] !== "{" && bruto[0] !== "[") {
+    throw new OabServicoError(bruto.slice(0, 200));
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(bruto);
+  } catch {
+    throw new OabServicoError("Resposta não-JSON do serviço OAB");
+  }
+  let lista: unknown = json;
+  if (json && typeof json === "object" && !Array.isArray(json)) {
+    const o = json as Record<string, unknown>;
+    lista = o["dados"] ?? o["data"] ?? o["resultado"] ?? o["result"] ?? [];
+  }
+  if (!Array.isArray(lista)) return [];
+  return lista
+    .filter((r): r is Record<string, unknown> => !!r && typeof r === "object")
+    .map(mapearRegistro)
+    .filter((r) => r.nome || r.inscricao);
+}
+
+async function chamarWebservice(
+  oab: string,
+  seccional: string,
+  key: string,
+): Promise<string> {
+  const params = new URLSearchParams({
+    tipo: "oab",
+    uf: seccional,
+    q: oab,
+    chave: key,
+    destino: "json",
+  });
+  const url = `${ENDPOINT}?${params.toString()}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   let resp: Response;
   try {
-    resp = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/xml; charset=utf-8",
-        SOAPAction: `"${SOAP_ACTION}"`,
-      },
-      body: envelope,
+    resp = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
       signal: controller.signal,
     });
   } finally {
@@ -208,53 +213,48 @@ async function chamarWebservice(cpf: string, key: string): Promise<string> {
   }
 
   const texto = await resp.text();
-
-  // Fault SOAP (chave inválida/ausente ou erro do servidor) => erro de serviço.
-  const fault = /<faultstring[^>]*>([\s\S]*?)<\/faultstring>/i.exec(texto);
-  if (fault) {
-    throw new OabServicoError(decodeEntities(fault[1] ?? "").trim());
-  }
   if (!resp.ok) {
     throw new OabServicoError(`HTTP ${resp.status}`);
   }
-
-  const m =
-    /<ConsultaAdvogadoPorCpfResult[^>]*>([\s\S]*?)<\/ConsultaAdvogadoPorCpfResult>/i.exec(
-      texto,
-    );
-  return m && m[1] !== undefined ? m[1] : "";
+  return texto;
 }
 
-async function chamarComRetentativa(cpf: string, key: string): Promise<string> {
+async function chamarComRetentativa(
+  oab: string,
+  seccional: string,
+  key: string,
+): Promise<string> {
   try {
-    return await chamarWebservice(cpf, key);
+    return await chamarWebservice(oab, seccional, key);
   } catch (err) {
-    if (err instanceof OabServicoError) throw err; // fault: não reenvia
+    if (err instanceof OabServicoError) throw err; // erro de serviço: não reenvia
     // Falha de rede/timeout: uma nova tentativa.
     logger.warn({ err }, "Consulta OAB falhou, tentando novamente uma vez");
-    return await chamarWebservice(cpf, key);
+    return await chamarWebservice(oab, seccional, key);
   }
 }
 
 export async function verificarInscricaoOab(
   entrada: OabConsultaEntrada,
 ): Promise<OabResultado> {
-  const key = process.env["OAB_CNA_KEY"];
+  const key = process.env["CONSULTA_OAB_KEY"];
   if (!key) {
-    // Sem chave o serviço rejeita toda chamada; sinalizamos erro de serviço
-    // para o funil marcar a verificação como pendente (revisão manual).
-    throw new OabServicoError("OAB_CNA_KEY ausente");
+    // Sem chave a API rejeita toda chamada; sinalizamos erro de serviço para o
+    // funil marcar a verificação como pendente (revisão manual).
+    throw new OabServicoError("CONSULTA_OAB_KEY ausente");
   }
 
-  const cpf = soloDigitos(entrada.cpf);
-  const bruto = await chamarComRetentativa(cpf, key);
-  logger.debug({ bruto }, "Resultado bruto da consulta OAB por CPF");
+  const oabDig = soloDigitos(entrada.oab);
+  const seccionalNorm = normalizar(entrada.seccional);
+  const bruto = await chamarComRetentativa(oabDig, seccionalNorm, key);
+  logger.debug({ bruto }, "Resultado bruto da consulta OAB por inscrição");
 
   const registros = parseRegistros(bruto);
   if (!registros.length) {
+    // Sem registros para o número + seccional informados.
     return {
       valido: false,
-      motivo: "cpf_nao_encontrado",
+      motivo: "oab_divergente",
       situacao: null,
       nomeOab: null,
       numeroOab: null,
@@ -262,8 +262,6 @@ export async function verificarInscricaoOab(
     };
   }
 
-  const oabDig = soloDigitos(entrada.oab);
-  const seccionalNorm = normalizar(entrada.seccional);
   const exato = registros.find(
     (r) =>
       soloDigitos(r.inscricao) === oabDig &&

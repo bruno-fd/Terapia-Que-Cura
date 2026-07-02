@@ -20,4 +20,5 @@
 export * from "./blog-posts";
 export * from "./subscriptions";
 export * from "./advogados";
+export * from "./advogado-atividades";
 export * from "./cadastro-leads";

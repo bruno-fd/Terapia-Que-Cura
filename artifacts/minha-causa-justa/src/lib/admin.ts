@@ -1,4 +1,9 @@
-import type { BlogPost as ApiBlogPost } from "@workspace/api-client-react";
+import type {
+  BlogPost as ApiBlogPost,
+  AdminAdvogado,
+  AdminAdvogadoDetail,
+  UpdateAdminAdvogadoInput,
+} from "@workspace/api-client-react";
 
 // ============================================================
 // Autenticação simulada do painel /admin (senha única no cliente)
@@ -108,4 +113,26 @@ export function listAdminPosts(): Promise<ApiBlogPost[]> {
 
 export function deletePost(id: number): Promise<void> {
   return adminFetch(`/admin/blog/posts/${id}`, { method: "DELETE" });
+}
+
+// ============================================================
+// Verificação de advogados (aba "Verificação" do painel /admin)
+// ============================================================
+
+export function listAdminAdvogados(): Promise<AdminAdvogado[]> {
+  return adminFetch("/admin/advogados");
+}
+
+export function getAdminAdvogado(id: number): Promise<AdminAdvogadoDetail> {
+  return adminFetch(`/admin/advogados/${id}`);
+}
+
+export function updateAdminAdvogado(
+  id: number,
+  input: UpdateAdminAdvogadoInput,
+): Promise<AdminAdvogadoDetail> {
+  return adminFetch(`/admin/advogados/${id}`, {
+    method: "PATCH",
+    body: input,
+  });
 }
