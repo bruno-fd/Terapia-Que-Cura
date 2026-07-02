@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
+import { useUser, useClerk, SignIn } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getListPublishedPostsQueryKey,
@@ -26,9 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { BLOG_CATEGORIES } from "@/data/blog";
 import {
-  getAdminPassword,
-  setAdminPassword,
-  clearAdminPassword,
   generateIdeas as apiGenerateIdeas,
   createPost as apiCreatePost,
   listAdminPosts as apiListAdminPosts,
@@ -43,10 +41,24 @@ import type {
   AdminAdvogadoDetail,
 } from "@workspace/api-client-react";
 
-const ADMIN_PASSWORD = "123456";
 const ERROR_COLOR = "#C0392B";
 const SUCCESS_COLOR = "#1E7D4F";
 const WARNING_COLOR = "#B97D00";
+
+// Base da aplicação (prefixo de rota do artifact), usada nos redirecionamentos
+// do login. import.meta.env.BASE_URL já vem com barra final.
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Lista de e-mails com acesso ao painel. Espelha o allowlist do back-end
+// (requireAdmin), aqui apenas para UX: quem decide o acesso é o servidor.
+const ADMIN_EMAILS = ["bf.damasio@gmail.com"];
+
+function isAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.some(
+    (e) => e.toLowerCase() === email.trim().toLowerCase(),
+  );
+}
 
 function formatDatePtBr(iso: string): string {
   const date = new Date(iso);
@@ -89,83 +101,74 @@ function initialBodyHtml(post: ApiBlogPost): string {
 // ============================================================
 // Gate de senha
 // ============================================================
-function AdminLogin({ onAuthed }: { onAuthed: () => void }) {
-  const [senha, setSenha] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (senha !== ADMIN_PASSWORD) {
-      setError("Senha incorreta.");
-      return;
-    }
-    setAdminPassword(senha);
-    onAuthed();
-  };
-
+// Tela de login do admin: autenticação real via Clerk (e-mail no navegador).
+// Não há mais senha compartilhada; o acesso é liberado apenas para e-mails
+// autorizados (validado no back-end).
+function AdminLogin() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-100 px-4 py-12">
-      <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-neutral-200 p-8">
-        <h1 className="text-xl font-bold text-primary-800 text-center">
+      <div className="mb-6 text-center">
+        <h1 className="text-xl font-bold text-primary-800">
           Painel administrativo
         </h1>
-        <p className="mt-1 text-sm text-neutral-500 text-center">
-          Acesso restrito. Informe a senha para continuar.
+        <p className="mt-1 text-sm text-neutral-500">
+          Acesso restrito. Entre com um e-mail autorizado.
+        </p>
+      </div>
+
+      <SignIn
+        routing="hash"
+        fallbackRedirectUrl={`${basePath}/admin`}
+        forceRedirectUrl={`${basePath}/admin`}
+        signUpUrl={`${basePath}/sign-up`}
+      />
+
+      <div className="mt-6 text-center">
+        <Link
+          href="/"
+          className="text-sm text-primary-500 hover:text-primary-600"
+        >
+          Voltar para o site
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Conta autenticada, porém sem permissão de administrador.
+function AdminNaoAutorizado({
+  email,
+  onSair,
+}: {
+  email: string | null;
+  onSair: () => void;
+}) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-100 px-4 py-12">
+      <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-neutral-200 p-8 text-center">
+        <h1 className="text-xl font-bold text-primary-800">
+          Acesso não autorizado
+        </h1>
+        <p className="mt-2 text-sm text-neutral-600">
+          {email ? (
+            <>
+              A conta <span className="font-medium">{email}</span> não tem
+              permissão para acessar o painel administrativo.
+            </>
+          ) : (
+            "Esta conta não tem permissão para acessar o painel administrativo."
+          )}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-          <div>
-            <label
-              htmlFor="admin-senha"
-              className="block text-sm font-bold text-neutral-700 mb-1.5"
-            >
-              Senha
-            </label>
-            <div className="relative">
-              <input
-                id="admin-senha"
-                type={showPassword ? "text" : "password"}
-                value={senha}
-                onChange={(e) => {
-                  setSenha(e.target.value);
-                  setError("");
-                }}
-                placeholder="Sua senha"
-                className="w-full h-12 px-4 pr-12 rounded-lg border border-neutral-300 text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                data-testid="input-admin-senha"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700"
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-          </div>
+        <Button
+          onClick={onSair}
+          className="mt-6 w-full h-12 bg-primary-600 hover:bg-primary-700 text-white text-base font-medium rounded-lg"
+          data-testid="button-admin-sair"
+        >
+          Sair e usar outra conta
+        </Button>
 
-          {error && (
-            <p className="text-sm" style={{ color: ERROR_COLOR }}>
-              {error}
-            </p>
-          )}
-
-          <Button
-            type="submit"
-            className="w-full h-12 bg-primary-600 hover:bg-primary-700 text-white text-base font-medium rounded-lg"
-            data-testid="button-admin-entrar"
-          >
-            Entrar
-          </Button>
-        </form>
-
-        <div className="mt-6 pt-6 border-t border-neutral-200 text-center">
+        <div className="mt-4">
           <Link
             href="/"
             className="text-sm text-primary-500 hover:text-primary-600"
@@ -1552,17 +1555,27 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 // Página /admin
 // ============================================================
 export default function Admin() {
-  const [authed, setAuthed] = useState(
-    () => getAdminPassword() === ADMIN_PASSWORD,
-  );
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
 
-  const handleLogout = () => {
-    clearAdminPassword();
-    setAuthed(false);
-  };
-
-  if (!authed) {
-    return <AdminLogin onAuthed={() => setAuthed(true)} />;
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-100">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
+      </div>
+    );
   }
-  return <AdminPanel onLogout={handleLogout} />;
+
+  if (!isSignedIn) {
+    return <AdminLogin />;
+  }
+
+  const email = user.primaryEmailAddress?.emailAddress ?? null;
+  if (!isAdminEmail(email)) {
+    return (
+      <AdminNaoAutorizado email={email} onSair={() => void signOut()} />
+    );
+  }
+
+  return <AdminPanel onLogout={() => void signOut()} />;
 }

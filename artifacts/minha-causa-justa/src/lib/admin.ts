@@ -6,53 +6,30 @@ import type {
 } from "@workspace/api-client-react";
 
 // ============================================================
-// Autenticação simulada do painel /admin (senha única no cliente)
-// e chamadas autenticadas à API de geração de posts.
+// Chamadas autenticadas ao painel /admin. O acesso é controlado pela sessão
+// Clerk do navegador (cookie same-origin enviado automaticamente para /api); o
+// back-end exige um e-mail autorizado. Não há mais senha compartilhada.
 // ============================================================
 
-const ADMIN_STORAGE_KEY = "mcj_admin_password";
 const API_BASE = "/api";
-
-export function getAdminPassword(): string | null {
-  try {
-    return sessionStorage.getItem(ADMIN_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-export function setAdminPassword(password: string): void {
-  try {
-    sessionStorage.setItem(ADMIN_STORAGE_KEY, password);
-  } catch {
-    // sessionStorage indisponível: o estado em memória cuida da sessão
-  }
-}
-
-export function clearAdminPassword(): void {
-  try {
-    sessionStorage.removeItem(ADMIN_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
-}
 
 async function adminFetch<T>(
   path: string,
   options: { method?: string; body?: unknown } = {},
 ): Promise<T> {
-  const password = getAdminPassword();
   const res = await fetch(`${API_BASE}${path}`, {
     method: options.method ?? "GET",
     headers: {
       "content-type": "application/json",
-      "x-admin-password": password ?? "",
     },
     body: options.body != null ? JSON.stringify(options.body) : undefined,
   });
 
   if (res.status === 401) {
-    throw new Error("Senha de administrador inválida.");
+    throw new Error("Faça login para acessar o painel.");
+  }
+  if (res.status === 403) {
+    throw new Error("Este e-mail não tem acesso ao painel administrativo.");
   }
   if (!res.ok) {
     let message = "Ocorreu um erro na operação.";
