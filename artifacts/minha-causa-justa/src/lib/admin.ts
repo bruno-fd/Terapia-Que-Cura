@@ -7,8 +7,9 @@ import type {
 
 // ============================================================
 // Chamadas autenticadas ao painel /admin. O acesso é controlado pela sessão
-// Clerk do navegador (cookie same-origin enviado automaticamente para /api); o
-// back-end exige um e-mail autorizado. Não há mais senha compartilhada.
+// segura de login (cookie same-origin "sid" enviado automaticamente para /api),
+// totalmente separada da base de advogados; o back-end exige um e-mail
+// autorizado. Não há senha compartilhada.
 // ============================================================
 
 const API_BASE = "/api";
@@ -19,6 +20,7 @@ async function adminFetch<T>(
 ): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: options.method ?? "GET",
+    credentials: "include",
     headers: {
       "content-type": "application/json",
     },

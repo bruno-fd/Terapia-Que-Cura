@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { useUser, useClerk, SignIn } from "@clerk/react";
+import { useAuth } from "@workspace/replit-auth-web";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getListPublishedPostsQueryKey,
@@ -99,37 +99,38 @@ function initialBodyHtml(post: ApiBlogPost): string {
 }
 
 // ============================================================
-// Gate de senha
+// Gate de acesso
 // ============================================================
-// Tela de login do admin: autenticação real via Clerk (e-mail no navegador).
-// Não há mais senha compartilhada; o acesso é liberado apenas para e-mails
-// autorizados (validado no back-end).
-function AdminLogin() {
+// Tela de login do admin: autenticação real e segura, totalmente separada da
+// base de advogados. Não há senha compartilhada; o acesso é liberado apenas
+// para e-mails autorizados (validado no back-end).
+function AdminLogin({ onEntrar }: { onEntrar: () => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-100 px-4 py-12">
-      <div className="mb-6 text-center">
+      <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-neutral-200 p-8 text-center">
         <h1 className="text-xl font-bold text-primary-800">
           Painel administrativo
         </h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Acesso restrito. Entre com um e-mail autorizado.
+        <p className="mt-2 text-sm text-neutral-600">
+          Acesso restrito. Entre com uma conta autorizada para continuar.
         </p>
-      </div>
 
-      <SignIn
-        routing="hash"
-        fallbackRedirectUrl={`${basePath}/admin`}
-        forceRedirectUrl={`${basePath}/admin`}
-        signUpUrl={`${basePath}/sign-up`}
-      />
-
-      <div className="mt-6 text-center">
-        <Link
-          href="/"
-          className="text-sm text-primary-500 hover:text-primary-600"
+        <Button
+          onClick={onEntrar}
+          className="mt-6 w-full h-12 bg-primary-600 hover:bg-primary-700 text-white text-base font-medium rounded-lg"
+          data-testid="button-admin-entrar"
         >
-          Voltar para o site
-        </Link>
+          Entrar
+        </Button>
+
+        <div className="mt-4">
+          <Link
+            href="/"
+            className="text-sm text-primary-500 hover:text-primary-600"
+          >
+            Voltar para o site
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -1555,10 +1556,16 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 // Página /admin
 // ============================================================
 export default function Admin() {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const { signOut } = useClerk();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
 
-  if (!isLoaded) {
+  // Redireciona para o login seguro, voltando direto para /admin após entrar.
+  const entrar = () => {
+    window.location.href = `/api/login?returnTo=${encodeURIComponent(
+      `${basePath}/admin`,
+    )}`;
+  };
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-100">
         <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
@@ -1566,16 +1573,14 @@ export default function Admin() {
     );
   }
 
-  if (!isSignedIn) {
-    return <AdminLogin />;
+  if (!isAuthenticated) {
+    return <AdminLogin onEntrar={entrar} />;
   }
 
-  const email = user.primaryEmailAddress?.emailAddress ?? null;
+  const email = user?.email ?? null;
   if (!isAdminEmail(email)) {
-    return (
-      <AdminNaoAutorizado email={email} onSair={() => void signOut()} />
-    );
+    return <AdminNaoAutorizado email={email} onSair={logout} />;
   }
 
-  return <AdminPanel onLogout={() => void signOut()} />;
+  return <AdminPanel onLogout={logout} />;
 }

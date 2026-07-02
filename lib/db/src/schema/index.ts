@@ -22,3 +22,4 @@ export * from "./subscriptions";
 export * from "./advogados";
 export * from "./advogado-atividades";
 export * from "./cadastro-leads";
+export * from "./auth";

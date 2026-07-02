@@ -1,7 +1,9 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
+import { authMiddleware } from "./middlewares/authMiddleware";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import {
   CLERK_PROXY_PATH,
@@ -37,6 +39,9 @@ app.use(
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
+// cookie-parser precisa vir antes do authMiddleware (Replit Auth), que lê o
+// cookie de sessão "sid" e os cookies temporários do fluxo OIDC.
+app.use(cookieParser());
 // A foto de perfil é enviada como data URL (base64) dentro do JSON. Uma imagem
 // de até 5MB (limite do frontend) vira ~6,7MB em base64, então elevamos o limite
 // do parser (padrão 100kb) para 8mb, evitando o erro 413 (Payload Too Large).
@@ -54,6 +59,11 @@ app.use(
     ),
   })),
 );
+
+// Replit Auth: carrega o usuário da sessão (cookie "sid") em toda requisição e
+// habilita req.isAuthenticated()/req.user. Independente do Clerk (advogados);
+// é usado apenas pelo painel administrativo (requireAdmin).
+app.use(authMiddleware);
 
 app.use("/api", router);
 

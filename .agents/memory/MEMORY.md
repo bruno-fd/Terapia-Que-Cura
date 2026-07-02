@@ -1,1 +1,1 @@
-- [Asaas dev is live billing](asaas-live-billing.md) — dev hits the REAL Asaas API; plan prices in PLANS charge real money, never ship a test-lowered amount.
+- [Vite import.meta.env in composite libs](vite-importmeta-composite-lib.md) — composite libs typechecked by `tsc --build` lack `vite/client`; add a local ambient `import.meta.env` decl or the build fails.
