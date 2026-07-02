@@ -8,11 +8,37 @@ import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { ArrowRight, Shield, Search, MessageCircle } from "lucide-react";
 import { CATEGORIAS, slugDaCategoria } from "@/data/categories";
+import { BLOG_POSTS, type BlogPost } from "@/data/blog";
+import { usePublishedPosts } from "@/data/published-posts";
 
 import heroPessoa from "@/assets/hero-pessoa.png";
 import celularPessoa from "@/assets/celular-pessoa.png";
 import familiaPessoa from "@/assets/familia-pessoa.png";
 import confiancaPessoa from "@/assets/confianca-pessoa.png";
+
+// Imagens usadas nos cards do blog na home. Cada categoria recebe uma imagem
+// que conversa com o tema; as demais caem num sorteio deterministico (estavel
+// por slug) entre as tres imagens disponiveis.
+const BLOG_IMAGENS = [confiancaPessoa, familiaPessoa, celularPessoa];
+
+const IMAGEM_POR_CATEGORIA: Record<string, string> = {
+  "Família": familiaPessoa,
+  "Herança e Inventário": familiaPessoa,
+  "Plano de Saúde": celularPessoa,
+  "Direito do Consumidor": celularPessoa,
+  "Dívidas e Nome Negativado": celularPessoa,
+  "Empresarial": celularPessoa,
+};
+
+function imagemDoPost(post: BlogPost): string {
+  const daCategoria = IMAGEM_POR_CATEGORIA[post.category];
+  if (daCategoria) return daCategoria;
+  let hash = 0;
+  for (let i = 0; i < post.slug.length; i++) {
+    hash = (hash + post.slug.charCodeAt(i)) % BLOG_IMAGENS.length;
+  }
+  return BLOG_IMAGENS[hash];
+}
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -39,6 +65,15 @@ export default function Home() {
   };
 
   const opcoesCategoria = [...CATEGORIAS.map((c) => c.nome), "Outro"];
+
+  // 3 posts para a seção do blog: os publicados no painel /admin vêm primeiro
+  // (mais recentes), e os posts fixos completam caso ainda não haja 3 publicados.
+  const { posts: postsPublicados } = usePublishedPosts();
+  const slugsPublicados = new Set(postsPublicados.map((p) => p.slug));
+  const postsHome: BlogPost[] = [
+    ...postsPublicados,
+    ...BLOG_POSTS.filter((p) => !slugsPublicados.has(p.slug)),
+  ].slice(0, 3);
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
@@ -298,26 +333,20 @@ export default function Home() {
                 </p>
               </div>
               <Button asChild variant="outline" className="rounded-full shrink-0 hidden md:inline-flex h-12 px-8 text-base border-primary-200 text-primary-700 hover:bg-primary-50">
-                <Link href="/">
+                <Link href="/blog">
                   Ver todos os artigos <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                "INSS cortou seu benefício? Veja o que fazer em até 30 dias",
-                "Plano de saúde negou exame ou cirurgia? Isso pode ser ilegal",
-                "Pensão por morte: quem tem direito e como pedir"
-              ].map((title, idx) => (
-                <div key={idx} className="bg-[#F5F4F2] p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300">
+              {postsHome.map((post) => (
+                <div key={post.slug} className="bg-[#F5F4F2] p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300">
                   <div className="mb-6 w-full h-48 bg-white rounded-2xl overflow-hidden relative">
-                     {idx === 0 && <img src={confiancaPessoa} alt={title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />}
-                     {idx === 1 && <img src={familiaPessoa} alt={title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />}
-                     {idx === 2 && <img src={celularPessoa} alt={title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />}
+                    <img src={imagemDoPost(post)} alt={post.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                   </div>
-                  <h3 className="font-bold text-xl text-primary-900 mb-6 flex-grow leading-snug">{title}</h3>
-                  <Link href="/" className="inline-flex items-center font-medium text-accent-600 hover:text-accent-700 transition-colors mt-auto">
+                  <h3 className="font-bold text-xl text-primary-900 mb-6 flex-grow leading-snug">{post.title}</h3>
+                  <Link href={`/blog/${post.slug}`} className="inline-flex items-center font-medium text-accent-600 hover:text-accent-700 transition-colors mt-auto">
                     Ler mais <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </div>
@@ -326,7 +355,7 @@ export default function Home() {
             
             <div className="mt-10 md:hidden text-center">
               <Button asChild variant="outline" className="rounded-full w-full h-14 text-base border-primary-200 text-primary-700 hover:bg-primary-50">
-                <Link href="/">
+                <Link href="/blog">
                   Ver todos os artigos <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
