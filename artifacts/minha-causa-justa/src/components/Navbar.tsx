@@ -33,7 +33,7 @@ export function Navbar() {
           </Button>
           <Button asChild className="bg-primary text-white hover:bg-primary-700">
             <Link href="/sign-in" data-testid="button-entrar">
-              Área do advogado
+              Entrar
             </Link>
           </Button>
         </nav>
@@ -66,7 +66,7 @@ export function Navbar() {
             </Button>
             <Button asChild className="w-full bg-primary text-white hover:bg-primary-700 justify-center">
               <Link href="/sign-in" onClick={closeMenu} data-testid="mobile-button-entrar">
-                Área do advogado
+                Entrar
               </Link>
             </Button>
           </div>
