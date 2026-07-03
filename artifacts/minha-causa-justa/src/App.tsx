@@ -34,6 +34,12 @@ import PainelAssinatura from "@/pages/painel-assinatura";
 import Admin from "@/pages/admin";
 import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
 const queryClient = new QueryClient();
 
 // Resolve a key a partir do hostname para que o mesmo build atenda múltiplos
@@ -116,6 +122,29 @@ function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
+
+// Rastreia navegações do SPA no Google Analytics. O snippet no index.html já
+// registra o page_view inicial via gtag('config'); aqui contabilizamos apenas as
+// trocas de rota seguintes (ex.: cada post do blog, que muda de endereço sem
+// recarregar a página).
+function AnalyticsTracker() {
+  const [location] = useLocation();
+  const primeiraRenderizacao = useRef(true);
+  useEffect(() => {
+    if (primeiraRenderizacao.current) {
+      primeiraRenderizacao.current = false;
+      return;
+    }
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "page_view", {
+        page_path: window.location.pathname + window.location.search,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }
   }, [location]);
   return null;
 }
@@ -213,6 +242,7 @@ function ClerkProviderWithRoutes() {
         <ClerkQueryClientCacheInvalidator />
         <TooltipProvider>
           <ScrollToTop />
+          <AnalyticsTracker />
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/advogados" component={Advogados} />
