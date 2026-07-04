@@ -36,10 +36,12 @@ import {
   listAdminAdvogados as apiListAdminAdvogados,
   getAdminAdvogado as apiGetAdminAdvogado,
   updateAdminAdvogado as apiUpdateAdminAdvogado,
+  listBlogDailyRuns as apiListBlogDailyRuns,
 } from "@/lib/admin";
 import type {
   AdminAdvogado,
   AdminAdvogadoDetail,
+  BlogDailyRunsResponse,
 } from "@workspace/api-client-react";
 
 const ERROR_COLOR = "#C0392B";
@@ -69,6 +71,12 @@ function formatDatePtBr(iso: string): string {
     month: "2-digit",
     year: "numeric",
   }).format(date);
+}
+
+// runDate vem como "YYYY-MM-DD". new Date() interpretaria como UTC meia-noite e
+// deslocaria o dia no fuso do Brasil, então fixamos o meio-dia local.
+function formatRunDatePtBr(runDate: string): string {
+  return formatDatePtBr(`${runDate}T12:00:00`);
 }
 
 function escapeHtml(s: string): string {
@@ -477,6 +485,192 @@ function PostEditor({
 }
 
 // ============================================================
+// Métrica da publicação automática diária
+// ============================================================
+function runStatusInfo(status: string): { label: string; color: string } {
+  switch (status) {
+    case "published":
+      return { label: "Publicado", color: SUCCESS_COLOR };
+    case "rejected":
+      return { label: "Reprovado", color: ERROR_COLOR };
+    case "skipped":
+      return { label: "Pulado", color: "#6B7280" };
+    case "failed":
+      return { label: "Falha", color: WARNING_COLOR };
+    default:
+      return { label: status, color: "#6B7280" };
+  }
+}
+
+function DailyRunsPanel() {
+  const [data, setData] = useState<BlogDailyRunsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState("");
+  const [detalhes, setDetalhes] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    void (async () => {
+      try {
+        const res = await apiListBlogDailyRuns();
+        if (ativo) setData(res);
+      } catch (e) {
+        if (ativo) {
+          setErro(
+            e instanceof Error ? e.message : "Erro ao carregar a métrica.",
+          );
+        }
+      } finally {
+        if (ativo) setLoading(false);
+      }
+    })();
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const TOTAL_CATEGORIAS = 12;
+  const latest = data?.latest ?? null;
+  const resumoUltimo = data?.days?.[0] ?? null;
+
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+        <h2 className="font-bold text-primary-800">Publicação automática diária</h2>
+        {latest && latest.items.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setDetalhes((v) => !v)}
+            className="text-sm text-primary-600 hover:underline"
+            data-testid="button-toggle-detalhes-diario"
+          >
+            {detalhes ? "Ocultar detalhes" : "Ver detalhes"}
+          </button>
+        )}
+      </div>
+      <p className="text-sm text-neutral-500 mb-4">
+        Um post por categoria por dia, publicado só depois de passar na
+        verificação de veracidade. Reprovados são descartados.
+      </p>
+
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-neutral-500 py-4">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando métrica...
+        </div>
+      )}
+
+      {!loading && erro && (
+        <p className="text-sm" style={{ color: ERROR_COLOR }}>
+          {erro}
+        </p>
+      )}
+
+      {!loading && !erro && !resumoUltimo && (
+        <p className="text-sm text-neutral-500">
+          Ainda não há execuções automáticas registradas.
+        </p>
+      )}
+
+      {!loading && !erro && resumoUltimo && (
+        <>
+          <div className="rounded-xl border border-neutral-200 p-4 mb-4">
+            <p className="text-sm text-neutral-500">
+              Última execução: {formatRunDatePtBr(resumoUltimo.runDate)}
+            </p>
+            <p className="mt-1">
+              <span
+                className="text-2xl font-bold"
+                style={{ color: SUCCESS_COLOR }}
+                data-testid="text-taxa-aceitacao"
+              >
+                {resumoUltimo.published} de {TOTAL_CATEGORIAS}
+              </span>{" "}
+              <span className="text-sm text-neutral-600">posts publicados</span>
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3 text-xs">
+              <span
+                className="px-2 py-1 rounded-full text-white"
+                style={{ backgroundColor: ERROR_COLOR }}
+              >
+                {resumoUltimo.rejected} reprovados
+              </span>
+              <span className="px-2 py-1 rounded-full bg-neutral-200 text-neutral-700">
+                {resumoUltimo.skipped} pulados
+              </span>
+              {resumoUltimo.failed > 0 && (
+                <span
+                  className="px-2 py-1 rounded-full text-white"
+                  style={{ backgroundColor: WARNING_COLOR }}
+                >
+                  {resumoUltimo.failed} falhas
+                </span>
+              )}
+            </div>
+          </div>
+
+          {detalhes && latest && latest.items.length > 0 && (
+            <ul className="space-y-2 mb-4">
+              {latest.items.map((item) => {
+                const info = runStatusInfo(item.status);
+                return (
+                  <li
+                    key={`${item.category}-${item.createdAt}`}
+                    className="border border-neutral-200 rounded-lg p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-neutral-800">
+                        {item.category}
+                      </span>
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full text-white"
+                        style={{ backgroundColor: info.color }}
+                      >
+                        {info.label}
+                      </span>
+                    </div>
+                    {item.title && (
+                      <p className="text-sm text-neutral-600 mt-1">
+                        {item.title}
+                      </p>
+                    )}
+                    {item.reason && (
+                      <p className="text-xs text-neutral-500 mt-1">
+                        {item.reason}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {data && data.days.length > 1 && (
+            <div className="border-t border-neutral-200 pt-3">
+              <p className="text-xs font-bold text-neutral-600 mb-2">
+                Histórico
+              </p>
+              <ul className="space-y-1">
+                {data.days.map((d) => (
+                  <li
+                    key={d.runDate}
+                    className="flex items-center justify-between text-sm text-neutral-600"
+                  >
+                    <span>{formatRunDatePtBr(d.runDate)}</span>
+                    <span>
+                      {d.published}/{TOTAL_CATEGORIAS} publicados
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // Painel principal do gerador + editor
 // ============================================================
 function BlogPanel() {
@@ -749,6 +943,7 @@ function BlogPanel() {
 
           {/* Painel de saída: editor + gestão */}
           <div className="flex-1 w-full min-w-0 space-y-6">
+            <DailyRunsPanel />
             <div className="bg-white rounded-2xl border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8">
               {!editing && !loadingPost && (
                 <div className="text-center text-neutral-500 py-16">

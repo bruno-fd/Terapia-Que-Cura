@@ -25,6 +25,7 @@ import type {
   ApiErrorResponse,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  BlogDailyRunsResponse,
   BlogIdeasInput,
   BlogIdeasResult,
   BlogPost,
@@ -593,6 +594,83 @@ export const useDeleteBlogPost = <TError = ErrorType<ApiErrorResponse>,
       > => {
       return useMutation(getDeleteBlogPostMutationOptions(options));
     }
+
+export const getListBlogDailyRunsUrl = () => {
+
+
+
+
+  return `/api/admin/blog/daily-runs`
+}
+
+/**
+ * @summary Daily automatic post generation acceptance metrics
+ */
+export const listBlogDailyRuns = async ( options?: RequestInit): Promise<BlogDailyRunsResponse> => {
+
+  return customFetch<BlogDailyRunsResponse>(getListBlogDailyRunsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBlogDailyRunsQueryKey = () => {
+    return [
+    `/api/admin/blog/daily-runs`
+    ] as const;
+    }
+
+
+export const getListBlogDailyRunsQueryOptions = <TData = Awaited<ReturnType<typeof listBlogDailyRuns>>, TError = ErrorType<ApiErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBlogDailyRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBlogDailyRunsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBlogDailyRuns>>> = ({ signal }) => listBlogDailyRuns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBlogDailyRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBlogDailyRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listBlogDailyRuns>>>
+export type ListBlogDailyRunsQueryError = ErrorType<ApiErrorResponse>
+
+
+/**
+ * @summary Daily automatic post generation acceptance metrics
+ */
+
+export function useListBlogDailyRuns<TData = Awaited<ReturnType<typeof listBlogDailyRuns>>, TError = ErrorType<ApiErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBlogDailyRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBlogDailyRunsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListAdminAdvogadosUrl = () => {
 

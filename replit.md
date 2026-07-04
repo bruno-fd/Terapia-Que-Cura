@@ -9,6 +9,7 @@ Diretório brasileiro de advogados: conecta cidadãos a advogados por área do d
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/api-server run generate-daily-posts` — run the daily automatic blog generator once (12 posts, 1 per macrocategory). Meant for a Scheduled Deployment (1x/day).
 - Verify the web artifact with `pnpm --filter @workspace/minha-causa-justa run typecheck` (not `build`, which needs the workflow-provided `PORT`/`BASE_PATH`).
 - Required env: `DATABASE_URL` (Postgres). Others per feature: `SESSION_SECRET`, `ADMIN_EMAILS`, `ASAAS_*`, `CONSULTA_OAB_KEY`, `EMAIL_FROM`, `APP_PUBLIC_URL`.
 
@@ -36,6 +37,14 @@ Diretório brasileiro de advogados: conecta cidadãos a advogados por área do d
 - Content has two forms: structured `body` (sections) and `bodyHtml` (richtext via `react-quill-new`). `post.tsx` renders `bodyHtml` when present (Tailwind `prose` + `dangerouslySetInnerHTML`), else `body`. `bodyHtml` is sanitized server-side on write with `sanitize-html` (strict allowlist) — the single XSS barrier.
 - `publishedAt` (nullable) records the first publish (null while draft), set server-side on the false→true transition. Date filters/display use `publishedAt` falling back to `createdAt`.
 - The AI generator strips em dashes before persisting (honors the no-em-dash rule).
+- Shared post-creation lives in `lib/blog-posts.ts` (`persistGeneratedPost(generated, category, {publish})`): sanitizes `bodyHtml`, dedupes slug, sets `publishedAt` when `publish:true`. Used by both the admin manual route and the daily generator.
+
+### Daily automatic blog generation
+- `generate-daily-posts.ts` is a standalone entry (esbuild bundles it; npm script `generate-daily-posts`) meant to run once a day via a Scheduled Deployment. It loops the 12 macrocategories and, per category: idempotency skip if a post was already created today (manual or auto), pick a new theme (ideas not matching existing titles), generate, then run `verifyPost` (independent Claude reviewer) BEFORE publishing.
+- `verifyPost` (in `blog-generator.ts`) is a second, independent AI pass with a strict REVIEWER_RULES prompt. Deterministic safety net: ANY legal check with `correto:false` forces reject regardless of the model's overall verdict ("na dúvida, reprova"). Rejected posts are DISCARDED (never persisted as draft), only logged.
+- Every per-category outcome is recorded in `blog_daily_runs` (schema `lib/db/src/schema/blog-daily-runs.ts`): `runDate`, `category`, `status` (published|rejected|skipped|failed), `reason`, `title`, `postId`. A failure in one category never aborts the batch (per-category try/catch). The process ends the pg pool on finish.
+- The daily acceptance metric is surfaced in the /admin Blog tab (`DailyRunsPanel` in `admin.tsx`) via GET `/admin/blog/daily-runs` (`listBlogDailyRuns` in `src/lib/admin.ts`): per-day summary (X of 12 published, rejected/skipped/failed counts) + latest-run detail with rejection reasons. Route is under the `requireAdmin` gate in `routes/blog.ts`.
+- Scheduled Deployment setup: create a Scheduled Deployment running `pnpm --filter @workspace/api-server run generate-daily-posts` on a daily cron (its own env inherits `DATABASE_URL` + `AI_INTEGRATIONS_ANTHROPIC_*`). The manual /admin publish flow is unchanged and independent.
 
 ### Categories
 - 12 legal categories, single source `categories.ts` (`CATEGORIAS` of `{nome, slug, emoji, descricao}` + `CATEGORIA_NOMES`, type `CategoriaNome`, helpers `categoriaPorSlug`/`slugDaCategoria`). `BLOG_CATEGORIES` and dashboard `AREAS` derive from it. URLs filter by slug (`?categoria=<slug>`).

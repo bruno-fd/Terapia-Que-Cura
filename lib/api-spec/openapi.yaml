@@ -197,6 +197,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
+  /admin/blog/daily-runs:
+    get:
+      operationId: listBlogDailyRuns
+      tags: [admin-blog]
+      summary: Daily automatic post generation acceptance metrics
+      responses:
+        "200":
+          description: Recent daily runs summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlogDailyRunsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
   /admin/advogados:
     get:
       operationId: listAdminAdvogados
@@ -1265,6 +1283,75 @@ components:
         - cidades
         - atendeOnline
         - whatsapp
+    BlogDailyRunDay:
+      type: object
+      properties:
+        runDate:
+          type: string
+        published:
+          type: integer
+        rejected:
+          type: integer
+        skipped:
+          type: integer
+        failed:
+          type: integer
+        total:
+          type: integer
+      required:
+        - runDate
+        - published
+        - rejected
+        - skipped
+        - failed
+        - total
+    BlogDailyRunItem:
+      type: object
+      properties:
+        category:
+          type: string
+        status:
+          type: string
+          enum: [published, rejected, skipped, failed]
+        title:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        postId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - category
+        - status
+        - createdAt
+    BlogDailyRunLatest:
+      type: object
+      properties:
+        runDate:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlogDailyRunItem"
+      required:
+        - runDate
+        - items
+    BlogDailyRunsResponse:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlogDailyRunDay"
+        latest:
+          $ref: "#/components/schemas/BlogDailyRunLatest"
+      required:
+        - days
+        - latest
     AdminAdvogado:
       type: object
       properties:

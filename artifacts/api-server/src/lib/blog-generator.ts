@@ -41,7 +41,7 @@ REGRAS DA OAB (Código de Ética e Provimento 205/2021)
 - Vocabulário PERMITIDO no encerramento: "Se isso aconteceu com você, pode ser que seus direitos não tenham sido respeitados."; "Situações como essa, em muitos casos, têm respaldo na legislação brasileira."; "Existem profissionais especializados nessa área que podem avaliar sua situação."
 - Vocabulário PROIBIDO no encerramento: "Você foi lesado."; "Entre em contato com um advogado."; "Procure um advogado agora."; "Você tem direito de processar."; "Não deixe isso passar."`;
 
-interface GeneratedPost {
+export interface GeneratedPost {
   title: string;
   subtitle: string;
   excerpt: string;
@@ -51,6 +51,24 @@ interface GeneratedPost {
   // Tema específico sugerido pela IA (uma das subcategorias da macrocategoria),
   // ou null quando nenhuma se aplica. Validado no chamador.
   subcategoria: string | null;
+}
+
+// Resultado da verificação de veracidade/conformidade feita por uma segunda
+// passada independente da IA (revisor jurídico).
+export interface VerificacaoLegal {
+  // Trecho exato do dado jurídico avaliado (lei, artigo, prazo, valor etc.).
+  citacao: string;
+  // true se o revisor confirmou o dado como correto; false se errado/duvidoso.
+  correto: boolean;
+  observacao: string;
+}
+
+export interface VerificationResult {
+  aprovado: boolean;
+  // Motivos da reprovação (vazio quando aprovado).
+  motivos: string[];
+  // Checagem explícita de cada dado jurídico encontrado no texto.
+  checagensLegais: VerificacaoLegal[];
 }
 
 function extractText(content: { type: string; text?: string }[]): string {
@@ -317,4 +335,166 @@ O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, in
     oabClosing: stripDash(parsed.oabClosing),
     subcategoria,
   };
+}
+
+// ------------------------------------------------------------------
+// Verificação de veracidade (segunda passada independente da IA)
+// ------------------------------------------------------------------
+
+// Instrução de sistema do revisor. Independente do gerador: sua única função é
+// checar o texto pronto, com viés conservador ("na dúvida, reprova").
+const REVIEWER_RULES = `Você é um revisor jurídico rigoroso e independente do blog "Minha Causa Justa". Seu trabalho NÃO é escrever nem melhorar o texto, e sim decidir se ele pode ir ao ar sem revisão humana. Você é o último filtro de qualidade antes da publicação automática. Aja com ceticismo profissional.
+
+O QUE VOCÊ DEVE VERIFICAR
+
+1. VERACIDADE JURÍDICA (prioridade máxima). Citar leis e artigos é permitido e desejável em conteúdo jurídico, MAS cada dado precisa estar correto. Identifique TODOS os dados jurídicos objetivos do texto, um a um:
+   - número de lei, decreto, súmula ou medida provisória (ex.: "Lei 8.078/1990", "CLT art. 477");
+   - número de artigo, inciso ou parágrafo;
+   - prazos (ex.: "prazo de 5 anos", "30 dias");
+   - valores em reais, percentuais, multas, alíquotas, índices;
+   - datas e vigências.
+   Para CADA dado, decida se está correto conforme a legislação brasileira vigente. Se um dado estiver errado, desatualizado, ou se você NÃO tiver certeza suficiente para confirmá-lo, marque "correto": false. Na dúvida, reprove: é preferível descartar um post correto a publicar um dado jurídico errado.
+
+2. CONFORMIDADE COM A OAB. Reprove se o texto: recomendar conduta processual ("entre com ação", "processe", "recorra", "acione o INSS"); afirmar como fato que o leitor foi lesado; mencionar ou indicar um advogado específico; estimular o litígio ou usar tom de indignação.
+
+3. REGRAS EDITORIAIS. Reprove se houver travessão (caractere "—") em qualquer lugar do texto, termo jurídico usado sem explicação em linguagem simples, ou promessa de resultado ("você vai ganhar", "com certeza receberá").
+
+DECISÃO
+- "aprovado": true SOMENTE se todos os dados jurídicos estiverem corretos E não houver nenhuma violação de OAB ou editorial.
+- Se qualquer dado jurídico for false, ou houver qualquer violação, "aprovado": false.
+- Em "motivos", liste objetivamente cada razão da reprovação (vazio se aprovado).
+- Em "checagens_legais", liste CADA dado jurídico avaliado com sua citação exata, se está correto e uma observação curta. Se o texto não tiver nenhum dado jurídico objetivo, retorne lista vazia.`;
+
+function postParaTextoRevisao(post: GeneratedPost): string {
+  const linhas: string[] = [];
+  linhas.push(`TÍTULO: ${post.title}`);
+  linhas.push(`SUBTÍTULO: ${post.subtitle}`);
+  linhas.push(`RESUMO: ${post.excerpt}`);
+  linhas.push("");
+  for (const section of post.body) {
+    if (section.heading) linhas.push(`## ${section.heading}`);
+    for (const p of section.paragraphs) linhas.push(p);
+    linhas.push("");
+  }
+  linhas.push(`ENCERRAMENTO: ${post.oabClosing}`);
+  return linhas.join("\n");
+}
+
+// Marcadores de que o texto faz alguma afirmação jurídica concreta (lei, artigo,
+// prazo, valor, percentual etc.). Se o texto contém algum desses e o revisor
+// devolveu ZERO checagens legais, tratamos como falha de verificação e
+// reprovamos ("na dúvida, reprova"): não publicamos dado jurídico sem checagem
+// explícita.
+const PADROES_JURIDICOS: RegExp[] = [
+  /\bartigos?\b/i,
+  /\bart\.?\s*\d/i,
+  /§/,
+  /\bincisos?\b/i,
+  /\bleis?\s+(n[.º°]?\s*)?\d/i,
+  /\blei\s+complementar\b/i,
+  /\bc[óo]digo\b/i,
+  /\bCLT\b/,
+  /\bCF\b/,
+  /\bconstitui[çc][ãa]o\b/i,
+  /\bs[úu]mula\b/i,
+  /\bdecreto\b/i,
+  /\bmedida provis[óo]ria\b/i,
+  /\bjurisprud[êe]ncia\b/i,
+  /\bprazo\b/i,
+  /\b\d+\s*(dias?|meses|m[êe]s|anos?)\b/i,
+  /R\$\s*\d/,
+  /\b\d+\s*%/,
+];
+
+function contemDadoJuridico(post: GeneratedPost): boolean {
+  const texto = postParaTextoRevisao(post);
+  return PADROES_JURIDICOS.some((re) => re.test(texto));
+}
+
+// Faz uma segunda passada independente pela IA, no papel de revisor jurídico.
+// Retorna a decisão de publicação e a checagem explícita de cada dado legal.
+export async function verifyPost(
+  category: string,
+  theme: string,
+  post: GeneratedPost,
+): Promise<VerificationResult> {
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: REVIEWER_RULES,
+    messages: [
+      {
+        role: "user",
+        content: `Revise o post abaixo (macrocategoria "${category}", tema "${theme}") e decida se pode ser publicado automaticamente.
+
+TEXTO DO POST:
+"""
+${postParaTextoRevisao(post)}
+"""
+
+Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
+{
+  "aprovado": true,
+  "motivos": ["motivo da reprovação 1", "..."],
+  "checagens_legais": [
+    { "citacao": "trecho exato do dado jurídico", "correto": true, "observacao": "por que está correto ou incorreto" }
+  ]
+}`,
+      },
+    ],
+  });
+
+  const parsed = parseJson(extractText(message.content)) as {
+    aprovado?: unknown;
+    motivos?: unknown;
+    checagens_legais?: unknown;
+  };
+
+  if (!parsed || typeof parsed.aprovado !== "boolean") {
+    throw new Error("Resposta da IA em formato inesperado para a verificação.");
+  }
+
+  const motivos = Array.isArray(parsed.motivos)
+    ? parsed.motivos.filter((m): m is string => typeof m === "string")
+    : [];
+
+  const checagensLegais: VerificacaoLegal[] = Array.isArray(
+    parsed.checagens_legais,
+  )
+    ? parsed.checagens_legais
+        .filter(
+          (c): c is { citacao: unknown; correto: unknown; observacao: unknown } =>
+            !!c && typeof c === "object",
+        )
+        .map((c) => ({
+          citacao: typeof c.citacao === "string" ? c.citacao : "",
+          correto: c.correto === true,
+          observacao: typeof c.observacao === "string" ? c.observacao : "",
+        }))
+    : [];
+
+  // Barreira de segurança determinística: mesmo que o revisor marque "aprovado",
+  // qualquer dado legal marcado como incorreto reprova o post ("na dúvida,
+  // reprova").
+  const algumDadoIncorreto = checagensLegais.some((c) => !c.correto);
+  // Segunda barreira: se o texto tem afirmações jurídicas concretas mas o revisor
+  // não checou nenhuma, não temos verificação explícita, então reprovamos.
+  const faltaChecagem =
+    checagensLegais.length === 0 && contemDadoJuridico(post);
+  const aprovado =
+    parsed.aprovado === true && !algumDadoIncorreto && !faltaChecagem;
+
+  const motivosFinais = [...motivos];
+  if (algumDadoIncorreto && parsed.aprovado === true) {
+    motivosFinais.push(
+      "Reprovado automaticamente: há dado jurídico marcado como incorreto ou não confirmado na checagem.",
+    );
+  }
+  if (faltaChecagem) {
+    motivosFinais.push(
+      "Reprovado automaticamente: o texto traz dados jurídicos, mas o revisor não apresentou a checagem explícita de cada um.",
+    );
+  }
+
+  return { aprovado, motivos: motivosFinais, checagensLegais };
 }

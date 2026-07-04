@@ -3,6 +3,7 @@ import type {
   AdminAdvogado,
   AdminAdvogadoDetail,
   UpdateAdminAdvogadoInput,
+  BlogDailyRunsResponse,
 } from "@workspace/api-client-react";
 
 // ============================================================
@@ -93,6 +94,11 @@ export function listAdminPosts(): Promise<ApiBlogPost[]> {
 
 export function deletePost(id: number): Promise<void> {
   return adminFetch(`/admin/blog/posts/${id}`, { method: "DELETE" });
+}
+
+// Métrica de aceitação do gerador diário automático de posts.
+export function listBlogDailyRuns(): Promise<BlogDailyRunsResponse> {
+  return adminFetch("/admin/blog/daily-runs");
 }
 
 // ============================================================

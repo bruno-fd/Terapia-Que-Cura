@@ -1,2 +1,3 @@
 - [Vite import.meta.env in composite libs](vite-importmeta-composite-lib.md) — composite libs typechecked by `tsc --build` lack `vite/client`; add a local ambient `import.meta.env` decl or the build fails.
 - [Free-text categoria search resolution](categoria-search-resolution.md) — CategoriaAutocomplete resolves typed text at search time (single source of truth); duplicate sub names across macros are ambiguous.
+- [Daily auto-blog veracity gate](daily-blog-veracity-gate.md) — auto-published AI legal posts need 2 deterministic reject layers over the model verdict; daily job day-boundary must be UTC in both label and idempotency.

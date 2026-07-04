@@ -174,6 +174,32 @@ export const DeleteBlogPostResponse = zod.void()
 
 
 /**
+ * @summary Daily automatic post generation acceptance metrics
+ */
+export const ListBlogDailyRunsResponse = zod.object({
+  "days": zod.array(zod.object({
+  "runDate": zod.string(),
+  "published": zod.number(),
+  "rejected": zod.number(),
+  "skipped": zod.number(),
+  "failed": zod.number(),
+  "total": zod.number()
+})),
+  "latest": zod.object({
+  "runDate": zod.string(),
+  "items": zod.array(zod.object({
+  "category": zod.string(),
+  "status": zod.enum(['published', 'rejected', 'skipped', 'failed']),
+  "title": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "postId": zod.number().nullish(),
+  "createdAt": zod.string()
+}))
+})
+})
+
+
+/**
  * @summary List all registered lawyers for admin verification
  */
 export const ListAdminAdvogadosResponseItem = zod.object({

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
-import { db, blogPostsTable } from "@workspace/db";
+import { db, blogPostsTable, blogDailyRunsTable } from "@workspace/db";
 import {
   ListPublishedPostsResponse,
   GenerateBlogIdeasBody,
@@ -13,17 +13,16 @@ import {
   UpdateBlogPostParams,
   UpdateBlogPostBody,
   UpdateBlogPostResponse,
+  ListBlogDailyRunsResponse,
 } from "@workspace/api-zod";
 import {
   generateIdeas,
   generatePost,
-  slugify,
-  computeReadingMinutes,
-  sectionsToHtml,
   sanitizeHtml,
   htmlToPlainText,
   computeReadingMinutesFromText,
 } from "../lib/blog-generator";
+import { persistGeneratedPost } from "../lib/blog-posts";
 import { isMacroValida, subcategoriasDe } from "../lib/categorias";
 
 // Macrocategorias válidas: a fonte é o espelho server-side em
@@ -100,56 +99,10 @@ router.post("/admin/blog/posts", async (req, res): Promise<void> => {
     return;
   }
 
-  // Garante slug único
-  const baseSlug = slugify(generated.title) || "post";
-  let slug = baseSlug;
-  let suffix = 2;
-  // Loop limitado para evitar colisões de slug
-  while (true) {
-    const [existing] = await db
-      .select({ id: blogPostsTable.id })
-      .from(blogPostsTable)
-      .where(eq(blogPostsTable.slug, slug));
-    if (!existing) break;
-    slug = `${baseSlug}-${suffix}`;
-    suffix += 1;
-    if (suffix > 100) {
-      slug = `${baseSlug}-${Date.now()}`;
-      break;
-    }
-  }
-
-  const readingMinutes = computeReadingMinutes(
-    generated.body,
-    generated.oabClosing,
-  );
-
-  // A IA pode sugerir um tema específico (subcategoria); só persistimos se ele
-  // pertencer à macrocategoria escolhida.
-  const subcategoria =
-    generated.subcategoria &&
-    subcategoriasDe(category).includes(generated.subcategoria)
-      ? generated.subcategoria
-      : null;
-
-  const [created] = await db
-    .insert(blogPostsTable)
-    .values({
-      slug,
-      category,
-      subcategoria,
-      title: generated.title,
-      subtitle: generated.subtitle,
-      excerpt: generated.excerpt,
-      keywords: generated.keywords,
-      readingMinutes,
-      body: generated.body,
-      bodyHtml: sectionsToHtml(generated.body),
-      oabClosing: generated.oabClosing,
-      // Rascunho: o post só vai ao ar quando o admin clicar em "Publicar".
-      published: false,
-    })
-    .returning();
+  // Rascunho: o post só vai ao ar quando o admin clicar em "Publicar".
+  const created = await persistGeneratedPost(generated, category, {
+    publish: false,
+  });
 
   res.status(201).json(CreateBlogPostResponse.parse(created));
 });
@@ -264,6 +217,99 @@ router.delete("/admin/blog/posts/:id", async (req, res): Promise<void> => {
   }
 
   res.sendStatus(204);
+});
+
+// Métrica de aceitação do gerador diário automático: resumo por dia (quantos
+// dos 12 foram publicados x reprovados x pulados x falhas) e o detalhe da
+// execução mais recente.
+router.get("/admin/blog/daily-runs", async (_req, res): Promise<void> => {
+  // Volume baixo (12/dia): trazemos as execuções recentes e agrupamos em JS.
+  const runs = await db
+    .select()
+    .from(blogDailyRunsTable)
+    .orderBy(desc(blogDailyRunsTable.createdAt))
+    .limit(400);
+
+  type Run = (typeof runs)[number];
+
+  // Uma categoria pode ter mais de um registro no mesmo dia (re-execução manual,
+  // agendamento duplicado). Para a métrica valer por dia (máx. 12), mantemos um
+  // registro por (dia, categoria), escolhendo o desfecho mais significativo.
+  const PRIORIDADE: Record<string, number> = {
+    published: 4,
+    rejected: 3,
+    failed: 2,
+    skipped: 1,
+  };
+  const escolhido = new Map<string, Run>();
+  for (const r of runs) {
+    const chave = `${r.runDate}::${r.category}`;
+    const atual = escolhido.get(chave);
+    if (
+      !atual ||
+      (PRIORIDADE[r.status] ?? 0) > (PRIORIDADE[atual.status] ?? 0)
+    ) {
+      escolhido.set(chave, r);
+    }
+  }
+  const deduplicados = Array.from(escolhido.values());
+
+  type Day = {
+    runDate: string;
+    published: number;
+    rejected: number;
+    skipped: number;
+    failed: number;
+    total: number;
+  };
+  const porDia = new Map<string, Day>();
+  for (const r of deduplicados) {
+    let dia = porDia.get(r.runDate);
+    if (!dia) {
+      dia = {
+        runDate: r.runDate,
+        published: 0,
+        rejected: 0,
+        skipped: 0,
+        failed: 0,
+        total: 0,
+      };
+      porDia.set(r.runDate, dia);
+    }
+    if (
+      r.status === "published" ||
+      r.status === "rejected" ||
+      r.status === "skipped" ||
+      r.status === "failed"
+    ) {
+      dia[r.status] += 1;
+    }
+    dia.total += 1;
+  }
+
+  const days = Array.from(porDia.values())
+    .sort((a, b) => (a.runDate < b.runDate ? 1 : -1))
+    .slice(0, 14);
+
+  const latestDate = days.length > 0 ? days[0].runDate : "";
+  const items = deduplicados
+    .filter((r) => r.runDate === latestDate)
+    .sort((a, b) => a.category.localeCompare(b.category, "pt-BR"))
+    .map((r) => ({
+      category: r.category,
+      status: r.status,
+      title: r.title,
+      reason: r.reason,
+      postId: r.postId,
+      createdAt: r.createdAt.toISOString(),
+    }));
+
+  res.json(
+    ListBlogDailyRunsResponse.parse({
+      days,
+      latest: { runDate: latestDate, items },
+    }),
+  );
 });
 
 export default router;

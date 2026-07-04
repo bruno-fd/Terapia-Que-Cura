@@ -282,6 +282,44 @@ export interface PublicLawyer {
   whatsapp: string;
 }
 
+export interface BlogDailyRunDay {
+  runDate: string;
+  published: number;
+  rejected: number;
+  skipped: number;
+  failed: number;
+  total: number;
+}
+
+export type BlogDailyRunItemStatus = typeof BlogDailyRunItemStatus[keyof typeof BlogDailyRunItemStatus];
+
+
+export const BlogDailyRunItemStatus = {
+  published: 'published',
+  rejected: 'rejected',
+  skipped: 'skipped',
+  failed: 'failed',
+} as const;
+
+export interface BlogDailyRunItem {
+  category: string;
+  status: BlogDailyRunItemStatus;
+  title?: string | null;
+  reason?: string | null;
+  postId?: number | null;
+  createdAt: string;
+}
+
+export interface BlogDailyRunLatest {
+  runDate: string;
+  items: BlogDailyRunItem[];
+}
+
+export interface BlogDailyRunsResponse {
+  days: BlogDailyRunDay[];
+  latest: BlogDailyRunLatest;
+}
+
 export type AdminAdvogadoPaymentStatus = typeof AdminAdvogadoPaymentStatus[keyof typeof AdminAdvogadoPaymentStatus] | null;
 
 
