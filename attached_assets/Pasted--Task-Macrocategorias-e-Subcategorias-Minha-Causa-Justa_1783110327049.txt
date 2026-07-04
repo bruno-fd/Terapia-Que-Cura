@@ -1,0 +1,396 @@
+# Task — Macrocategorias e Subcategorias
+## Minha Causa Justa
+
+---
+
+## Contexto e objetivo
+
+Esta task implementa uma arquitetura de dois níveis de categorização na plataforma. O usuário interage com subcategorias via busca livre (digitação ou seleção). O advogado marca macrocategorias obrigatoriamente e subcategorias de forma opcional e expansível. A busca retorna resultados em camadas de relevância.
+
+---
+
+## Fonte da verdade — lista completa de categorias
+
+Criar um objeto global `CATEGORIAS_COMPLETAS` em `main.js` que substitui o objeto `CATEGORIAS` atual. Este objeto é a única fonte de verdade usada em todo o site.
+
+```javascript
+const CATEGORIAS_COMPLETAS = [
+  {
+    nome: "INSS e Previdência",
+    slug: "inss-e-previdencia",
+    emoji: "🏥",
+    subcategorias: [
+      "Auxílio Doença",
+      "Aposentadoria por Tempo de Contribuição",
+      "Aposentadoria por Invalidez",
+      "Aposentadoria Especial",
+      "Salário Maternidade",
+      "Auxílio Acidente",
+      "BPC/LOAS",
+      "Pensão por Morte",
+      "Revisão de Benefício",
+      "Benefício Negado ou Cortado"
+    ]
+  },
+  {
+    nome: "Trabalho e Emprego",
+    slug: "trabalho-e-emprego",
+    emoji: "💼",
+    subcategorias: [
+      "Demissão Sem Justa Causa",
+      "Rescisão Indireta",
+      "Verbas Rescisórias",
+      "FGTS",
+      "Horas Extras",
+      "Acúmulo de Função",
+      "Insalubridade e Periculosidade",
+      "Assédio Moral",
+      "Acidente de Trabalho",
+      "Doença Ocupacional",
+      "Dano Moral Trabalhista",
+      "Carteira Não Assinada",
+      "Estabilidade no Emprego"
+    ]
+  },
+  {
+    nome: "Família",
+    slug: "familia",
+    emoji: "👨‍👩‍👧",
+    subcategorias: [
+      "Pensão Alimentícia",
+      "Divórcio",
+      "Guarda de Filhos",
+      "Reconhecimento de Paternidade",
+      "Alienação Parental",
+      "União Estável",
+      "Adoção",
+      "Violência Doméstica"
+    ]
+  },
+  {
+    nome: "Herança e Inventário",
+    slug: "heranca-e-inventario",
+    emoji: "📋",
+    subcategorias: [
+      "Inventário Judicial",
+      "Inventário Extrajudicial",
+      "Divisão de Bens",
+      "Testamento",
+      "Exclusão de Herdeiro",
+      "Doação em Vida",
+      "Bens de Pessoa Falecida no Exterior"
+    ]
+  },
+  {
+    nome: "Plano de Saúde",
+    slug: "plano-de-saude",
+    emoji: "💊",
+    subcategorias: [
+      "Negativa de Cobertura",
+      "Reajuste Abusivo",
+      "Cancelamento Indevido",
+      "Reembolso Negado",
+      "Plano Coletivo Cancelado pela Empresa",
+      "Negativa de Internação",
+      "Negativa de Medicamento"
+    ]
+  },
+  {
+    nome: "Dívidas e Nome Negativado",
+    slug: "dividas-e-nome-negativado",
+    emoji: "💳",
+    subcategorias: [
+      "Negativação Indevida no Serasa ou SPC",
+      "Cobrança de Dívida Prescrita",
+      "Superendividamento",
+      "Renegociação de Dívidas",
+      "Penhora de Bens",
+      "Nome Limpo Após Pagamento",
+      "Dívida com Banco ou Financeira"
+    ]
+  },
+  {
+    nome: "Imóveis e Moradia",
+    slug: "imoveis-e-moradia",
+    emoji: "🏠",
+    subcategorias: [
+      "Despejo",
+      "Contrato de Aluguel",
+      "Distrato com Construtora",
+      "Imóvel com Defeito",
+      "Financiamento Imobiliário",
+      "Usucapião",
+      "Condomínio",
+      "Regularização de Imóvel",
+      "Compra e Venda"
+    ]
+  },
+  {
+    nome: "Direito do Consumidor",
+    slug: "direito-do-consumidor",
+    emoji: "🛒",
+    subcategorias: [
+      "Voo Atrasado ou Cancelado",
+      "Produto com Defeito",
+      "Cobrança Indevida",
+      "Pacote de Viagem",
+      "Internet ou Telefone",
+      "Compra Online",
+      "Propaganda Enganosa",
+      "Cancelamento de Contrato",
+      "Seguro Negado"
+    ]
+  },
+  {
+    nome: "Acidentes e Indenizações",
+    slug: "acidentes-e-indenizacoes",
+    emoji: "⚠️",
+    subcategorias: [
+      "Acidente de Trânsito",
+      "Atropelamento",
+      "Erro Médico",
+      "Queda em Estabelecimento",
+      "Dano Moral",
+      "Dano Estético",
+      "Acidente com Animal",
+      "Produto Defeituoso que Causou Dano"
+    ]
+  },
+  {
+    nome: "Crimes e Defesa Criminal",
+    slug: "crimes-e-defesa-criminal",
+    emoji: "⚖️",
+    subcategorias: [
+      "Ameaça",
+      "Violência Doméstica",
+      "Furto e Roubo",
+      "Estelionato",
+      "Injúria e Difamação",
+      "Defesa em Inquérito Policial",
+      "Defesa em Processo Criminal",
+      "Prisão Preventiva",
+      "Habeas Corpus",
+      "Crimes de Trânsito"
+    ]
+  },
+  {
+    nome: "Servidor Público",
+    slug: "servidor-publico",
+    emoji: "🏛️",
+    subcategorias: [
+      "Concurso Público",
+      "Reintegração ao Cargo",
+      "Progressão de Carreira",
+      "Acúmulo de Cargos",
+      "Processo Administrativo Disciplinar",
+      "Aposentadoria do Servidor",
+      "Desvio de Função",
+      "Assédio Moral no Serviço Público"
+    ]
+  },
+  {
+    nome: "Empresarial",
+    slug: "empresarial",
+    emoji: "🏢",
+    subcategorias: [
+      "Abertura de Empresa",
+      "Encerramento de Empresa",
+      "Contrato Entre Empresas",
+      "Cobrança de Dívida Empresarial",
+      "Conflito Entre Sócios",
+      "Recuperação Judicial",
+      "Falência",
+      "Responsabilidade do Sócio",
+      "Contrato de Prestação de Serviços"
+    ]
+  }
+];
+```
+
+Remover o objeto `CATEGORIAS` antigo e substituir por `CATEGORIAS_COMPLETAS` em todo o projeto. Atualizar todas as referências.
+
+---
+
+## Mudanças por arquivo
+
+---
+
+### 1. main.js
+
+Substituir `CATEGORIAS` por `CATEGORIAS_COMPLETAS` conforme acima.
+
+Criar função auxiliar que retorna apenas os nomes das macrocategorias para uso em selects e filtros simples:
+
+```javascript
+function getMacrocategorias() {
+  return CATEGORIAS_COMPLETAS.map(c => ({ nome: c.nome, slug: c.slug, emoji: c.emoji }));
+}
+```
+
+Criar função de busca que pesquisa em macrocategorias e subcategorias simultaneamente:
+
+```javascript
+function buscarCategorias(termo) {
+  const t = normalizar(termo);
+  const resultados = [];
+
+  CATEGORIAS_COMPLETAS.forEach(cat => {
+    // Verifica se o termo bate com a macrocategoria
+    if (normalizar(cat.nome).includes(t)) {
+      resultados.push({ tipo: 'macro', nome: cat.nome, slug: cat.slug, emoji: cat.emoji });
+    }
+    // Verifica subcategorias
+    cat.subcategorias.forEach(sub => {
+      if (normalizar(sub).includes(t)) {
+        resultados.push({
+          tipo: 'sub',
+          nome: sub,
+          macro_nome: cat.nome,
+          macro_slug: cat.slug,
+          emoji: cat.emoji
+        });
+      }
+    });
+  });
+
+  return resultados;
+}
+
+function normalizar(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+```
+
+---
+
+### 2. index.html — Hero e cards da home
+
+**Select "Qual é o seu problema?" no hero:**
+Substituir as opções atuais por um campo de texto com autocomplete que usa `buscarCategorias()`. Ao digitar, exibir dropdown com resultados agrupados:
+
+Grupo "Áreas" → macrocategorias que batem
+Grupo "Temas específicos" → subcategorias que batem, com a macrocategoria pai em texto menor abaixo
+
+Ao selecionar qualquer resultado, redirecionar para `advogados.html` com os parâmetros corretos:
+- Se macrocategoria: `?categoria=slug-da-macro`
+- Se subcategoria: `?categoria=slug-da-macro&subcategoria=nome-da-sub`
+
+**Cards de problema na Seção 2:**
+Manter os 12 cards de macrocategoria como estão. Não exibir subcategorias nos cards — eles são pontos de entrada, não de detalhe.
+
+---
+
+### 3. advogados.html — Busca e filtros
+
+**Campo de busca principal:**
+Substituir o select atual por campo de texto com autocomplete usando `buscarCategorias()`. Mesmo comportamento descrito acima para o hero da home.
+
+**Lógica de filtragem dos cards:**
+Ao buscar por subcategoria: exibir primeiro advogados que marcaram aquela subcategoria específica (match exato), depois advogados que marcaram apenas a macrocategoria pai (match amplo). Separar os dois grupos visualmente com um divisor discreto:
+
+Grupo 1 — "Especialistas em [subcategoria]" (badge com a subcategoria)
+Grupo 2 — "Advogados em [macrocategoria]" (sem badge de subcategoria)
+
+Ao buscar por macrocategoria: exibir todos os advogados daquela categoria sem separação de grupos.
+
+**Cards de advogado:**
+No card, exibir as subcategorias marcadas pelo advogado como badges menores abaixo dos badges de macrocategoria. Limitar a 3 subcategorias visíveis + "e mais X" se houver mais.
+
+---
+
+### 4. cadastro.html e cadastro-fluxo.html
+
+Sem mudanças visíveis. O campo de área de atuação continua como macrocategorias apenas na landing page.
+
+---
+
+### 5. painel-perfil.html — Seção de áreas de atuação
+
+Esta é a mudança mais importante para o advogado. Substituir a seção atual de badges simples por um sistema expansível em dois níveis.
+
+**Comportamento:**
+
+Exibir os 12 badges de macrocategoria como antes. Ao clicar em uma macrocategoria para ativá-la, ela se expande abaixo e revela as subcategorias daquela categoria.
+
+Layout da expansão:
+- Badge da macrocategoria fica ativo (azul)
+- Abaixo dele, aparece com animação suave um bloco expansível com fundo `--color-primary-50`, `--radius-md`, padding `--space-4`
+- Título do bloco: "Quer detalhar suas especialidades em [nome da macrocategoria]?" — font-size-sm, `--color-neutral-600`
+- Texto secundário: "Opcional. Ajuda clientes a te encontrarem com mais precisão." — font-size-xs, `--color-neutral-500`
+- Subcategorias como badges menores, mesmo sistema de toggle (ativo/inativo)
+
+Ao desmarcar a macrocategoria, o bloco de subcategorias colapsa e todas as subcategorias daquela categoria são desmarcadas automaticamente.
+
+É possível ter a macrocategoria ativa sem nenhuma subcategoria marcada — isso é o comportamento padrão e esperado.
+
+**Estado visual dos badges de subcategoria:**
+- Ativo: fundo `--color-primary-100`, texto `--color-primary-800`, border `--color-primary-400`
+- Inativo: fundo branco, texto `--color-neutral-500`, border `--color-neutral-300`
+- Tamanho menor que os badges de macrocategoria: padding 4px 10px, font-size-xs
+
+**Estado inicial de demonstração:**
+Macrocategoria "INSS e Previdência" ativa, com subcategorias "Auxílio Doença" e "Aposentadoria por Tempo de Contribuição" marcadas. Macrocategoria "Trabalho e Emprego" ativa, sem subcategorias marcadas.
+
+---
+
+### 6. Banco de dados — campo subcategorias
+
+Adicionar o campo `subcategorias` ao schema do advogado como array de strings, com valor padrão de array vazio:
+
+```javascript
+subcategorias: { type: Array, default: [] }
+// Exemplo de valor: ["Auxílio Doença", "Rescisão Indireta", "FGTS"]
+```
+
+Este campo não exige migração de dados existentes — array vazio é o estado válido para advogados que não marcaram subcategorias.
+
+---
+
+### 7. Blog — tags de posts
+
+Cada post deve receber dois campos de classificação:
+- `categoria` — uma das 12 macrocategorias (slug)
+- `subcategoria` — uma das subcategorias daquela macrocategoria (string, opcional)
+
+Na exibição do post individual (`post.html`), mostrar:
+- Badge de macrocategoria (como hoje)
+- Badge menor de subcategoria abaixo, se existir — fundo `--color-primary-50`, texto `--color-primary-700`, font-size-xs
+
+Na sidebar do blog, manter apenas as 12 macrocategorias. Subcategorias não aparecem na navegação do blog — são apenas metadata de cada post para SEO e busca interna.
+
+---
+
+### 8. painel-metricas.html
+
+Atualizar o texto de demonstração para usar a nova nomenclatura:
+"Em Trabalho e Emprego (Rescisão Indireta) em SP, seu perfil está entre os Top 30% dos perfis mais visualizados"
+
+---
+
+### 9. admin.html
+
+Na coluna de especialidades do advogado no modal de detalhes, exibir:
+- Macrocategorias em badges azuis normais
+- Subcategorias em badges menores azuis claros, agrupadas abaixo da macrocategoria correspondente
+
+---
+
+## Checklist de verificação
+
+- [ ] Objeto `CATEGORIAS_COMPLETAS` criado em `main.js` com 12 macrocategorias e 111 subcategorias
+- [ ] Função `buscarCategorias()` retorna resultados de macro e subcategorias simultaneamente
+- [ ] Função `getMacrocategorias()` retorna apenas macrocategorias para selects simples
+- [ ] Hero da home: campo de busca com autocomplete pesquisa em ambos os níveis
+- [ ] Cards da home: 12 cards de macrocategoria sem alteração
+- [ ] advogados.html: busca com autocomplete funcionando
+- [ ] advogados.html: resultados separados em "Especialistas em X" e "Advogados em Y"
+- [ ] advogados.html: badges de subcategoria visíveis nos cards (máximo 3 + contador)
+- [ ] painel-perfil.html: macrocategoria ativa expande e mostra subcategorias opcionais
+- [ ] painel-perfil.html: desmarcar macrocategoria desmarca todas as suas subcategorias
+- [ ] painel-perfil.html: é possível ter macrocategoria ativa sem subcategorias
+- [ ] Banco de dados: campo `subcategorias` adicionado como array vazio por padrão
+- [ ] post.html: badge de subcategoria visível quando preenchido
+- [ ] blog.html: sidebar mantém apenas 12 macrocategorias
+- [ ] painel-metricas.html: texto atualizado com nova nomenclatura
+- [ ] admin.html: modal de detalhes mostra macro e subcategorias agrupadas
+- [ ] Todas as referências ao objeto `CATEGORIAS` antigo substituídas por `CATEGORIAS_COMPLETAS`
