@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Check, TrendingUp, UserCircle, BarChart3, Handshake, Image as ImageIcon, Crosshair, MessageSquare, Phone, ArrowRight } from "lucide-react";
 
-import advogadoHero from "@/assets/advogado-hero.png";
-import advogadaPerfil from "@/assets/advogada-perfil.png";
+import advogadoHero from "@/assets/advogado-hero.webp";
+import advogadaPerfil from "@/assets/advogada-perfil.webp";
 
 export default function Cadastro() {
   const [, setLocation] = useLocation();

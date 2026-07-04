@@ -117,7 +117,27 @@ export default function PainelPerfil() {
     }
     setPhotoError("");
     const reader = new FileReader();
-    reader.onload = () => update({ photo: reader.result as string });
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          update({ photo: reader.result as string });
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        try {
+          update({ photo: canvas.toDataURL("image/webp", 0.85) });
+        } catch {
+          update({ photo: reader.result as string });
+        }
+      };
+      img.onerror = () => update({ photo: reader.result as string });
+      img.src = reader.result as string;
+    };
     reader.readAsDataURL(file);
   };
 
@@ -354,7 +374,7 @@ export default function PainelPerfil() {
                   </button>
                 )}
               </div>
-              <p className="text-xs text-neutral-500">JPG, PNG ou WEBP. Máximo 5MB.</p>
+              <p className="text-xs text-neutral-500">JPG, PNG ou WEBP. Máximo 5MB. A foto será otimizada automaticamente.</p>
               {photoError && (
                 <p className="text-xs text-[#C0392B]" data-testid="text-foto-erro">{photoError}</p>
               )}

@@ -11,10 +11,10 @@ import { CATEGORIAS, resolverBuscaCategoria, type ResultadoBusca } from "@/data/
 import { BLOG_POSTS, type BlogPost } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
 
-import heroPessoa from "@/assets/hero-pessoa.png";
-import celularPessoa from "@/assets/celular-pessoa.png";
-import familiaPessoa from "@/assets/familia-pessoa.png";
-import confiancaPessoa from "@/assets/confianca-pessoa.png";
+import heroPessoa from "@/assets/hero-pessoa.webp";
+import celularPessoa from "@/assets/celular-pessoa.webp";
+import familiaPessoa from "@/assets/familia-pessoa.webp";
+import confiancaPessoa from "@/assets/confianca-pessoa.webp";
 
 // Imagens usadas nos cards do blog na home. Cada categoria recebe uma imagem
 // que conversa com o tema; as demais caem num sorteio deterministico (estavel

@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import quemSomosFoto from "@assets/generated_images/quem-somos-foto.png";
+import quemSomosFoto from "@assets/generated_images/quem-somos-foto.webp";
 
 export default function QuemSomos() {
   return (
