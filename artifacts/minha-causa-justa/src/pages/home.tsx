@@ -40,6 +40,22 @@ function imagemDoPost(post: BlogPost): string {
   return BLOG_IMAGENS[hash];
 }
 
+// Escolhe imagens distintas para os cards de blog em destaque na home, evitando
+// repetir a mesma foto entre eles. Preferimos a imagem da categoria; se ela ja
+// tiver sido usada por outro card, caimos para a proxima foto ainda livre.
+function imagensDistintasDaHome(posts: BlogPost[]): string[] {
+  const usadas = new Set<string>();
+  return posts.map((post) => {
+    let escolhida = imagemDoPost(post);
+    if (usadas.has(escolhida)) {
+      const livre = BLOG_IMAGENS.find((img) => !usadas.has(img));
+      if (livre) escolhida = livre;
+    }
+    usadas.add(escolhida);
+    return escolhida;
+  });
+}
+
 export default function Home() {
   const [, setLocation] = useLocation();
   // Texto livre digitado na busca de categorias. É a fonte da verdade: a busca
@@ -98,6 +114,7 @@ export default function Home() {
     ...postsPublicados,
     ...BLOG_POSTS.filter((p) => !slugsPublicados.has(p.slug)),
   ].slice(0, 3);
+  const imagensHome = imagensDistintasDaHome(postsHome);
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
@@ -363,10 +380,10 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {postsHome.map((post) => (
+              {postsHome.map((post, index) => (
                 <div key={post.slug} className="bg-[#F5F4F2] p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300">
                   <div className="mb-6 w-full h-48 bg-white rounded-2xl overflow-hidden relative">
-                    <img src={imagemDoPost(post)} alt={post.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
+                    <img src={imagensHome[index]} alt={post.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <h3 className="font-bold text-xl text-primary-900 mb-6 flex-grow leading-snug">{post.title}</h3>
                   <Link href={`/blog/${post.slug}`} className="inline-flex items-center font-medium text-accent-600 hover:text-accent-700 transition-colors mt-auto">
