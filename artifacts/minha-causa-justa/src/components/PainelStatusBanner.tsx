@@ -111,10 +111,10 @@ export function PainelStatusBanner() {
 
         {/* Próxima ação */}
         {cta && (
-          <div className="flex items-center gap-3 shrink-0">
-            <p className={`text-sm ${accentText} flex items-center gap-1.5`}>
-              {tone === "warning" && <AlertTriangle className="h-4 w-4 shrink-0" />}
-              {message}
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <p className={`text-sm ${accentText} flex items-start gap-1.5 min-w-0`}>
+              {tone === "warning" && <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />}
+              <span>{message}</span>
             </p>
             <Link
               href={cta.href}
