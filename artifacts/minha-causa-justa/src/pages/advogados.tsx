@@ -3,14 +3,14 @@ import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle, Loader2 } from "lucide-react";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
-import { CATEGORIAS, categoriaPorSlug, slugDaCategoria } from "@/data/categories";
+import { CategoriaAutocomplete } from "@/components/CategoriaAutocomplete";
+import { categoriaPorSlug, buscarCategorias, type ResultadoBusca } from "@/data/categories";
 import { useListAdvogados, type PublicLawyer } from "@workspace/api-client-react";
 
 // Tipo de exibição derivado do advogado público vindo da API.
@@ -24,6 +24,7 @@ interface Lawyer {
   cities: string[];
   online: boolean;
   badges: string[];
+  subcategorias: string[];
   about: string;
   phone: string;
   instagram: string;
@@ -42,6 +43,7 @@ function toViewLawyer(l: PublicLawyer): Lawyer {
     cities: l.cidades.map((c) => `${c.nome}, ${c.uf}`),
     online: l.atendeOnline,
     badges: l.areas,
+    subcategorias: l.subcategorias,
     about: l.about,
     phone: l.whatsapp,
     instagram: "",
@@ -77,12 +79,15 @@ function shuffleFair<T>(list: T[], seed: number): T[] {
 
 export default function Advogados() {
   const [, setLocation] = useLocation();
-  const [categoria, setCategoria] = useState<string>("");
+  // Texto livre digitado na busca de categorias. É a fonte da verdade: ao clicar
+  // em "Buscar" resolvemos o que está visível no campo, mesmo sem selecionar uma
+  // sugestão. Os filtros efetivos (applied) guardam os nomes já resolvidos.
+  const [queryCategoria, setQueryCategoria] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
   // Filtros efetivamente aplicados (só mudam ao clicar em "Buscar"), separados
   // do estado dos campos para que a lista não filtre enquanto o usuário digita.
-  const [applied, setApplied] = useState({ cat: "", est: "", cid: "" });
+  const [applied, setApplied] = useState({ cat: "", sub: "", est: "", cid: "" });
   // Ordem sorteada de forma justa, definida uma vez por visita (estável durante a navegação).
   const [rotationSeed] = useState(() => Date.now());
 
@@ -92,19 +97,41 @@ export default function Advogados() {
     [publicLawyers, rotationSeed],
   );
 
-  const filteredLawyers = useMemo(() => {
-    let filtered: Lawyer[] = rotatedLawyers;
-    if (applied.cat && applied.cat !== "Outro") {
-      filtered = filtered.filter((l) => l.badges.includes(applied.cat));
-    }
+  // Resultados em camadas de relevância: quando o cidadão busca um tema
+  // específico (subcategoria), os "especialistas" (que marcaram aquele tema)
+  // aparecem primeiro; em seguida, os demais advogados da macrocategoria.
+  const { especialistas, geral } = useMemo(() => {
+    let base: Lawyer[] = rotatedLawyers;
     if (applied.est) {
-      filtered = filtered.filter((l) => l.cities.some((c) => c.endsWith(`, ${applied.est}`)));
+      base = base.filter((l) => l.cities.some((c) => c.endsWith(`, ${applied.est}`)));
     }
     if (applied.cid) {
-      filtered = filtered.filter((l) => l.cities.includes(applied.cid));
+      base = base.filter((l) => l.cities.includes(applied.cid));
     }
-    return filtered;
+
+    if (applied.sub) {
+      const esp = base.filter((l) => l.subcategorias.includes(applied.sub));
+      const espIds = new Set(esp.map((l) => l.id));
+      const restantes = applied.cat
+        ? base.filter((l) => !espIds.has(l.id) && l.badges.includes(applied.cat))
+        : [];
+      return { especialistas: esp, geral: restantes };
+    }
+
+    if (applied.cat && applied.cat !== "Outro") {
+      return {
+        especialistas: base.filter((l) => l.badges.includes(applied.cat)),
+        geral: [] as Lawyer[],
+      };
+    }
+
+    return { especialistas: base, geral: [] as Lawyer[] };
   }, [rotatedLawyers, applied]);
+
+  const totalResultados = especialistas.length + geral.length;
+  // Só mostramos os cabeçalhos das camadas quando há uma subcategoria aplicada
+  // e de fato existem dois grupos distintos para separar.
+  const mostrarCamadas = Boolean(applied.sub);
 
   const [contactLawyer, setContactLawyer] = useState<Lawyer | null>(null);
   const [detailLawyer, setDetailLawyer] = useState<Lawyer | null>(null);
@@ -112,27 +139,55 @@ export default function Advogados() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const catParam = params.get("categoria");
+    const subParam = params.get("subcategoria");
     const estParam = params.get("estado");
     const cidParam = params.get("cidade");
 
     const catNome = catParam ? categoriaPorSlug(catParam)?.nome ?? "" : "";
-    if (catNome) setCategoria(catNome);
+    const subNome = subParam ?? "";
+    // O campo exibe o tema quando houver, senão a macrocategoria.
+    if (subNome || catNome) setQueryCategoria(subNome || catNome);
     if (estParam) setEstado(estParam);
     if (cidParam) setCidade(cidParam);
 
-    if (catNome || estParam || cidParam) {
-      setApplied({ cat: catNome, est: estParam || "", cid: cidParam || "" });
+    if (catNome || subNome || estParam || cidParam) {
+      setApplied({
+        cat: catNome,
+        sub: subNome,
+        est: estParam || "",
+        cid: cidParam || "",
+      });
     }
   }, []);
 
   const handleSearch = () => {
-    setApplied({ cat: categoria, est: estado, cid: cidade });
+    // Resolve o texto digitado para uma macro (nome + slug) e, quando houver, um
+    // tema (subcategoria), usando a mesma ordenação das sugestões exibidas.
+    const q = queryCategoria.trim();
+    const match = q ? buscarCategorias(q)[0] : undefined;
+    let catNome = "";
+    let subNome = "";
+    let slug: string | undefined;
+    if (match) {
+      if (match.tipo === "macro") {
+        catNome = match.nome;
+        slug = match.slug;
+      } else {
+        catNome = match.macroNome;
+        subNome = match.nome;
+        slug = match.macroSlug;
+      }
+    }
 
-    // Update URL without reload (slug nos query strings)
+    setApplied({ cat: catNome, sub: subNome, est: estado, cid: cidade });
+
+    // Update URL without reload (slug da macro + nome da subcategoria)
     const url = new URL(window.location.href);
-    const slug = categoria && categoria !== "Outro" ? slugDaCategoria(categoria) : undefined;
     if (slug) url.searchParams.set("categoria", slug);
     else url.searchParams.delete("categoria");
+
+    if (subNome) url.searchParams.set("subcategoria", subNome);
+    else url.searchParams.delete("subcategoria");
 
     if (estado) url.searchParams.set("estado", estado);
     else url.searchParams.delete("estado");
@@ -148,7 +203,15 @@ export default function Advogados() {
     setCidade("");
   };
 
-  const opcoesCategoria = [...CATEGORIAS.map((c) => c.nome), "Outro"];
+  // Ao escolher uma sugestão, o campo passa a exibir o nome selecionado; a
+  // resolução em macro/tema acontece no "Buscar".
+  const handleCategoriaSelect = (r: ResultadoBusca) => {
+    setQueryCategoria(r.nome);
+  };
+
+  const handleCategoriaClear = () => {
+    setQueryCategoria("");
+  };
 
   const getInitials = (name: string) => {
     return name.replace("Dr. ", "").replace("Dra. ", "").split(" ").map(n => n[0]).slice(0, 2).join("");
@@ -218,6 +281,91 @@ export default function Advogados() {
     );
   };
 
+  // Sub-badges do card: no máximo 3 temas, com "e mais X" quando houver mais.
+  const renderSubBadges = (lawyer: Lawyer) => {
+    if (lawyer.subcategorias.length === 0) return null;
+    const visiveis = lawyer.subcategorias.slice(0, 3);
+    const extras = lawyer.subcategorias.length - visiveis.length;
+    return (
+      <div className="flex flex-wrap gap-1.5 mb-4" data-testid={`lawyer-subs-${lawyer.id}`}>
+        {visiveis.map((sub) => (
+          <span
+            key={sub}
+            className="text-xs px-2.5 py-0.5 rounded-full bg-accent-50 text-accent-700 border border-accent-100"
+          >
+            {sub}
+          </span>
+        ))}
+        {extras > 0 && (
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500">
+            e mais {extras}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const renderCard = (lawyer: Lawyer) => (
+    <div key={lawyer.id} className="bg-white p-6 md:p-8 rounded-[28px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow flex flex-col h-full" data-testid={`lawyer-card-${lawyer.id}`}>
+      <div className="flex gap-4 mb-5">
+        <Avatar className="h-20 w-20 shrink-0 bg-primary-100 border-2 border-white shadow-sm">
+          {lawyer.photo && (
+            <AvatarImage src={lawyer.photo} alt={lawyer.name} className="object-cover" />
+          )}
+          <AvatarFallback className="text-primary-800 font-bold text-xl">{getInitials(lawyer.name)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            <h3 className="font-bold text-lg text-primary-900 leading-tight">{lawyer.name}</h3>
+            <SocialLinks lawyer={lawyer} />
+          </div>
+          <Badge variant="secondary" className="bg-[#1E7D4F]/10 text-[#1E7D4F] hover:bg-[#1E7D4F]/20 font-medium px-2 py-0.5 rounded-full border border-[#1E7D4F]/20">
+            <Check className="w-3 h-3 mr-1" /> {lawyer.oab}
+          </Badge>
+          <p className="text-neutral-700 text-sm mt-2">
+            {lawyer.primaryArea}
+            {lawyer.secondaryArea && <span> • {lawyer.secondaryArea}</span>}
+          </p>
+          <p className="text-neutral-500 text-xs mt-1 flex items-center gap-1" data-testid={`lawyer-location-${lawyer.id}`}>
+            <MapPin className="w-3 h-3 shrink-0" /> {formatLocation(lawyer)}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        {lawyer.badges.map(badge => (
+          <Badge key={badge} variant="secondary" className="bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-full font-normal text-xs px-3 py-1">
+            {badge}
+          </Badge>
+        ))}
+      </div>
+
+      {renderSubBadges(lawyer)}
+
+      <p className="text-neutral-600 text-sm mb-6 flex-grow line-clamp-2 italic">
+        "{lawyer.about}"
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-3 mt-auto">
+        <Button
+          variant="outline"
+          className="flex-1 h-12 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300 font-medium"
+          onClick={() => setDetailLawyer(lawyer)}
+          data-testid={`button-saiba-mais-${lawyer.id}`}
+        >
+          Saiba mais
+        </Button>
+        <Button
+          className="flex-1 h-12 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium shadow-sm hover:shadow-md transition-all"
+          onClick={() => setContactLawyer(lawyer)}
+          data-testid={`button-entrar-contato-${lawyer.id}`}
+        >
+          Entrar em contato
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
       <Navbar />
@@ -232,16 +380,15 @@ export default function Advogados() {
             <div className="bg-primary-50 p-4 md:p-6 rounded-[32px] border border-primary-100 shadow-sm">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
-                  <Select value={categoria} onValueChange={setCategoria}>
-                    <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="filter-select-problema">
-                      <SelectValue placeholder="Qual é o seu problema?" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {opcoesCategoria.map(p => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CategoriaAutocomplete
+                    value={queryCategoria}
+                    onSelect={handleCategoriaSelect}
+                    onClear={handleCategoriaClear}
+                    onQueryChange={setQueryCategoria}
+                    placeholder="Qual é o seu problema?"
+                    inputClassName="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
+                    testId="filter-autocomplete-problema"
+                  />
                 </div>
                 <div className="w-full md:w-48">
                   <StateAutocomplete
@@ -281,82 +428,52 @@ export default function Advogados() {
               <div className="flex items-center justify-center py-20" data-testid="advogados-carregando">
                 <Loader2 className="h-7 w-7 animate-spin text-primary-500" />
               </div>
-            ) : filteredLawyers.length === 0 ? (
+            ) : totalResultados === 0 ? (
               <div className="text-center py-20">
                 <h3 className="text-2xl font-bold text-primary-900 mb-2">Nenhum advogado encontrado</h3>
                 <p className="text-neutral-600">Tente ajustar seus filtros para ver mais resultados.</p>
                 <Button
                   variant="outline"
                   className="mt-6 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50"
-                  onClick={() => { setCategoria(""); setEstado(""); setCidade(""); setApplied({ cat: "", est: "", cid: "" }); }}
+                  onClick={() => { setQueryCategoria(""); setEstado(""); setCidade(""); setApplied({ cat: "", sub: "", est: "", cid: "" }); }}
                   data-testid="button-limpar-filtros"
                 >
                   Limpar filtros
                 </Button>
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredLawyers.map((lawyer) => (
-                  <div key={lawyer.id} className="bg-white p-6 md:p-8 rounded-[28px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow flex flex-col h-full" data-testid={`lawyer-card-${lawyer.id}`}>
-                    <div className="flex gap-4 mb-5">
-                      <Avatar className="h-20 w-20 shrink-0 bg-primary-100 border-2 border-white shadow-sm">
-                        {lawyer.photo && (
-                          <AvatarImage src={lawyer.photo} alt={lawyer.name} className="object-cover" />
-                        )}
-                        <AvatarFallback className="text-primary-800 font-bold text-xl">{getInitials(lawyer.name)}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                          <h3 className="font-bold text-lg text-primary-900 leading-tight">{lawyer.name}</h3>
-                          <SocialLinks lawyer={lawyer} />
-                        </div>
-                        <Badge variant="secondary" className="bg-[#1E7D4F]/10 text-[#1E7D4F] hover:bg-[#1E7D4F]/20 font-medium px-2 py-0.5 rounded-full border border-[#1E7D4F]/20">
-                          <Check className="w-3 h-3 mr-1" /> {lawyer.oab}
-                        </Badge>
-                        <p className="text-neutral-700 text-sm mt-2">
-                          {lawyer.primaryArea}
-                          {lawyer.secondaryArea && <span> • {lawyer.secondaryArea}</span>}
-                        </p>
-                        <p className="text-neutral-500 text-xs mt-1 flex items-center gap-1" data-testid={`lawyer-location-${lawyer.id}`}>
-                          <MapPin className="w-3 h-3 shrink-0" /> {formatLocation(lawyer)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {lawyer.badges.map(badge => (
-                        <Badge key={badge} variant="secondary" className="bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-full font-normal text-xs px-3 py-1">
-                          {badge}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    <p className="text-neutral-600 text-sm mb-6 flex-grow line-clamp-2 italic">
-                      "{lawyer.about}"
+            ) : mostrarCamadas ? (
+              <div className="space-y-12">
+                {especialistas.length > 0 && (
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-bold text-primary-900 mb-1" data-testid="camada-especialistas-titulo">
+                      Especialistas em {applied.sub}
+                    </h2>
+                    <p className="text-neutral-600 text-sm mb-6">
+                      Profissionais que atuam especificamente neste tema.
                     </p>
-
-                    <div className="flex flex-col sm:flex-row gap-3 mt-auto">
-                      <Button
-                        variant="outline"
-                        className="flex-1 h-12 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300 font-medium"
-                        onClick={() => setDetailLawyer(lawyer)}
-                        data-testid={`button-saiba-mais-${lawyer.id}`}
-                      >
-                        Saiba mais
-                      </Button>
-                      <Button
-                        className="flex-1 h-12 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium shadow-sm hover:shadow-md transition-all"
-                        onClick={() => setContactLawyer(lawyer)}
-                        data-testid={`button-entrar-contato-${lawyer.id}`}
-                      >
-                        Entrar em contato
-                      </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {especialistas.map(renderCard)}
                     </div>
                   </div>
-                ))}
-                </div>
-              </>
+                )}
+                {geral.length > 0 && (
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-bold text-primary-900 mb-1" data-testid="camada-geral-titulo">
+                      Advogados em {applied.cat}
+                    </h2>
+                    <p className="text-neutral-600 text-sm mb-6">
+                      Outros profissionais que atuam nesta área do direito.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {geral.map(renderCard)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {especialistas.map(renderCard)}
+              </div>
             )}
           </div>
         </section>
@@ -430,6 +547,22 @@ export default function Advogados() {
                     ))}
                   </div>
                 </div>
+
+                {detailLawyer.subcategorias.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-primary-900 mb-3">Temas de atuação</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {detailLawyer.subcategorias.map((sub) => (
+                        <span
+                          key={sub}
+                          className="text-sm px-3 py-1 rounded-full bg-accent-50 text-accent-700 border border-accent-100"
+                        >
+                          {sub}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <h3 className="font-bold text-primary-900 mb-3">Sobre mim</h3>

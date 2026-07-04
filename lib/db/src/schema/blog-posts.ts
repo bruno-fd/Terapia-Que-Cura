@@ -19,6 +19,8 @@ export const blogPostsTable = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   category: text("category").notNull(),
+  // Tema específico (subcategoria) dentro da macrocategoria. Nulo = sem tema.
+  subcategoria: text("subcategoria"),
   title: text("title").notNull(),
   subtitle: text("subtitle").notNull(),
   excerpt: text("excerpt").notNull(),

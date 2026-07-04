@@ -11,6 +11,7 @@ export interface BlogPost {
   id: number;
   slug: string;
   category: string;
+  subcategoria?: string | null;
   title: string;
   subtitle: string;
   excerpt: string;

@@ -9,6 +9,7 @@
 export interface UpdateBlogPostInput {
   /** @minLength 1 */
   category?: string;
+  subcategoria?: string | null;
   /** @minLength 1 */
   title?: string;
   subtitle?: string;

@@ -23,6 +23,7 @@ export interface AdminAdvogadoDetail {
   oabVerificada: boolean;
   situacaoOab?: AdminAdvogadoDetailSituacaoOab;
   areas: string[];
+  subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
   atividades: AtividadeLog[];

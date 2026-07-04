@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { BLOG_CATEGORIES } from "@/data/blog";
+import { subcategoriasDaCategoria } from "@/data/categories";
 import {
   generateIdeas as apiGenerateIdeas,
   createPost as apiCreatePost,
@@ -251,6 +252,7 @@ function PostEditor({
       subtitle: string;
       excerpt: string;
       category: string;
+      subcategoria: string | null;
       bodyHtml: string;
     },
     publishedOverride?: boolean,
@@ -261,6 +263,7 @@ function PostEditor({
   const [subtitle, setSubtitle] = useState(post.subtitle);
   const [excerpt, setExcerpt] = useState(post.excerpt);
   const [category, setCategory] = useState(post.category);
+  const [subcategoria, setSubcategoria] = useState(post.subcategoria ?? "");
   const [bodyHtml, setBodyHtml] = useState(() => initialBodyHtml(post));
 
   // Reinicializa o formulário quando outro post é aberto no editor.
@@ -269,14 +272,27 @@ function PostEditor({
     setSubtitle(post.subtitle);
     setExcerpt(post.excerpt);
     setCategory(post.category);
+    setSubcategoria(post.subcategoria ?? "");
     setBodyHtml(initialBodyHtml(post));
   }, [post.id]);
+
+  // Temas disponíveis para a macrocategoria selecionada.
+  const subOptions = subcategoriasDaCategoria(category);
+
+  // Ao trocar de macrocategoria, limpa o tema se ele não pertence à nova área.
+  const handleCategoryChange = (nova: string) => {
+    setCategory(nova);
+    if (subcategoria && !subcategoriasDaCategoria(nova).includes(subcategoria)) {
+      setSubcategoria("");
+    }
+  };
 
   const collect = () => ({
     title: title.trim(),
     subtitle: subtitle.trim(),
     excerpt: excerpt.trim(),
     category,
+    subcategoria: subcategoria || null,
     bodyHtml,
   });
 
@@ -348,13 +364,32 @@ function PostEditor({
             </label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full h-11 px-3 rounded-lg border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               data-testid="select-editor-categoria"
             >
               {BLOG_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-neutral-700 mb-1.5">
+              Tema (opcional)
+            </label>
+            <select
+              value={subcategoria}
+              onChange={(e) => setSubcategoria(e.target.value)}
+              disabled={subOptions.length === 0}
+              className="w-full h-11 px-3 rounded-lg border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:text-neutral-400"
+              data-testid="select-editor-subcategoria"
+            >
+              <option value="">Sem tema específico</option>
+              {subOptions.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
                 </option>
               ))}
             </select>
@@ -534,6 +569,7 @@ function BlogPanel() {
       subtitle: string;
       excerpt: string;
       category: string;
+      subcategoria: string | null;
       bodyHtml: string;
     },
     publishedOverride?: boolean,
@@ -1041,15 +1077,28 @@ function DetalheModal({
                 Categorias
               </p>
               {detail.areas.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {detail.areas.map((a) => (
-                    <Badge
-                      key={a}
-                      className="bg-primary-50 text-primary-700 border-transparent text-[11px]"
-                    >
-                      {a}
-                    </Badge>
-                  ))}
+                <div className="space-y-2">
+                  {detail.areas.map((a) => {
+                    const subsDaArea = subcategoriasDaCategoria(a);
+                    const subsMarcados = detail.subcategorias.filter((s) =>
+                      subsDaArea.includes(s),
+                    );
+                    return (
+                      <div key={a} className="flex flex-wrap items-center gap-1.5">
+                        <Badge className="bg-primary-50 text-primary-700 border-transparent text-[11px]">
+                          {a}
+                        </Badge>
+                        {subsMarcados.map((s) => (
+                          <Badge
+                            key={s}
+                            className="bg-accent-50 text-accent-700 border border-accent-100 text-[11px]"
+                          >
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-neutral-900">Não informado</p>

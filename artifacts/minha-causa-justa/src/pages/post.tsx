@@ -69,10 +69,17 @@ export default function Post() {
                 </span>
               </nav>
 
-              {/* Tag de categoria */}
-              <Badge className="mb-4 bg-primary-50 text-primary-700 border-transparent">
-                {post.category}
-              </Badge>
+              {/* Tags de categoria e tema */}
+              <div className="mb-4 flex flex-wrap gap-2">
+                <Badge className="bg-primary-50 text-primary-700 border-transparent">
+                  {post.category}
+                </Badge>
+                {post.subcategoria && (
+                  <Badge className="bg-accent-50 text-accent-700 border border-accent-100">
+                    {post.subcategoria}
+                  </Badge>
+                )}
+              </div>
 
               {/* Título */}
               <h1 className="text-2xl md:text-3xl font-bold text-primary-900 leading-tight mb-4">

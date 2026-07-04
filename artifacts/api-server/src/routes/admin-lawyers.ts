@@ -140,6 +140,7 @@ async function buildDetail(row: AdvogadoRow) {
     oabVerificada: row.oabVerificada,
     situacaoOab: toSituacao(row.situacaoOab),
     areas: row.areas ?? [],
+    subcategorias: row.subcategorias ?? [],
     cidades: row.cidades ?? [],
     atendeOnline: row.atendeOnline,
     atividades: atividades.map((a) => ({

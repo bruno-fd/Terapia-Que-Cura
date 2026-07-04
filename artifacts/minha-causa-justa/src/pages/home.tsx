@@ -3,11 +3,11 @@ import { Link, useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
+import { CategoriaAutocomplete } from "@/components/CategoriaAutocomplete";
 import { ArrowRight, Shield, Search, MessageCircle } from "lucide-react";
-import { CATEGORIAS, slugDaCategoria } from "@/data/categories";
+import { CATEGORIAS, buscarCategorias, type ResultadoBusca } from "@/data/categories";
 import { BLOG_POSTS, type BlogPost } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
 
@@ -42,7 +42,9 @@ function imagemDoPost(post: BlogPost): string {
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [categoria, setCategoria] = useState<string>("");
+  // Texto livre digitado na busca de categorias. É a fonte da verdade: a busca
+  // sempre resolve o que está visível no campo, mesmo sem clicar numa sugestão.
+  const [queryCategoria, setQueryCategoria] = useState<string>("");
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
 
@@ -51,20 +53,41 @@ export default function Home() {
     setCidade("");
   };
 
+  // Ao escolher uma sugestão, o campo passa a exibir o nome selecionado.
+  const handleCategoriaSelect = (r: ResultadoBusca) => {
+    setQueryCategoria(r.nome);
+  };
+
+  const handleCategoriaClear = () => {
+    setQueryCategoria("");
+  };
+
   const handleSearch = () => {
     let url = "/advogados";
-    const slug = categoria && categoria !== "Outro" ? slugDaCategoria(categoria) : undefined;
-    if (slug || estado || cidade) {
+    // Resolve o texto digitado para uma macro (slug) e, quando houver, um tema
+    // (subcategoria), usando a mesma ordenação das sugestões exibidas.
+    const q = queryCategoria.trim();
+    const match = q ? buscarCategorias(q)[0] : undefined;
+    let slug: string | undefined;
+    let subcategoria: string | undefined;
+    if (match) {
+      if (match.tipo === "macro") {
+        slug = match.slug;
+      } else {
+        slug = match.macroSlug;
+        subcategoria = match.nome;
+      }
+    }
+    if (slug || subcategoria || estado || cidade) {
       const params = new URLSearchParams();
       if (slug) params.append("categoria", slug);
+      if (subcategoria) params.append("subcategoria", subcategoria);
       if (estado) params.append("estado", estado);
       if (cidade) params.append("cidade", cidade);
       url += `?${params.toString()}`;
     }
     setLocation(url);
   };
-
-  const opcoesCategoria = [...CATEGORIAS.map((c) => c.nome), "Outro"];
 
   // 3 posts para a seção do blog: os publicados no painel /admin vêm primeiro
   // (mais recentes), e os posts fixos completam caso ainda não haja 3 publicados.
@@ -144,16 +167,15 @@ export default function Home() {
             <div className="hidden lg:block bg-primary-50 p-4 md:p-5 rounded-[32px] border border-primary-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10 mt-6 lg:mt-16">
               <div className="flex flex-col lg:flex-row gap-3 lg:items-stretch">
                 <div className="lg:flex-1 min-w-0">
-                  <Select value={categoria} onValueChange={setCategoria}>
-                    <SelectTrigger className="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5" data-testid="select-problema">
-                      <SelectValue placeholder="Qual é o seu problema?" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {opcoesCategoria.map(p => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CategoriaAutocomplete
+                    value={queryCategoria}
+                    onSelect={handleCategoriaSelect}
+                    onClear={handleCategoriaClear}
+                    onQueryChange={setQueryCategoria}
+                    placeholder="Qual é o seu problema?"
+                    inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
+                    testId="autocomplete-problema"
+                  />
                 </div>
                 <div className="lg:flex-1 min-w-0">
                   <StateAutocomplete

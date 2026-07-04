@@ -29,6 +29,7 @@ export function mapApiPost(post: ApiBlogPost): BlogPost {
   return {
     slug: post.slug,
     category,
+    subcategoria: post.subcategoria ?? undefined,
     title: post.title,
     excerpt: post.excerpt,
     date: formatDatePtBr(post.publishedAt || post.createdAt),

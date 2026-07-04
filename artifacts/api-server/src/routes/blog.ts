@@ -24,25 +24,12 @@ import {
   htmlToPlainText,
   computeReadingMinutesFromText,
 } from "../lib/blog-generator";
+import { isMacroValida, subcategoriasDe } from "../lib/categorias";
 
-// Macrocategorias válidas: devem ser idênticas às categorias do blog público,
-// garantindo que todo post gerado caia na categoria correta do site.
-// IMPORTANTE: manter em sincronia com a fonte única do front-end em
-// artifacts/minha-causa-justa/src/data/categories.ts (campo `nome`).
-const VALID_CATEGORIES = new Set<string>([
-  "INSS e Previdência",
-  "Trabalho e Emprego",
-  "Família",
-  "Herança e Inventário",
-  "Plano de Saúde",
-  "Dívidas e Nome Negativado",
-  "Imóveis e Moradia",
-  "Direito do Consumidor",
-  "Acidentes e Indenizações",
-  "Crimes e Defesa Criminal",
-  "Servidor Público",
-  "Empresarial",
-]);
+// Macrocategorias válidas: a fonte é o espelho server-side em
+// ../lib/categorias.ts, mantido em sincronia com a fonte única do front-end
+// (artifacts/minha-causa-justa/src/data/categories.ts).
+const VALID_CATEGORIES = { has: isMacroValida };
 
 const router: IRouter = Router();
 
@@ -106,7 +93,7 @@ router.post("/admin/blog/posts", async (req, res): Promise<void> => {
 
   let generated;
   try {
-    generated = await generatePost(category, theme);
+    generated = await generatePost(category, theme, subcategoriasDe(category));
   } catch (err) {
     req.log.error({ err }, "Falha ao gerar post");
     res.status(502).json({ error: "Não foi possível gerar o post agora." });
@@ -137,11 +124,20 @@ router.post("/admin/blog/posts", async (req, res): Promise<void> => {
     generated.oabClosing,
   );
 
+  // A IA pode sugerir um tema específico (subcategoria); só persistimos se ele
+  // pertencer à macrocategoria escolhida.
+  const subcategoria =
+    generated.subcategoria &&
+    subcategoriasDe(category).includes(generated.subcategoria)
+      ? generated.subcategoria
+      : null;
+
   const [created] = await db
     .insert(blogPostsTable)
     .values({
       slug,
       category,
+      subcategoria,
       title: generated.title,
       subtitle: generated.subtitle,
       excerpt: generated.excerpt,
@@ -187,8 +183,33 @@ router.patch("/admin/blog/posts/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // A macrocategoria efetiva (nova, se enviada; senão a persistida) define quais
+  // subcategorias são válidas.
+  const categoriaEfetiva = input.category ?? existing.category;
+  if (
+    input.subcategoria !== undefined &&
+    input.subcategoria !== null &&
+    !subcategoriasDe(categoriaEfetiva).includes(input.subcategoria)
+  ) {
+    res.status(400).json({ error: "Subcategoria inválida para a categoria." });
+    return;
+  }
+
   const updates: Partial<typeof blogPostsTable.$inferInsert> = {};
   if (input.category !== undefined) updates.category = input.category;
+  if (input.subcategoria !== undefined) {
+    updates.subcategoria = input.subcategoria;
+  }
+  // Trocar a macrocategoria pode invalidar a subcategoria persistida: se a nova
+  // categoria não a contém e o cliente não enviou uma nova, limpa o tema.
+  if (
+    input.category !== undefined &&
+    input.subcategoria === undefined &&
+    existing.subcategoria &&
+    !subcategoriasDe(input.category).includes(existing.subcategoria)
+  ) {
+    updates.subcategoria = null;
+  }
   if (input.title !== undefined) updates.title = input.title;
   if (input.subtitle !== undefined) updates.subtitle = input.subtitle;
   if (input.excerpt !== undefined) updates.excerpt = input.excerpt;

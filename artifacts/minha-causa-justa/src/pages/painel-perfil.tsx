@@ -14,6 +14,7 @@ import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { AREAS, getInitial, maskPhone } from "@/lib/dashboard";
+import { subcategoriasDaCategoria } from "@/data/categories";
 
 const ABOUT_LIMIT = 500;
 const MAX_PHOTO_MB = 5;
@@ -27,6 +28,7 @@ const EMPTY_PROFILE: Profile = {
   photo: null,
   about: "",
   areas: [],
+  subcategorias: [],
   cidades: [],
   atendeOnline: false,
   whatsapp: "",
@@ -79,6 +81,7 @@ export default function PainelPerfil() {
         photo: loaded.photo ?? null,
         about: loaded.about,
         areas: loaded.areas,
+        subcategorias: loaded.subcategorias,
         cidades: loaded.cidades,
         atendeOnline: loaded.atendeOnline,
         whatsapp: loaded.whatsapp,
@@ -125,10 +128,24 @@ export default function PainelPerfil() {
       return;
     }
     setAreaError("");
+    if (isSelected) {
+      // Ao desmarcar uma macrocategoria, remove também os temas dela.
+      const subsDaArea = new Set(subcategoriasDaCategoria(area));
+      update({
+        areas: profile.areas.filter((a) => a !== area),
+        subcategorias: profile.subcategorias.filter((s) => !subsDaArea.has(s)),
+      });
+    } else {
+      update({ areas: [...profile.areas, area] });
+    }
+  };
+
+  const toggleSubcategoria = (sub: string) => {
+    const isSelected = profile.subcategorias.includes(sub);
     update({
-      areas: isSelected
-        ? profile.areas.filter((a) => a !== area)
-        : [...profile.areas, area],
+      subcategorias: isSelected
+        ? profile.subcategorias.filter((s) => s !== sub)
+        : [...profile.subcategorias, sub],
     });
   };
 
@@ -472,6 +489,40 @@ export default function PainelPerfil() {
           </div>
           {areaError && (
             <p className="mt-3 text-sm text-[#C0392B]" data-testid="text-area-erro">{areaError}</p>
+          )}
+
+          {/* Temas específicos por área selecionada (opcional) */}
+          {profile.areas.length > 0 && (
+            <div className="mt-6 border-t border-neutral-100 pt-6">
+              <h3 className="text-sm font-bold text-primary-800">Temas de atuação (opcional)</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                Marque os temas específicos que você atende. Isso ajuda os clientes a te encontrarem com mais precisão.
+              </p>
+              <div className="mt-4 space-y-5">
+                {profile.areas.map((area) => {
+                  const subs = subcategoriasDaCategoria(area);
+                  if (subs.length === 0) return null;
+                  return (
+                    <div key={area} data-testid={`grupo-subcategorias-${area}`}>
+                      <p className="text-sm font-medium text-neutral-700 mb-2">{area}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {subs.map((sub) => (
+                          <button
+                            key={sub}
+                            type="button"
+                            onClick={() => toggleSubcategoria(sub)}
+                            className={badgeClass(profile.subcategorias.includes(sub))}
+                            data-testid={`badge-subcategoria-${sub}`}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </Card>
 

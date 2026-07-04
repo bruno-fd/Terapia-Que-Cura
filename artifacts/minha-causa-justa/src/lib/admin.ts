@@ -68,6 +68,7 @@ export function createPost(
 
 export interface UpdatePostInput {
   category?: string;
+  subcategoria?: string | null;
   title?: string;
   subtitle?: string;
   excerpt?: string;

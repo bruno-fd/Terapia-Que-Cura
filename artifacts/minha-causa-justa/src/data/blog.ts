@@ -18,6 +18,8 @@ export interface PostSection {
 export interface BlogPost {
   slug: string;
   category: BlogCategory;
+  // Tema específico (subcategoria) do post, quando definido no painel /admin.
+  subcategoria?: string;
   title: string;
   excerpt: string;
   date: string;

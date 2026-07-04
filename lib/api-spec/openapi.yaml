@@ -849,6 +849,9 @@ components:
           type: string
         category:
           type: string
+        subcategoria:
+          type: string
+          nullable: true
         title:
           type: string
         subtitle:
@@ -927,6 +930,9 @@ components:
         category:
           type: string
           minLength: 1
+        subcategoria:
+          type: string
+          nullable: true
         title:
           type: string
           minLength: 1
@@ -1097,6 +1103,10 @@ components:
           type: array
           items:
             type: string
+        subcategorias:
+          type: array
+          items:
+            type: string
         cidades:
           type: array
           items:
@@ -1142,6 +1152,7 @@ components:
         - oab
         - about
         - areas
+        - subcategorias
         - cidades
         - atendeOnline
         - whatsapp
@@ -1166,6 +1177,10 @@ components:
         about:
           type: string
         areas:
+          type: array
+          items:
+            type: string
+        subcategorias:
           type: array
           items:
             type: string
@@ -1201,6 +1216,7 @@ components:
         - oab
         - about
         - areas
+        - subcategorias
         - cidades
         - atendeOnline
         - whatsapp
@@ -1227,6 +1243,10 @@ components:
           type: array
           items:
             type: string
+        subcategorias:
+          type: array
+          items:
+            type: string
         cidades:
           type: array
           items:
@@ -1241,6 +1261,7 @@ components:
         - oab
         - about
         - areas
+        - subcategorias
         - cidades
         - atendeOnline
         - whatsapp
@@ -1329,6 +1350,10 @@ components:
           type: array
           items:
             type: string
+        subcategorias:
+          type: array
+          items:
+            type: string
         cidades:
           type: array
           items:
@@ -1347,6 +1372,7 @@ components:
         - adminAtivo
         - oabVerificada
         - areas
+        - subcategorias
         - cidades
         - atendeOnline
         - atividades

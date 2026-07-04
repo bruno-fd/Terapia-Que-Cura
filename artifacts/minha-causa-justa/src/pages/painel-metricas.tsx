@@ -52,6 +52,12 @@ export default function PainelMetricas() {
   const data = PERIOD_DATA[period];
   const conversion = data.views > 0 ? Math.round((data.contacts / data.views) * 100) : 0;
 
+  // Rótulo de foco: área principal, tema específico (se houver) e estado.
+  const areaPrincipal = profile?.areas[0] ?? "sua área";
+  const temaPrincipal = profile?.subcategorias[0];
+  const ufPrincipal = profile?.cidades[0]?.uf;
+  const focoLabel = `${areaPrincipal}${temaPrincipal ? ` (${temaPrincipal})` : ""}${ufPrincipal ? ` em ${ufPrincipal}` : ""}`;
+
   return (
     <DashboardLayout active="metricas">
       {/* Cabeçalho */}
@@ -92,6 +98,7 @@ export default function PainelMetricas() {
           conversion={conversion}
           hasPhoto={hasPhoto}
           areasCount={areasCount}
+          focoLabel={focoLabel}
         />
       )}
     </DashboardLayout>
@@ -152,11 +159,13 @@ function MetricsState({
   conversion,
   hasPhoto,
   areasCount,
+  focoLabel,
 }: {
   data: typeof PERIOD_DATA[Period];
   conversion: number;
   hasPhoto: boolean;
   areasCount: number;
+  focoLabel: string;
 }) {
   const tips: string[] = [];
   if (!hasPhoto)
@@ -221,7 +230,7 @@ function MetricsState({
           <div>
             <p className="text-sm text-neutral-500">Você está entre os</p>
             <p className="text-2xl font-bold text-[#1E7D4F] mt-0.5">Top 30%</p>
-            <p className="text-sm text-neutral-500">perfis mais visualizados em Trabalho e Emprego em SP</p>
+            <p className="text-sm text-neutral-500">perfis mais visualizados em {focoLabel}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-700 mb-3">Visualizações este mês</p>

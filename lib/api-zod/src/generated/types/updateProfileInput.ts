@@ -13,6 +13,7 @@ export interface UpdateProfileInput {
   photo?: string | null;
   about: string;
   areas: string[];
+  subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
   whatsapp: string;

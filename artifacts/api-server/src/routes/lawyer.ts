@@ -23,6 +23,7 @@ import type { Logger } from "pino";
 import { claimSubscriptionForUser } from "../lib/subscriptionClaim";
 import { verificarInscricaoOab } from "../lib/oab";
 import { verificarOabToken, tokenCombinaComOab } from "../lib/oabToken";
+import { filtrarSubcategoriasValidas } from "../lib/categorias";
 
 const router: IRouter = Router();
 
@@ -168,6 +169,7 @@ function toProfile(
     photo: row.photo,
     about: row.about,
     areas: row.areas ?? [],
+    subcategorias: row.subcategorias ?? [],
     cidades: row.cidades ?? [],
     atendeOnline: row.atendeOnline,
     whatsapp: row.whatsapp,
@@ -256,6 +258,7 @@ router.get("/advogados", async (_req, res): Promise<void> => {
       photo: advogado.photo,
       about: advogado.about,
       areas: advogado.areas ?? [],
+      subcategorias: advogado.subcategorias ?? [],
       cidades: advogado.cidades ?? [],
       atendeOnline: advogado.atendeOnline,
       whatsapp: advogado.whatsapp,
@@ -406,6 +409,10 @@ router.put("/perfil", requireAuth, async (req, res): Promise<void> => {
     photo: data.photo ?? null,
     about: data.about,
     areas: data.areas,
+    subcategorias: filtrarSubcategoriasValidas(
+      data.areas,
+      data.subcategorias ?? [],
+    ),
     cidades: data.cidades as Cidade[],
     atendeOnline: data.atendeOnline,
     whatsapp: data.whatsapp,

@@ -27,8 +27,10 @@ export const advogadosTable = pgTable("advogados", {
   // URL da foto (data URL ou link). Nulo quando sem foto.
   photo: text("photo"),
   about: text("about").notNull().default(""),
-  // Áreas de atuação (nomes de categorias do site).
+  // Áreas de atuação (nomes de macrocategorias do site).
   areas: jsonb("areas").$type<string[]>().notNull().default([]),
+  // Temas específicos (subcategorias) opcionais dentro das áreas marcadas.
+  subcategorias: jsonb("subcategorias").$type<string[]>().notNull().default([]),
   cidades: jsonb("cidades").$type<Cidade[]>().notNull().default([]),
   atendeOnline: boolean("atende_online").notNull().default(false),
   whatsapp: text("whatsapp").notNull().default(""),

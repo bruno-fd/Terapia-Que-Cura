@@ -48,6 +48,9 @@ interface GeneratedPost {
   keywords: string[];
   body: BlogPostSection[];
   oabClosing: string;
+  // Tema específico sugerido pela IA (uma das subcategorias da macrocategoria),
+  // ou null quando nenhuma se aplica. Validado no chamador.
+  subcategoria: string | null;
 }
 
 function extractText(content: { type: string; text?: string }[]): string {
@@ -216,7 +219,16 @@ Responda APENAS com JSON válido, sem texto extra, no formato:
 export async function generatePost(
   category: string,
   theme: string,
+  subcategorias: string[] = [],
 ): Promise<GeneratedPost> {
+  const subInstrucao =
+    subcategorias.length > 0
+      ? `\nEscolha o tema específico (subcategoria) mais adequado ao post entre estas opções da macrocategoria: ${subcategorias
+          .map((s) => `"${s}"`)
+          .join(
+            ", ",
+          )}. Use exatamente uma dessas opções em "subcategoria", ou null se nenhuma se aplicar.`
+      : `\nDefina "subcategoria" como null.`;
   const message = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 8192,
@@ -227,12 +239,14 @@ export async function generatePost(
         content: `Escreva um post completo do blog para a macrocategoria "${category}", sobre o tema: "${theme}".
 
 Siga rigorosamente todas as regras editoriais e da OAB. Entre 600 e 900 palavras no total. Nunca use travessão.
+${subInstrucao}
 
 Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
 {
   "title": "título H1, no máximo 70 caracteres",
   "subtitle": "subtítulo/chamada de uma frase",
   "excerpt": "resumo de 1 a 2 frases para o card da listagem",
+  "subcategoria": "tema específico da lista, ou null",
   "keywords": ["palavra-chave 1", "palavra-chave 2", "palavra-chave 3"],
   "body": [
     { "paragraphs": ["parágrafo de introdução 1", "parágrafo de introdução 2"] },
@@ -286,6 +300,14 @@ O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, in
     .filter(Boolean)
     .slice(0, 3);
 
+  // Só aceita a subcategoria se for exatamente uma das opções oferecidas.
+  const subSugerida =
+    typeof parsed.subcategoria === "string"
+      ? stripDash(parsed.subcategoria)
+      : null;
+  const subcategoria =
+    subSugerida && subcategorias.includes(subSugerida) ? subSugerida : null;
+
   return {
     title: stripDash(parsed.title).slice(0, 120),
     subtitle: stripDash(parsed.subtitle),
@@ -293,5 +315,6 @@ O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, in
     keywords,
     body,
     oabClosing: stripDash(parsed.oabClosing),
+    subcategoria,
   };
 }

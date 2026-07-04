@@ -25,6 +25,7 @@ export const ListPublishedPostsResponseItem = zod.object({
   "id": zod.number(),
   "slug": zod.string(),
   "category": zod.string(),
+  "subcategoria": zod.string().nullish(),
   "title": zod.string(),
   "subtitle": zod.string(),
   "excerpt": zod.string(),
@@ -65,6 +66,7 @@ export const ListAdminPostsResponseItem = zod.object({
   "id": zod.number(),
   "slug": zod.string(),
   "category": zod.string(),
+  "subcategoria": zod.string().nullish(),
   "title": zod.string(),
   "subtitle": zod.string(),
   "excerpt": zod.string(),
@@ -99,6 +101,7 @@ export const CreateBlogPostResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string(),
   "category": zod.string(),
+  "subcategoria": zod.string().nullish(),
   "title": zod.string(),
   "subtitle": zod.string(),
   "excerpt": zod.string(),
@@ -129,6 +132,7 @@ export const UpdateBlogPostParams = zod.object({
 
 export const UpdateBlogPostBody = zod.object({
   "category": zod.string().min(1).optional(),
+  "subcategoria": zod.string().nullish(),
   "title": zod.string().min(1).optional(),
   "subtitle": zod.string().optional(),
   "excerpt": zod.string().optional(),
@@ -141,6 +145,7 @@ export const UpdateBlogPostResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string(),
   "category": zod.string(),
+  "subcategoria": zod.string().nullish(),
   "title": zod.string(),
   "subtitle": zod.string(),
   "excerpt": zod.string(),
@@ -211,6 +216,7 @@ export const GetAdminAdvogadoResponse = zod.object({
   "oabVerificada": zod.boolean(),
   "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
   "areas": zod.array(zod.string()),
+  "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
   "uf": zod.string().min(getAdminAdvogadoResponseCidadesItemUfMin).max(getAdminAdvogadoResponseCidadesItemUfMax)
@@ -257,6 +263,7 @@ export const UpdateAdminAdvogadoResponse = zod.object({
   "oabVerificada": zod.boolean(),
   "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
   "areas": zod.array(zod.string()),
+  "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
   "uf": zod.string().min(updateAdminAdvogadoResponseCidadesItemUfMin).max(updateAdminAdvogadoResponseCidadesItemUfMax)
@@ -288,6 +295,7 @@ export const ListAdvogadosResponseItem = zod.object({
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
+  "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
   "uf": zod.string().min(listAdvogadosResponseCidadesItemUfMin).max(listAdvogadosResponseCidadesItemUfMax)
@@ -454,6 +462,7 @@ export const GetPerfilResponse = zod.object({
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
+  "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
   "uf": zod.string().min(getPerfilResponseCidadesItemUfMin).max(getPerfilResponseCidadesItemUfMax)
@@ -491,6 +500,7 @@ export const UpdatePerfilBody = zod.object({
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
+  "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
   "uf": zod.string().min(updatePerfilBodyCidadesItemUfMin).max(updatePerfilBodyCidadesItemUfMax)
@@ -517,6 +527,7 @@ export const UpdatePerfilResponse = zod.object({
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
+  "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
   "uf": zod.string().min(updatePerfilResponseCidadesItemUfMin).max(updatePerfilResponseCidadesItemUfMax)

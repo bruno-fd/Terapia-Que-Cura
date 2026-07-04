@@ -65,6 +65,7 @@ export interface BlogPost {
   id: number;
   slug: string;
   category: string;
+  subcategoria?: string | null;
   title: string;
   subtitle: string;
   excerpt: string;
@@ -97,6 +98,7 @@ export interface BlogPostInput {
 export interface UpdateBlogPostInput {
   /** @minLength 1 */
   category?: string;
+  subcategoria?: string | null;
   /** @minLength 1 */
   title?: string;
   subtitle?: string;
@@ -230,6 +232,7 @@ export interface LawyerProfile {
   photo?: string | null;
   about: string;
   areas: string[];
+  subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
   whatsapp: string;
@@ -254,6 +257,7 @@ export interface UpdateProfileInput {
   photo?: string | null;
   about: string;
   areas: string[];
+  subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
   whatsapp: string;
@@ -272,6 +276,7 @@ export interface PublicLawyer {
   photo?: string | null;
   about: string;
   areas: string[];
+  subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
   whatsapp: string;
@@ -347,6 +352,7 @@ export interface AdminAdvogadoDetail {
   oabVerificada: boolean;
   situacaoOab?: AdminAdvogadoDetailSituacaoOab;
   areas: string[];
+  subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
   atividades: AtividadeLog[];
