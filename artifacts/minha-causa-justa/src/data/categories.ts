@@ -288,6 +288,25 @@ export type ResultadoBusca =
       emoji: string;
     };
 
+// Resolve a busca do cidadão para os filtros efetivos. Quando o usuário
+// escolheu uma sugestão (selecionado), usamos a macro exata dela (importante
+// para temas com nome repetido em macros diferentes). Sem seleção, caímos no
+// texto digitado, resolvido pela mesma ordenação das sugestões exibidas.
+export function resolverBuscaCategoria(
+  selecionado: ResultadoBusca | null,
+  texto: string,
+): { catNome: string; subNome: string; slug: string } | null {
+  const q = texto.trim();
+  let r: ResultadoBusca | undefined =
+    selecionado && selecionado.nome === q ? selecionado : undefined;
+  if (!r) r = q ? buscarCategorias(q)[0] : undefined;
+  if (!r) return null;
+  if (r.tipo === "macro") {
+    return { catNome: r.nome, subNome: "", slug: r.slug };
+  }
+  return { catNome: r.macroNome, subNome: r.nome, slug: r.macroSlug };
+}
+
 // Busca livre que pesquisa em macrocategorias e subcategorias ao mesmo tempo.
 // Termo vazio retorna apenas as macrocategorias (estado inicial do dropdown).
 export function buscarCategorias(termo: string): ResultadoBusca[] {

@@ -7,7 +7,7 @@ import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { CategoriaAutocomplete } from "@/components/CategoriaAutocomplete";
 import { ArrowRight, Shield, Search, MessageCircle } from "lucide-react";
-import { CATEGORIAS, buscarCategorias, type ResultadoBusca } from "@/data/categories";
+import { CATEGORIAS, resolverBuscaCategoria, type ResultadoBusca } from "@/data/categories";
 import { BLOG_POSTS, type BlogPost } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
 
@@ -45,6 +45,9 @@ export default function Home() {
   // Texto livre digitado na busca de categorias. É a fonte da verdade: a busca
   // sempre resolve o que está visível no campo, mesmo sem clicar numa sugestão.
   const [queryCategoria, setQueryCategoria] = useState<string>("");
+  // Sugestão escolhida (quando houver): preserva a macro exata, importante para
+  // temas com nome repetido em macros diferentes.
+  const [catSelecionada, setCatSelecionada] = useState<ResultadoBusca | null>(null);
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
 
@@ -53,31 +56,29 @@ export default function Home() {
     setCidade("");
   };
 
-  // Ao escolher uma sugestão, o campo passa a exibir o nome selecionado.
+  // Ao escolher uma sugestão, o campo exibe o nome e guardamos a macro escolhida.
   const handleCategoriaSelect = (r: ResultadoBusca) => {
     setQueryCategoria(r.nome);
+    setCatSelecionada(r);
+  };
+
+  // Digitar invalida a seleção anterior (o texto volta a ser a fonte da verdade).
+  const handleCategoriaQueryChange = (texto: string) => {
+    setQueryCategoria(texto);
+    setCatSelecionada(null);
   };
 
   const handleCategoriaClear = () => {
     setQueryCategoria("");
+    setCatSelecionada(null);
   };
 
   const handleSearch = () => {
     let url = "/advogados";
-    // Resolve o texto digitado para uma macro (slug) e, quando houver, um tema
-    // (subcategoria), usando a mesma ordenação das sugestões exibidas.
-    const q = queryCategoria.trim();
-    const match = q ? buscarCategorias(q)[0] : undefined;
-    let slug: string | undefined;
-    let subcategoria: string | undefined;
-    if (match) {
-      if (match.tipo === "macro") {
-        slug = match.slug;
-      } else {
-        slug = match.macroSlug;
-        subcategoria = match.nome;
-      }
-    }
+    // Resolve a seleção (macro exata) ou, sem seleção, o texto digitado.
+    const resolvido = resolverBuscaCategoria(catSelecionada, queryCategoria);
+    const slug = resolvido?.slug;
+    const subcategoria = resolvido?.subNome || undefined;
     if (slug || subcategoria || estado || cidade) {
       const params = new URLSearchParams();
       if (slug) params.append("categoria", slug);
@@ -171,7 +172,7 @@ export default function Home() {
                     value={queryCategoria}
                     onSelect={handleCategoriaSelect}
                     onClear={handleCategoriaClear}
-                    onQueryChange={setQueryCategoria}
+                    onQueryChange={handleCategoriaQueryChange}
                     placeholder="Qual é o seu problema?"
                     inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
                     testId="autocomplete-problema"

@@ -10,7 +10,7 @@ import { Phone, Check, Instagram, Linkedin, Globe, MapPin, MessageCircle, Loader
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { CategoriaAutocomplete } from "@/components/CategoriaAutocomplete";
-import { categoriaPorSlug, buscarCategorias, type ResultadoBusca } from "@/data/categories";
+import { categoriaPorSlug, resolverBuscaCategoria, type ResultadoBusca } from "@/data/categories";
 import { useListAdvogados, type PublicLawyer } from "@workspace/api-client-react";
 
 // Tipo de exibição derivado do advogado público vindo da API.
@@ -83,6 +83,9 @@ export default function Advogados() {
   // em "Buscar" resolvemos o que está visível no campo, mesmo sem selecionar uma
   // sugestão. Os filtros efetivos (applied) guardam os nomes já resolvidos.
   const [queryCategoria, setQueryCategoria] = useState<string>("");
+  // Sugestão escolhida (quando houver): preserva a macro exata, importante para
+  // temas com nome repetido em macros diferentes.
+  const [catSelecionada, setCatSelecionada] = useState<ResultadoBusca | null>(null);
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
   // Filtros efetivamente aplicados (só mudam ao clicar em "Buscar"), separados
@@ -161,23 +164,12 @@ export default function Advogados() {
   }, []);
 
   const handleSearch = () => {
-    // Resolve o texto digitado para uma macro (nome + slug) e, quando houver, um
-    // tema (subcategoria), usando a mesma ordenação das sugestões exibidas.
-    const q = queryCategoria.trim();
-    const match = q ? buscarCategorias(q)[0] : undefined;
-    let catNome = "";
-    let subNome = "";
-    let slug: string | undefined;
-    if (match) {
-      if (match.tipo === "macro") {
-        catNome = match.nome;
-        slug = match.slug;
-      } else {
-        catNome = match.macroNome;
-        subNome = match.nome;
-        slug = match.macroSlug;
-      }
-    }
+    // Resolve a seleção (macro exata) ou, sem seleção, o texto digitado, usando a
+    // mesma ordenação das sugestões exibidas.
+    const resolvido = resolverBuscaCategoria(catSelecionada, queryCategoria);
+    const catNome = resolvido?.catNome ?? "";
+    const subNome = resolvido?.subNome ?? "";
+    const slug = resolvido?.slug;
 
     setApplied({ cat: catNome, sub: subNome, est: estado, cid: cidade });
 
@@ -203,14 +195,22 @@ export default function Advogados() {
     setCidade("");
   };
 
-  // Ao escolher uma sugestão, o campo passa a exibir o nome selecionado; a
-  // resolução em macro/tema acontece no "Buscar".
+  // Ao escolher uma sugestão, o campo exibe o nome e guardamos a macro escolhida;
+  // a resolução em macro/tema acontece no "Buscar".
   const handleCategoriaSelect = (r: ResultadoBusca) => {
     setQueryCategoria(r.nome);
+    setCatSelecionada(r);
+  };
+
+  // Digitar invalida a seleção anterior (o texto volta a ser a fonte da verdade).
+  const handleCategoriaQueryChange = (texto: string) => {
+    setQueryCategoria(texto);
+    setCatSelecionada(null);
   };
 
   const handleCategoriaClear = () => {
     setQueryCategoria("");
+    setCatSelecionada(null);
   };
 
   const getInitials = (name: string) => {
@@ -384,7 +384,7 @@ export default function Advogados() {
                     value={queryCategoria}
                     onSelect={handleCategoriaSelect}
                     onClear={handleCategoriaClear}
-                    onQueryChange={setQueryCategoria}
+                    onQueryChange={handleCategoriaQueryChange}
                     placeholder="Qual é o seu problema?"
                     inputClassName="bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
                     testId="filter-autocomplete-problema"

@@ -23,7 +23,7 @@ import type { Logger } from "pino";
 import { claimSubscriptionForUser } from "../lib/subscriptionClaim";
 import { verificarInscricaoOab } from "../lib/oab";
 import { verificarOabToken, tokenCombinaComOab } from "../lib/oabToken";
-import { filtrarSubcategoriasValidas } from "../lib/categorias";
+import { isSubValidaEmAreas } from "../lib/categorias";
 
 const router: IRouter = Router();
 
@@ -371,6 +371,19 @@ router.put("/perfil", requireAuth, async (req, res): Promise<void> => {
   }
   const data = parsed.data;
 
+  // Recusa subcategorias que não pertencem a nenhuma das macrocategorias
+  // selecionadas (contrato explícito: rejeitar, não descartar silenciosamente).
+  const subsRecebidas = data.subcategorias ?? [];
+  const subsInvalidas = subsRecebidas.filter(
+    (sub) => !isSubValidaEmAreas(sub, data.areas),
+  );
+  if (subsInvalidas.length > 0) {
+    res.status(400).json({
+      error: `Temas inválidos para as áreas selecionadas: ${subsInvalidas.join(", ")}`,
+    });
+    return;
+  }
+
   // Status de verificação da OAB é server-managed: só marcamos oabVerificada a
   // partir de um token assinado por /verificar-oab (impede o cliente forjar o
   // status). "Pendente" é o estado de menor privilégio e pode vir do cliente.
@@ -409,10 +422,7 @@ router.put("/perfil", requireAuth, async (req, res): Promise<void> => {
     photo: data.photo ?? null,
     about: data.about,
     areas: data.areas,
-    subcategorias: filtrarSubcategoriasValidas(
-      data.areas,
-      data.subcategorias ?? [],
-    ),
+    subcategorias: Array.from(new Set(subsRecebidas)),
     cidades: data.cidades as Cidade[],
     atendeOnline: data.atendeOnline,
     whatsapp: data.whatsapp,
