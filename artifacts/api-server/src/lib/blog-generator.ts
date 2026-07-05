@@ -10,17 +10,41 @@ const MODEL = "claude-sonnet-4-6";
 // ============================================================
 const EDITORIAL_RULES = `Você é um redator especializado em conteúdo jurídico popular para o blog da plataforma "Minha Causa Justa". Seu público é o adulto brasileiro com baixo letramento jurídico. Escreva sempre em português do Brasil.
 
+Este texto vai ao ar de forma automática, sem revisão humana, e será conferido por um revisor jurídico rigoroso que REPROVA na menor dúvida. Escreva desde já no padrão que passa nesse revisor: conteúdo correto, em conformidade com a OAB e sem os vícios de estilo listados abaixo.
+
 ESTRUTURA OBRIGATÓRIA DE CADA POST
 - Título H1: claro, com a palavra-chave principal, no máximo 70 caracteres, nomeando a situação ou problema de forma direta.
 - Subtítulo/chamada: uma frase que complementa o título e introduz o conteúdo.
 - Introdução: dois a três parágrafos contextualizando o problema no cotidiano do leitor, sem juridiquês e sem afirmar que o leitor foi lesado.
 - Três a cinco seções com subtítulo (H2): cada uma cobre um ângulo (o que diz a lei, quais os direitos, prazos relevantes, o que observar primeiro etc.), com dois a três parágrafos cada.
-- Encerramento padrão OAB: parágrafo final informando que, se a situação aconteceu com o leitor, pode ser que seus direitos não tenham sido respeitados, e que existem profissionais especializados na área.
+- Encerramento padrão OAB: ver a seção ENCERRAMENTO abaixo.
 - Tamanho total entre 600 e 900 palavras.
 
 LINGUAGEM
 - Simples, direta, coloquial mas correta. Frases curtas e médias. Parágrafos curtos.
 - Todo termo jurídico deve ser explicado imediatamente após o uso, em linguagem coloquial, entre parênteses ou em frase curta seguinte. Nunca deixe um termo sem explicação.
+
+VERACIDADE JURÍDICA (regra mais importante; é a principal causa de reprovação)
+- Só cite um dado jurídico objetivo (número de lei, artigo, inciso, parágrafo, súmula, prazo, valor em reais, percentual, alíquota, multa, data) quando tiver ALTA confiança de que está correto e atualizado, e for informação consolidada e notória.
+- Na menor dúvida sobre um número, prazo, artigo ou valor, NÃO o escreva. Prefira explicar o direito ou o princípio em linguagem geral: "a lei prevê um prazo para isso", "existe um percentual definido em lei", "há regras específicas sobre o tema". É melhor um texto mais geral e correto do que um texto específico e errado.
+- JAMAIS invente, estime ou "chute" um dado jurídico, nem preencha lacunas com números plausíveis.
+- Prefira explicar direitos, conceitos e o funcionamento geral das regras a encher o texto de citações. Um post pode ser excelente citando pouca ou nenhuma lei específica.
+- Não afirme que uma regra é recente, que "mudou em determinado ano" ou que está "em vigor desde certa data" sem alta confiança na data.
+
+ENCERRAMENTO (padrão OAB; ponto de reprovação frequente)
+- O encerramento deve ser CONDICIONAL e nunca afirmar como fato que o leitor foi prejudicado.
+- Use SOMENTE construções deste tipo (a redação pode variar, desde que mantenha o sentido condicional):
+  - "Se isso aconteceu com você, pode ser que seus direitos não tenham sido respeitados."
+  - "Situações como essa, em muitos casos, têm respaldo na legislação brasileira."
+  - "Existem profissionais especializados nessa área que podem avaliar a sua situação."
+- PROIBIDO no encerramento (reprova na hora): "Você foi lesado."; "Seus direitos não foram respeitados." (na forma afirmativa); "Entre em contato com um advogado."; "Procure um advogado agora."; "Você tem direito de processar."; "Não deixe isso passar."; "Exija seus direitos."
+
+REGRAS DA OAB (Código de Ética e Provimento 205/2021)
+- Nunca recomende conduta processual: não diga ao leitor para "entrar com ação", "processar", "recorrer na justiça", "acionar o INSS" ou variações. O texto informa o que a lei prevê; a decisão de agir é sempre do leitor.
+- Nunca afirme como fato que o leitor foi lesado. Pode informar que determinada prática é ilegal, mas não pode concluir que aconteceu com aquele leitor.
+- Nunca mencione ou linke um advogado específico.
+- Nunca estimule o litígio nem use tom de indignação. Tom de esclarecimento e empoderamento informativo. Permitido: "um reajuste pode ser ilegal". Proibido: "não aceite isso", "exija seus direitos".
+- Nunca prometa resultado ("você vai ganhar", "com certeza receberá").
 
 PADRÕES DE ESCRITA TERMINANTEMENTE PROIBIDOS
 - Travessão: JAMAIS use travessão (o caractere "—") em qualquer situação. Use vírgula, dois-pontos ou hífen.
@@ -33,13 +57,12 @@ PADRÕES DE ESCRITA TERMINANTEMENTE PROIBIDOS
 - Fragmentos de ênfase: nunca use frases isoladas curtíssimas como parágrafos para efeito dramático.
 - Particípio presente vazio no fim de frase: nunca encerre com "-ndo" sem informação ("destacando sua importância", "refletindo tendências").
 
-REGRAS DA OAB (Código de Ética e Provimento 205/2021)
-- Nunca recomende conduta processual: não diga ao leitor para "entrar com ação", "processar", "recorrer na justiça", "acionar o INSS" ou variações. O texto informa o que a lei prevê; a decisão de agir é sempre do leitor.
-- Nunca afirme como fato que o leitor foi lesado. Pode informar que determinada prática é ilegal, mas não pode concluir que aconteceu com aquele leitor.
-- Nunca mencione ou linke um advogado específico.
-- Nunca estimule o litígio. Tom de esclarecimento e empoderamento informativo, nunca de indignação. Permitido: "um reajuste pode ser ilegal". Proibido: "não aceite isso", "exija seus direitos".
-- Vocabulário PERMITIDO no encerramento: "Se isso aconteceu com você, pode ser que seus direitos não tenham sido respeitados."; "Situações como essa, em muitos casos, têm respaldo na legislação brasileira."; "Existem profissionais especializados nessa área que podem avaliar sua situação."
-- Vocabulário PROIBIDO no encerramento: "Você foi lesado."; "Entre em contato com um advogado."; "Procure um advogado agora."; "Você tem direito de processar."; "Não deixe isso passar."`;
+ANTES DE RESPONDER, CONFIRA (autoverificação obrigatória)
+1. Todos os dados jurídicos citados estão corretos e você tem alta confiança em cada um? Se não, remova ou generalize o trecho.
+2. O encerramento é condicional e está no padrão permitido, sem afirmar que o leitor foi lesado?
+3. Não há nenhuma recomendação de conduta processual nem estímulo ao litígio?
+4. Todo termo jurídico foi explicado em linguagem simples?
+5. Não há nenhum travessão nem nenhum dos padrões de estilo proibidos?`;
 
 export interface GeneratedPost {
   title: string;
@@ -234,52 +257,13 @@ Responda APENAS com JSON válido, sem texto extra, no formato:
   return ideas.slice(0, 10);
 }
 
-export async function generatePost(
-  category: string,
-  theme: string,
-  subcategorias: string[] = [],
-): Promise<GeneratedPost> {
-  const subInstrucao =
-    subcategorias.length > 0
-      ? `\nEscolha o tema específico (subcategoria) mais adequado ao post entre estas opções da macrocategoria: ${subcategorias
-          .map((s) => `"${s}"`)
-          .join(
-            ", ",
-          )}. Use exatamente uma dessas opções em "subcategoria", ou null se nenhuma se aplicar.`
-      : `\nDefina "subcategoria" como null.`;
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    system: EDITORIAL_RULES,
-    messages: [
-      {
-        role: "user",
-        content: `Escreva um post completo do blog para a macrocategoria "${category}", sobre o tema: "${theme}".
-
-Siga rigorosamente todas as regras editoriais e da OAB. Entre 600 e 900 palavras no total. Nunca use travessão.
-${subInstrucao}
-
-Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
-{
-  "title": "título H1, no máximo 70 caracteres",
-  "subtitle": "subtítulo/chamada de uma frase",
-  "excerpt": "resumo de 1 a 2 frases para o card da listagem",
-  "subcategoria": "tema específico da lista, ou null",
-  "keywords": ["palavra-chave 1", "palavra-chave 2", "palavra-chave 3"],
-  "body": [
-    { "paragraphs": ["parágrafo de introdução 1", "parágrafo de introdução 2"] },
-    { "heading": "Subtítulo H2", "paragraphs": ["parágrafo", "parágrafo"] }
-  ],
-  "oabClosing": "parágrafo de encerramento no padrão permitido pela OAB"
-}
-
-O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, inclua de 3 a 5 seções, cada uma com "heading" (H2) e seus parágrafos. Não inclua o disclaimer no JSON, ele é adicionado automaticamente.`,
-      },
-    ],
-  });
-
-  const parsed = parseJson(extractText(message.content)) as Partial<GeneratedPost>;
-
+// Constrói um GeneratedPost validado a partir do JSON devolvido pela IA. Usado
+// tanto na geração quanto na correção, para aplicar as mesmas validações,
+// remoção de travessão e checagem de subcategoria.
+function buildGeneratedPost(
+  parsed: Partial<GeneratedPost>,
+  subcategorias: string[],
+): GeneratedPost {
   if (
     !parsed ||
     typeof parsed.title !== "string" ||
@@ -337,6 +321,56 @@ O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, in
   };
 }
 
+export async function generatePost(
+  category: string,
+  theme: string,
+  subcategorias: string[] = [],
+): Promise<GeneratedPost> {
+  const subInstrucao =
+    subcategorias.length > 0
+      ? `\nEscolha o tema específico (subcategoria) mais adequado ao post entre estas opções da macrocategoria: ${subcategorias
+          .map((s) => `"${s}"`)
+          .join(
+            ", ",
+          )}. Use exatamente uma dessas opções em "subcategoria", ou null se nenhuma se aplicar.`
+      : `\nDefina "subcategoria" como null.`;
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: EDITORIAL_RULES,
+    messages: [
+      {
+        role: "user",
+        content: `Escreva um post completo do blog para a macrocategoria "${category}", sobre o tema: "${theme}".
+
+Siga rigorosamente todas as regras editoriais e da OAB. Entre 600 e 900 palavras no total. Nunca use travessão.
+${subInstrucao}
+
+Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
+{
+  "title": "título H1, no máximo 70 caracteres",
+  "subtitle": "subtítulo/chamada de uma frase",
+  "excerpt": "resumo de 1 a 2 frases para o card da listagem",
+  "subcategoria": "tema específico da lista, ou null",
+  "keywords": ["palavra-chave 1", "palavra-chave 2", "palavra-chave 3"],
+  "body": [
+    { "paragraphs": ["parágrafo de introdução 1", "parágrafo de introdução 2"] },
+    { "heading": "Subtítulo H2", "paragraphs": ["parágrafo", "parágrafo"] }
+  ],
+  "oabClosing": "parágrafo de encerramento no padrão permitido pela OAB"
+}
+
+O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, inclua de 3 a 5 seções, cada uma com "heading" (H2) e seus parágrafos. Não inclua o disclaimer no JSON, ele é adicionado automaticamente.`,
+      },
+    ],
+  });
+
+  const parsed = parseJson(
+    extractText(message.content),
+  ) as Partial<GeneratedPost>;
+  return buildGeneratedPost(parsed, subcategorias);
+}
+
 // ------------------------------------------------------------------
 // Verificação de veracidade (segunda passada independente da IA)
 // ------------------------------------------------------------------
@@ -356,6 +390,7 @@ O QUE VOCÊ DEVE VERIFICAR
    Para CADA dado, decida se está correto conforme a legislação brasileira vigente. Se um dado estiver errado, desatualizado, ou se você NÃO tiver certeza suficiente para confirmá-lo, marque "correto": false. Na dúvida, reprove: é preferível descartar um post correto a publicar um dado jurídico errado.
 
 2. CONFORMIDADE COM A OAB. Reprove se o texto: recomendar conduta processual ("entre com ação", "processe", "recorra", "acione o INSS"); afirmar como fato que o leitor foi lesado; mencionar ou indicar um advogado específico; estimular o litígio ou usar tom de indignação.
+   ATENÇÃO ao encerramento: construções CONDICIONAIS são PERMITIDAS e NÃO devem ser reprovadas. Trate como corretas frases como "Se isso aconteceu com você, pode ser que seus direitos não tenham sido respeitados.", "Situações como essa, em muitos casos, têm respaldo na legislação brasileira." e "Existem profissionais especializados nessa área que podem avaliar a sua situação.". As expressões condicionais "pode ser que", "em muitos casos", "pode" e "talvez" deixam claro que é uma possibilidade, não uma afirmação de fato. Só reprove o encerramento se ele AFIRMAR categoricamente que o leitor foi lesado (ex.: "Você foi lesado.", "Seus direitos não foram respeitados." sem condicional), recomendar procurar/contatar advogado de forma imperativa, ou mandar processar.
 
 3. REGRAS EDITORIAIS. Reprove se houver travessão (caractere "—") em qualquer lugar do texto, termo jurídico usado sem explicação em linguagem simples, ou promessa de resultado ("você vai ganhar", "com certeza receberá").
 
@@ -497,4 +532,87 @@ Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
   }
 
   return { aprovado, motivos: motivosFinais, checagensLegais };
+}
+
+// ------------------------------------------------------------------
+// Correção guiada pelo revisor (terceira passada da IA)
+// ------------------------------------------------------------------
+
+// Reescreve um post reprovado corrigindo APENAS os problemas apontados pelo
+// revisor, mantendo tema, estrutura e o conteúdo que passou. Dados jurídicos
+// não confirmados devem ser corrigidos (com alta confiança) ou generalizados,
+// nunca inventados. O resultado ainda passa por uma nova verificação no
+// chamador; a correção não publica nada por conta própria.
+export async function correctPost(
+  category: string,
+  theme: string,
+  post: GeneratedPost,
+  verificacao: VerificationResult,
+  subcategorias: string[] = [],
+): Promise<GeneratedPost> {
+  const problemas: string[] = [];
+  for (const m of verificacao.motivos) {
+    problemas.push(`- ${m}`);
+  }
+  for (const c of verificacao.checagensLegais) {
+    if (!c.correto) {
+      problemas.push(
+        `- Dado jurídico a corrigir: "${c.citacao}". Observação do revisor: ${c.observacao}`,
+      );
+    }
+  }
+  const listaProblemas =
+    problemas.length > 0
+      ? problemas.join("\n")
+      : "- O revisor não aprovou o texto para publicação automática. Reforce a conformidade com a OAB e a veracidade dos dados jurídicos.";
+
+  const subInstrucao =
+    subcategorias.length > 0
+      ? `Mantenha "subcategoria" como uma destas opções: ${subcategorias
+          .map((s) => `"${s}"`)
+          .join(", ")}, ou null.`
+      : `Mantenha "subcategoria" como null.`;
+
+  const postAtual = JSON.stringify(
+    {
+      title: post.title,
+      subtitle: post.subtitle,
+      excerpt: post.excerpt,
+      subcategoria: post.subcategoria,
+      keywords: post.keywords,
+      body: post.body,
+      oabClosing: post.oabClosing,
+    },
+    null,
+    2,
+  );
+
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: EDITORIAL_RULES,
+    messages: [
+      {
+        role: "user",
+        content: `Você escreveu o post abaixo (macrocategoria "${category}", tema "${theme}"), mas o revisor jurídico apontou problemas que impedem a publicação automática. Corrija o post resolvendo TODOS os problemas, mantendo o tema, a estrutura e o conteúdo que não foi apontado.
+
+Para cada dado jurídico apontado como incorreto ou não confirmado: corrija para o valor correto SOMENTE se tiver alta confiança; caso contrário, reescreva o trecho em linguagem geral, sem cravar número, prazo, artigo ou valor. Nunca invente dados. Nunca use travessão. ${subInstrucao}
+
+POST ATUAL (JSON):
+"""
+${postAtual}
+"""
+
+PROBLEMAS APONTADOS PELO REVISOR:
+${listaProblemas}
+
+Responda APENAS com JSON válido, sem texto extra, no mesmo formato do post atual (title, subtitle, excerpt, subcategoria, keywords, body, oabClosing). O primeiro item de "body" é a introdução e NÃO tem "heading".`,
+      },
+    ],
+  });
+
+  const parsed = parseJson(
+    extractText(message.content),
+  ) as Partial<GeneratedPost>;
+  return buildGeneratedPost(parsed, subcategorias);
 }

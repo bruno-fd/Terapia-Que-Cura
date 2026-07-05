@@ -180,6 +180,7 @@ export const ListBlogDailyRunsResponse = zod.object({
   "days": zod.array(zod.object({
   "runDate": zod.string(),
   "published": zod.number(),
+  "corrected": zod.number(),
   "rejected": zod.number(),
   "skipped": zod.number(),
   "failed": zod.number(),
@@ -193,6 +194,7 @@ export const ListBlogDailyRunsResponse = zod.object({
   "title": zod.string().nullish(),
   "reason": zod.string().nullish(),
   "postId": zod.number().nullish(),
+  "correctionRounds": zod.number(),
   "createdAt": zod.string()
 }))
 })

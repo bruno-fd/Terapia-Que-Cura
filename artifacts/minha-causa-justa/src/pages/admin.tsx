@@ -550,7 +550,8 @@ function DailyRunsPanel() {
       </div>
       <p className="text-sm text-neutral-500 mb-4">
         Um post por categoria por dia, publicado só depois de passar na
-        verificação de veracidade. Reprovados são descartados.
+        verificação de veracidade. Quando reprovado, o revisor tenta corrigir o
+        texto antes de publicar; só é descartado se a correção não resolver.
       </p>
 
       {loading && (
@@ -606,6 +607,12 @@ function DailyRunsPanel() {
                 </span>
               )}
             </div>
+            {resumoUltimo.corrected > 0 && (
+              <p className="text-xs text-neutral-500 mt-2">
+                {resumoUltimo.corrected} publicado(s) após correção automática do
+                revisor.
+              </p>
+            )}
           </div>
 
           {detalhes && latest && latest.items.length > 0 && (
@@ -636,6 +643,15 @@ function DailyRunsPanel() {
                     {item.reason && (
                       <p className="text-xs text-neutral-500 mt-1">
                         {item.reason}
+                      </p>
+                    )}
+                    {item.correctionRounds > 0 && (
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: WARNING_COLOR }}
+                      >
+                        Corrigido pelo revisor: {item.correctionRounds}{" "}
+                        rodada(s).
                       </p>
                     )}
                   </li>

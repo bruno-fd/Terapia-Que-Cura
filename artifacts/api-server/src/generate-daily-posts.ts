@@ -5,6 +5,7 @@ import {
   generateIdeas,
   generatePost,
   verifyPost,
+  correctPost,
 } from "./lib/blog-generator";
 import { persistGeneratedPost } from "./lib/blog-posts";
 import { logger } from "./lib/logger";
@@ -15,7 +16,10 @@ import { logger } from "./lib/logger";
 // Para cada macrocategoria (12), publica 1 post por dia:
 //   gera ideias -> escolhe um tema novo -> escreve o post ->
 //   verifica a veracidade (2a passada independente da IA) ->
-//   publica se aprovado, senão DESCARTA e registra o motivo.
+//   se reprovado, o revisor CORRIGE e reverifica (até 2 rodadas) ->
+//   publica a 1a versão aprovada; só DESCARTA se seguir reprovado.
+// O número de correções por categoria é registrado para monitorar se o
+// escritor precisa de mais reforço no prompt.
 //
 // Idempotente: se já existe um post criado hoje na categoria (manual ou
 // automático), a categoria é pulada. Uma falha isolada não interrompe o lote.
@@ -55,6 +59,7 @@ async function registrarRun(entry: {
   reason?: string | null;
   title?: string | null;
   postId?: number | null;
+  correctionRounds?: number;
 }): Promise<void> {
   await db.insert(blogDailyRunsTable).values({
     runDate: hojeIso(),
@@ -63,6 +68,7 @@ async function registrarRun(entry: {
     reason: entry.reason ?? null,
     title: entry.title ?? null,
     postId: entry.postId ?? null,
+    correctionRounds: entry.correctionRounds ?? 0,
   });
 }
 
@@ -98,7 +104,8 @@ async function processarCategoria(category: string): Promise<RunStatus> {
   const tema =
     ideias.find((i) => !titulosExistentes.has(normalizar(i))) ?? ideias[0];
 
-  const generated = await generatePost(category, tema, subcategoriasDe(category));
+  const subcats = subcategoriasDe(category);
+  const generated = await generatePost(category, tema, subcats);
 
   // Também evita publicar um título idêntico a um já existente.
   if (titulosExistentes.has(normalizar(generated.title))) {
@@ -115,8 +122,26 @@ async function processarCategoria(category: string): Promise<RunStatus> {
     return "rejected";
   }
 
-  // Verificação de veracidade (segunda passada independente da IA).
-  const verificacao = await verifyPost(category, tema, generated);
+  // Máximo de rodadas de correção guiada pelo revisor antes de desistir.
+  const MAX_CORRECOES = 2;
+
+  // Verificação de veracidade (segunda passada independente da IA). Se reprovar,
+  // o revisor corrige o texto e reverificamos, até MAX_CORRECOES rodadas. Só
+  // descartamos se continuar reprovado depois disso: nunca publicamos dado
+  // jurídico errado, mas damos ao escritor a chance de consertar.
+  let atual = generated;
+  let verificacao = await verifyPost(category, tema, atual);
+  let correcoes = 0;
+
+  while (!verificacao.aprovado && correcoes < MAX_CORRECOES) {
+    correcoes += 1;
+    logger.info(
+      { category, correcao: correcoes, motivos: verificacao.motivos },
+      "Post reprovado; tentando correção automática.",
+    );
+    atual = await correctPost(category, tema, atual, verificacao, subcats);
+    verificacao = await verifyPost(category, tema, atual);
+  }
 
   if (!verificacao.aprovado) {
     const reason =
@@ -126,33 +151,48 @@ async function processarCategoria(category: string): Promise<RunStatus> {
     logger.warn(
       {
         category,
-        title: generated.title,
+        title: atual.title,
+        correcoes,
         motivos: verificacao.motivos,
         checagensLegais: verificacao.checagensLegais,
       },
-      "Post reprovado e descartado.",
+      "Post reprovado mesmo após correção; descartado.",
     );
     await registrarRun({
       category,
       status: "rejected",
-      title: generated.title,
+      title: atual.title,
       reason,
+      correctionRounds: correcoes,
     });
     return "rejected";
   }
 
-  const created = await persistGeneratedPost(generated, category, {
+  const created = await persistGeneratedPost(atual, category, {
     publish: true,
   });
   logger.info(
-    { category, title: created.title, slug: created.slug, postId: created.id },
-    "Post publicado automaticamente.",
+    {
+      category,
+      title: created.title,
+      slug: created.slug,
+      postId: created.id,
+      correcoes,
+    },
+    correcoes > 0
+      ? "Post publicado automaticamente após correção."
+      : "Post publicado automaticamente.",
   );
   await registrarRun({
     category,
     status: "published",
     title: created.title,
     postId: created.id,
+    correctionRounds: correcoes,
+    reason:
+      correcoes > 0
+        ? `Publicado após ${correcoes} rodada(s) de correção.`
+        : null,
   });
   return "published";
 }

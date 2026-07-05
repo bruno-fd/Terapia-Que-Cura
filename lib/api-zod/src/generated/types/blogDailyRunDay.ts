@@ -9,6 +9,7 @@
 export interface BlogDailyRunDay {
   runDate: string;
   published: number;
+  corrected: number;
   rejected: number;
   skipped: number;
   failed: number;

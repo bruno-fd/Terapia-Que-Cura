@@ -257,6 +257,7 @@ router.get("/admin/blog/daily-runs", async (_req, res): Promise<void> => {
   type Day = {
     runDate: string;
     published: number;
+    corrected: number;
     rejected: number;
     skipped: number;
     failed: number;
@@ -269,6 +270,7 @@ router.get("/admin/blog/daily-runs", async (_req, res): Promise<void> => {
       dia = {
         runDate: r.runDate,
         published: 0,
+        corrected: 0,
         rejected: 0,
         skipped: 0,
         failed: 0,
@@ -283,6 +285,10 @@ router.get("/admin/blog/daily-runs", async (_req, res): Promise<void> => {
       r.status === "failed"
     ) {
       dia[r.status] += 1;
+    }
+    // Publicados que só passaram depois de uma ou mais correções do revisor.
+    if (r.status === "published" && (r.correctionRounds ?? 0) > 0) {
+      dia.corrected += 1;
     }
     dia.total += 1;
   }
@@ -301,6 +307,7 @@ router.get("/admin/blog/daily-runs", async (_req, res): Promise<void> => {
       title: r.title,
       reason: r.reason,
       postId: r.postId,
+      correctionRounds: r.correctionRounds ?? 0,
       createdAt: r.createdAt.toISOString(),
     }));
 

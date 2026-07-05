@@ -1290,6 +1290,8 @@ components:
           type: string
         published:
           type: integer
+        corrected:
+          type: integer
         rejected:
           type: integer
         skipped:
@@ -1301,6 +1303,7 @@ components:
       required:
         - runDate
         - published
+        - corrected
         - rejected
         - skipped
         - failed
@@ -1322,11 +1325,14 @@ components:
         postId:
           type: integer
           nullable: true
+        correctionRounds:
+          type: integer
         createdAt:
           type: string
       required:
         - category
         - status
+        - correctionRounds
         - createdAt
     BlogDailyRunLatest:
       type: object

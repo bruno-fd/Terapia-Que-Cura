@@ -285,6 +285,7 @@ export interface PublicLawyer {
 export interface BlogDailyRunDay {
   runDate: string;
   published: number;
+  corrected: number;
   rejected: number;
   skipped: number;
   failed: number;
@@ -307,6 +308,7 @@ export interface BlogDailyRunItem {
   title?: string | null;
   reason?: string | null;
   postId?: number | null;
+  correctionRounds: number;
   createdAt: string;
 }
 

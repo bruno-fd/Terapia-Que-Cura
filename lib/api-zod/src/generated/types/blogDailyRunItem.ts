@@ -13,5 +13,6 @@ export interface BlogDailyRunItem {
   title?: string | null;
   reason?: string | null;
   postId?: number | null;
+  correctionRounds: number;
   createdAt: string;
 }
