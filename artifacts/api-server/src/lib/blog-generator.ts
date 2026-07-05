@@ -421,13 +421,11 @@ function postParaTextoRevisao(post: GeneratedPost): string {
 // reprovamos ("na dúvida, reprova"): não publicamos dado jurídico sem checagem
 // explícita.
 const PADROES_JURIDICOS: RegExp[] = [
-  /\bartigos?\b/i,
-  /\bart\.?\s*\d/i,
+  /\bart(?:igo)?s?\.?\s*\d/i,
   /§/,
   /\bincisos?\b/i,
   /\bleis?\s+(n[.º°]?\s*)?\d/i,
   /\blei\s+complementar\b/i,
-  /\bc[óo]digo\b/i,
   /\bCLT\b/,
   /\bCF\b/,
   /\bconstitui[çc][ãa]o\b/i,
@@ -435,7 +433,6 @@ const PADROES_JURIDICOS: RegExp[] = [
   /\bdecreto\b/i,
   /\bmedida provis[óo]ria\b/i,
   /\bjurisprud[êe]ncia\b/i,
-  /\bprazo\b/i,
   /\b\d+\s*(dias?|meses|m[êe]s|anos?)\b/i,
   /R\$\s*\d/,
   /\b\d+\s*%/,
@@ -596,7 +593,7 @@ export async function correctPost(
         role: "user",
         content: `Você escreveu o post abaixo (macrocategoria "${category}", tema "${theme}"), mas o revisor jurídico apontou problemas que impedem a publicação automática. Corrija o post resolvendo TODOS os problemas, mantendo o tema, a estrutura e o conteúdo que não foi apontado.
 
-Para cada dado jurídico apontado como incorreto ou não confirmado: corrija para o valor correto SOMENTE se tiver alta confiança; caso contrário, reescreva o trecho em linguagem geral, sem cravar número, prazo, artigo ou valor. Nunca invente dados. Nunca use travessão. ${subInstrucao}
+REGRA DE CORREÇÃO (prioridade máxima): a ação PADRÃO para todo dado jurídico apontado é GENERALIZAR, não reafirmar. Se o revisor marcou um número, prazo, artigo, percentual, valor ou regime como incorreto, controverso, divergente ou não confirmável, REMOVA esse dado específico e reescreva o trecho em linguagem geral (ex.: troque "o prazo é de 2 anos" por "a lei prevê um prazo para isso, que varia conforme o caso"; troque "regime semiaberto" por "as regras de cumprimento previstas em lei"; troque "art. 206 do Código Civil" por "a legislação civil"). NUNCA repita o mesmo valor específico que o revisor apontou, mesmo que você acredite que ele está certo, o objetivo é eliminar a controvérsia, não vencê-la. Só mantenha um dado numérico/específico se o próprio revisor confirmou explicitamente o valor correto E você tem altíssima confiança nele. Na dúvida, generalize ou remova o trecho. Nunca invente dados. Nunca use travessão. ${subInstrucao}
 
 POST ATUAL (JSON):
 """
