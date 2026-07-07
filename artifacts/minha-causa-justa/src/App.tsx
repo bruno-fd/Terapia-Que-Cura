@@ -32,7 +32,13 @@ import PainelPerfil from "@/pages/painel-perfil";
 import PainelMetricas from "@/pages/painel-metricas";
 import PainelAssinatura from "@/pages/painel-assinatura";
 import Admin from "@/pages/admin";
+import Manutencao from "@/pages/manutencao";
 import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
+
+// Interruptor de manutenção. Enquanto "true", o site inteiro exibe apenas a
+// página "Site em construção". Para religar o site normalmente, basta trocar
+// para "false" (nada foi apagado).
+const MODO_MANUTENCAO = true;
 
 declare global {
   interface Window {
@@ -284,6 +290,10 @@ function ClerkProviderWithRoutes() {
 }
 
 function App() {
+  if (MODO_MANUTENCAO) {
+    return <Manutencao />;
+  }
+
   return (
     <WouterRouter base={basePath}>
       <ClerkProviderWithRoutes />
