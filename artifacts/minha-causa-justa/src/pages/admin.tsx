@@ -529,7 +529,9 @@ function DailyRunsPanel() {
     };
   }, []);
 
-  const TOTAL_CATEGORIAS = 12;
+  // Deriva o total das macrocategorias reais (fonte única em data/categories.ts),
+  // para a métrica não ficar defasada quando a lista de categorias muda.
+  const TOTAL_CATEGORIAS = BLOG_CATEGORIES.length;
   const latest = data?.latest ?? null;
   const resumoUltimo = data?.days?.[0] ?? null;
 

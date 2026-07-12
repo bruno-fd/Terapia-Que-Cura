@@ -13,7 +13,8 @@ import { logger } from "./lib/logger";
 // ============================================================
 // Gerador diário automático de posts do blog.
 //
-// Para cada macrocategoria (12), publica 1 post por dia:
+// Para cada macrocategoria (a lista completa de MACRO_NOMES), publica 1 post
+// por dia:
 //   gera ideias -> escolhe um tema novo -> escreve o post ->
 //   verifica a veracidade (2a passada independente da IA) ->
 //   se reprovado, o revisor CORRIGE e reverifica (até 2 rodadas) ->
