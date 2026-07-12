@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { User, BarChart3, CreditCard, ExternalLink, LogOut, Menu, X } from "lucide-react";
 import { useClerk, useUser } from "@clerk/react";
-import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
+import logoUrl from "@assets/logo-terapia-que-cura.png";
 import { PainelStatusBanner } from "@/components/PainelStatusBanner";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");

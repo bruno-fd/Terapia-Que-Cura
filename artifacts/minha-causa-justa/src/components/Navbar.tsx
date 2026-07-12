@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
+import logoUrl from "@assets/logo-terapia-que-cura.png";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +12,7 @@ export function Navbar() {
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-border/40 shadow-sm transition-all duration-200">
+    <header className="sticky top-0 z-50 w-full bg-white border-b border-primary-100 shadow-sm transition-all duration-200">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-[1200px]">
         <Link href="/" className="flex items-center hover:opacity-90 transition-opacity" onClick={closeMenu} data-testid="link-logo">
           <img src={logoUrl} alt="Terapia Que Cura" className="h-11 w-auto" />
@@ -51,7 +51,7 @@ export function Navbar() {
 
       {/* Mobile Nav */}
       {isOpen && (
-        <div className="md:hidden bg-white border-b border-border/40 absolute top-16 left-0 w-full shadow-lg">
+        <div className="md:hidden bg-white border-b border-primary-100 absolute top-16 left-0 w-full shadow-lg">
           <div className="flex flex-col px-6 py-4 space-y-4">
             <Link href="/psicologos" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-encontrar-psicologo">
               Encontrar Psicólogo

@@ -33,7 +33,7 @@ import PainelMetricas from "@/pages/painel-metricas";
 import PainelAssinatura from "@/pages/painel-assinatura";
 import Admin from "@/pages/admin";
 import Manutencao from "@/pages/manutencao";
-import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
+import logoUrl from "@assets/logo-terapia-que-cura.png";
 
 // Interruptor de manutenção. Enquanto "true", o site inteiro exibe apenas a
 // página "Site em construção". Para religar o site normalmente, basta trocar
@@ -80,16 +80,16 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${logoUrl}`,
   },
   variables: {
-    colorPrimary: "#2260AA",
+    colorPrimary: "#FF3D8B",
     colorForeground: "#1A1A1A",
-    colorMutedForeground: "#555555",
+    colorMutedForeground: "#717171",
     colorDanger: "#C0392B",
     colorBackground: "#FFFFFF",
     colorInput: "#FFFFFF",
     colorInputForeground: "#1A1A1A",
     colorNeutral: "#C4C4C4",
-    fontFamily: "'Inter', sans-serif",
-    borderRadius: "0.5rem",
+    fontFamily: "'Nunito', 'Inter', sans-serif",
+    borderRadius: "0.75rem",
   },
   elements: {
     rootBox: "w-full flex justify-center",

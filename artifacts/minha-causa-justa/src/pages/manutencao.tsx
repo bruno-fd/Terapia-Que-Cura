@@ -1,8 +1,8 @@
-import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
+import logoUrl from "@assets/logo-terapia-que-cura.png";
 
 export default function Manutencao() {
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-neutral-50 px-6 py-16 text-center">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-primary-50 px-6 py-16 text-center">
       <div className="flex w-full max-w-md flex-col items-center gap-8">
         <img
           src={logoUrl}

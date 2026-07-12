@@ -10,6 +10,7 @@ export interface Categoria {
   nome: string;
   slug: string;
   descricao: string;
+  emoji?: string;
   // Temas específicos dentro da macrocategoria. Usados na busca livre do
   // cliente e na marcação opcional do psicólogo no painel.
   subcategorias: string[];
@@ -21,6 +22,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "ansiedade-e-estresse",
     descricao:
       "Ansiedade generalizada, síndrome do pânico, fobias, estresse e burnout.",
+    emoji: "🌪️",
     subcategorias: [
       "Ansiedade",
       "Ansiedade Generalizada",
@@ -39,6 +41,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "depressao-e-transtornos-de-humor",
     descricao:
       "Depressão, depressão pós-parto, transtorno bipolar e alterações de humor.",
+    emoji: "🌧️",
     subcategorias: [
       "Depressão",
       "Depressão Pós-Parto",
@@ -54,6 +57,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "relacionamentos-e-casais",
     descricao:
       "Terapia de casal, conflitos amorosos, ciúmes, divórcio e infidelidade.",
+    emoji: "❤️",
     subcategorias: [
       "Casais",
       "Conflitos Amorosos",
@@ -69,6 +73,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "familia-e-parentalidade",
     descricao:
       "Conflitos familiares, orientação de pais, adoção e rivalidade entre irmãos.",
+    emoji: "🏡",
     subcategorias: [
       "Conflitos Familiares",
       "Orientação de Pais",
@@ -82,6 +87,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "infancia-e-adolescencia",
     descricao:
       "Aprendizagem, autismo, bullying, TDAH e orientação vocacional.",
+    emoji: "🧸",
     subcategorias: [
       "Adolescência",
       "Aprendizagem",
@@ -98,6 +104,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "luto-envelhecimento-e-cuidados-paliativos",
     descricao:
       "Luto e morte, cuidados paliativos, envelhecimento e adoecimento físico.",
+    emoji: "🕊️",
     subcategorias: [
       "Luto e Morte",
       "Cuidados Paliativos",
@@ -111,6 +118,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "autoconhecimento-e-desenvolvimento-pessoal",
     descricao:
       "Autoestima, autoconhecimento, autoconfiança, autonomia e assertividade.",
+    emoji: "🌱",
     subcategorias: [
       "Autoestima",
       "Autoaceitação",
@@ -127,6 +135,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "traumas-e-violencia",
     descricao:
       "Traumas, abuso sexual, violência doméstica e assédio moral ou sexual.",
+    emoji: "🩹",
     subcategorias: [
       "Traumas",
       "Abuso Sexual",
@@ -140,6 +149,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "dependencias-e-compulsoes",
     descricao:
       "Dependências em geral, compulsões, alcoolismo e jogo compulsivo.",
+    emoji: "🔗",
     subcategorias: [
       "Dependências em Geral",
       "Compulsões em Geral",
@@ -154,6 +164,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "transtornos-alimentares",
     descricao:
       "Compulsão alimentar, anorexia, bulimia e relação com o corpo e a comida.",
+    emoji: "🍽️",
     subcategorias: [
       "Compulsão Alimentar",
       "Anorexia",
@@ -166,6 +177,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "sexualidade-e-identidade-de-genero",
     descricao:
       "LGBTQIA+, orientação sexual, identidade de gênero e disfunções sexuais.",
+    emoji: "🌈",
     subcategorias: [
       "LGBTQIA+",
       "Orientação Sexual",
@@ -178,6 +190,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "saude-mental-e-transtornos-psiquiatricos",
     descricao:
       "Esquizofrenia, transtorno bipolar, borderline e transtornos de personalidade.",
+    emoji: "🧠",
     subcategorias: [
       "Esquizofrenia",
       "Transtorno Bipolar",
@@ -191,6 +204,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "avaliacoes-e-pericias-psicologicas",
     descricao:
       "Avaliação neuropsicológica, avaliação para cirurgia e laudos psicológicos.",
+    emoji: "📋",
     subcategorias: [
       "Avaliação Neuropsicológica",
       "Avaliação para Cirurgia",
@@ -202,6 +216,7 @@ export const CATEGORIAS: Categoria[] = [
     slug: "carreira-e-vida-profissional",
     descricao:
       "Transição de carreira, assédio moral no trabalho e equilíbrio vida-trabalho.",
+    emoji: "💼",
     subcategorias: [
       "Transição de Carreira",
       "Assédio Moral no Trabalho",

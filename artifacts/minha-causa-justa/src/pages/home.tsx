@@ -117,12 +117,12 @@ export default function Home() {
   const imagensHome = imagensDistintasDaHome(postsHome);
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
+    <div className="min-h-screen flex flex-col font-sans bg-background">
       <Navbar />
 
       <main className="flex-grow">
         {/* Section 1 — Hero */}
-        <section className="bg-white py-6 md:py-24 overflow-hidden">
+        <section className="bg-gradient-to-br from-white to-primary-50 py-6 md:py-24 overflow-hidden">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
               <div className="w-full lg:w-1/2">
@@ -137,7 +137,7 @@ export default function Home() {
                   </p>
                   <Button
                     onClick={() => setLocation("/psicologos")}
-                    className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all w-full"
+                    className="bg-primary-500 hover:bg-primary-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all w-full"
                     data-testid="button-cta-hero-mobile"
                   >
                     Falar com um psicólogo
@@ -169,7 +169,7 @@ export default function Home() {
 
               <div className="hidden lg:block w-full lg:w-1/2 relative">
                 <div className="absolute inset-0 bg-primary-100 rounded-[100px] rounded-tl-[30px] rounded-br-[30px] transform rotate-3 scale-105 -z-10"></div>
-                <div className="absolute inset-0 bg-[#E86100]/10 rounded-[100px] rounded-tr-[30px] rounded-bl-[30px] transform -rotate-3 scale-105 -z-20"></div>
+                <div className="absolute inset-0 bg-accent-100/50 rounded-[100px] rounded-tr-[30px] rounded-bl-[30px] transform -rotate-3 scale-105 -z-20"></div>
                 <div className="relative h-[600px] w-full rounded-[100px] rounded-tl-[40px] rounded-br-[40px] overflow-hidden shadow-xl border-8 border-white">
                   <img 
                     src={heroPessoa} 
@@ -216,7 +216,7 @@ export default function Home() {
                 </div>
                 <Button
                   onClick={handleSearch}
-                  className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full lg:w-auto lg:shrink-0"
+                  className="bg-primary-500 hover:bg-primary-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full lg:w-auto lg:shrink-0"
                   data-testid="button-buscar-psicologo"
                 >
                   Encontrar psicólogo
@@ -227,7 +227,7 @@ export default function Home() {
         </section>
 
         {/* Section 2 — Qual situação */}
-        <section className="bg-[#F5F4F2] py-20 md:py-28 relative">
+        <section className="bg-background py-20 md:py-28 relative">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-primary-900 tracking-tight">Qual situação se parece com a sua?</h2>
@@ -242,7 +242,7 @@ export default function Home() {
                   data-testid={`card-situacao-${idx}`}
                 >
                   <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mb-6 text-2xl font-bold text-primary-600 group-hover:scale-110 transition-transform duration-300">
-                    <span aria-hidden="true">{cat.nome.charAt(0)}</span>
+                    <span aria-hidden="true">{cat.emoji || cat.nome.charAt(0)}</span>
                   </div>
                   <h3 className="font-bold text-xl text-primary-900 mb-3 leading-tight">{cat.nome}</h3>
                   <p className="text-neutral-600 text-sm leading-relaxed flex-grow">{cat.descricao}</p>
@@ -304,7 +304,7 @@ export default function Home() {
         </section>
 
         {/* Section 4 — Feito para quem precisa */}
-        <section className="bg-[#EEF5FC] py-20 md:py-32 relative overflow-hidden">
+        <section className="bg-primary-50 py-20 md:py-32 relative overflow-hidden">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
               <div className="w-full lg:w-1/2 z-10">
@@ -381,7 +381,7 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {postsHome.map((post, index) => (
-                <div key={post.slug} className="bg-[#F5F4F2] p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300">
+                <div key={post.slug} className="bg-background p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300">
                   <div className="mb-6 w-full h-48 bg-white rounded-2xl overflow-hidden relative">
                     <img src={imagensHome[index]} alt={post.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                   </div>
@@ -414,7 +414,7 @@ export default function Home() {
               <div className="relative z-10 max-w-[800px] mx-auto flex flex-col items-center">
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">Cuidar de você não pode esperar.</h2>
                 <p className="text-xl md:text-2xl text-primary-100 mb-12 font-light">Muita gente desiste porque não sabe por onde começar. A gente mostra o caminho.</p>
-                <Button asChild size="lg" className="bg-accent-500 hover:bg-accent-600 text-white h-16 px-10 text-lg rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+                <Button asChild size="lg" className="bg-primary-500 hover:bg-primary-600 text-white h-16 px-10 text-lg rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
                   <Link href="/psicologos" data-testid="button-cta-encontrar">
                     Encontrar um psicólogo agora
                   </Link>
@@ -429,7 +429,7 @@ export default function Home() {
           <div className="container mx-auto px-6 max-w-[800px]">
             <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Você é psicólogo?</h2>
             <p className="text-xl text-neutral-600 mb-10 leading-relaxed">Cadastre seu perfil e apareça para pessoas que precisam exatamente do que você oferece.</p>
-            <Button asChild size="lg" className="bg-accent-500 hover:bg-accent-600 text-white h-16 px-10 text-lg rounded-full transition-all">
+            <Button asChild size="lg" className="bg-primary-500 hover:bg-primary-600 text-white h-16 px-10 text-lg rounded-full transition-all">
               <Link href="/cadastro" data-testid="button-cta-cadastro">
                 Quero cadastrar meu perfil
               </Link>
