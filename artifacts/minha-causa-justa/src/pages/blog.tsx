@@ -29,6 +29,28 @@ export default function Blog() {
     ? allPosts.filter((post) => post.category === activeCategoryName)
     : allPosts;
 
+  // Paginação: 6 posts por página. A página atual vem do query param (?pagina=N).
+  const POSTS_POR_PAGINA = 6;
+  const totalPaginas = Math.max(1, Math.ceil(posts.length / POSTS_POR_PAGINA));
+  const paginaSolicitada = Number.parseInt(params.get("pagina") ?? "1", 10);
+  const paginaAtual = Math.min(
+    Math.max(Number.isNaN(paginaSolicitada) ? 1 : paginaSolicitada, 1),
+    totalPaginas,
+  );
+  const postsDaPagina = posts.slice(
+    (paginaAtual - 1) * POSTS_POR_PAGINA,
+    paginaAtual * POSTS_POR_PAGINA,
+  );
+
+  // Monta a URL de uma página preservando o filtro de categoria ativo.
+  const hrefDaPagina = (pagina: number): string => {
+    const p = new URLSearchParams();
+    if (activeSlug) p.set("categoria", activeSlug);
+    if (pagina > 1) p.set("pagina", String(pagina));
+    const qs = p.toString();
+    return qs ? `/blog?${qs}` : "/blog";
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F4F2]">
       <Navbar />
@@ -67,7 +89,7 @@ export default function Blog() {
               )}
 
               <div className="space-y-6">
-                {posts.map((post) => (
+                {postsDaPagina.map((post) => (
                   <article
                     key={post.slug}
                     className="bg-white rounded-2xl border border-neutral-200 p-6 md:p-8 transition-shadow hover:shadow-md"
@@ -107,19 +129,41 @@ export default function Blog() {
                 )}
               </div>
 
-              {/* Paginação simples (visual) */}
-              <nav
-                className="mt-10 flex items-center justify-center gap-6 text-sm text-neutral-500"
-                aria-label="Paginação"
-              >
-                <span className="text-primary-600 cursor-default select-none">
-                  &larr; Anterior
-                </span>
-                <span>Página 1 de 3</span>
-                <span className="text-primary-600 cursor-default select-none">
-                  Próxima &rarr;
-                </span>
-              </nav>
+              {/* Paginação */}
+              {totalPaginas > 1 && (
+                <nav
+                  className="mt-10 flex items-center justify-center gap-6 text-sm text-neutral-500"
+                  aria-label="Paginação"
+                >
+                  {paginaAtual > 1 ? (
+                    <Link
+                      href={hrefDaPagina(paginaAtual - 1)}
+                      className="text-primary-600 hover:underline"
+                    >
+                      &larr; Anterior
+                    </Link>
+                  ) : (
+                    <span className="text-neutral-300 cursor-default select-none">
+                      &larr; Anterior
+                    </span>
+                  )}
+                  <span>
+                    Página {paginaAtual} de {totalPaginas}
+                  </span>
+                  {paginaAtual < totalPaginas ? (
+                    <Link
+                      href={hrefDaPagina(paginaAtual + 1)}
+                      className="text-primary-600 hover:underline"
+                    >
+                      Próxima &rarr;
+                    </Link>
+                  ) : (
+                    <span className="text-neutral-300 cursor-default select-none">
+                      Próxima &rarr;
+                    </span>
+                  )}
+                </nav>
+              )}
             </div>
 
             {/* Sidebar */}
