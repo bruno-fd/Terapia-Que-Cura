@@ -14,16 +14,17 @@ export interface CadastroLead {
   email: string;
   telefone: string;
   cpf: string;
-  oab: string;
-  seccional: string;
-  oabVerificada: boolean;
-  oabSituacao?: string | null;
-  oabNomeConfirmado?: string | null;
-  oabVerificacaoPendente: boolean;
+  crp: string;
+  regiao: string;
+  crpVerificada: boolean;
+  crpSituacao?: string | null;
+  crpNomeConfirmado?: string | null;
+  crpVerificacaoPendente: boolean;
   plano?: CadastroLeadPlano;
   areas: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido?: string[];
   step: number;
   completed: boolean;
 }

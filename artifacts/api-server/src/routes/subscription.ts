@@ -4,7 +4,7 @@ import type { Logger } from "pino";
 import {
   db,
   subscriptionsTable,
-  advogadosTable,
+  psicologosTable,
   cadastroLeadsTable,
   type SubscriptionRow,
 } from "@workspace/db";
@@ -54,12 +54,12 @@ const PLANS: Record<Plano, PlanConfig> = {
   mensal: {
     valueCents: 4990,
     cycle: "MONTHLY",
-    description: "Plano Mensal, Minha Causa Justa",
+    description: "Plano Mensal, Terapia Que Cura",
   },
   anual: {
     valueCents: 47880,
     cycle: "YEARLY",
-    description: "Plano Anual, Minha Causa Justa",
+    description: "Plano Anual, Terapia Que Cura",
   },
 };
 
@@ -222,17 +222,17 @@ const EMPTY_STATE = {
 };
 
 async function findRow(
-  lawyerRef: string,
+  psicologoRef: string,
 ): Promise<SubscriptionRow | undefined> {
   const [row] = await db
     .select()
     .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.lawyerRef, lawyerRef));
+    .where(eq(subscriptionsTable.psicologoRef, psicologoRef));
   return row;
 }
 
 // E-mail da conta autenticada (Clerk). Fonte da verdade para o vínculo com a
-// assinatura criada no checkout anônimo, cujo lawyerRef nasce nulo.
+// assinatura criada no checkout anônimo, cujo psicologoRef nasce nulo.
 async function getAuthedEmail(req: Request): Promise<string | null> {
   try {
     const clerkUserId = getAuth(req).userId;
@@ -249,11 +249,11 @@ async function getAuthedEmail(req: Request): Promise<string | null> {
   }
 }
 
-// Resolve a assinatura do advogado autenticado. No modelo "checkout primeiro" a
-// assinatura é criada de forma anônima (lawyerRef nulo, chaveada por
+// Resolve a assinatura do psicólogo autenticado. No modelo "checkout primeiro" a
+// assinatura é criada de forma anônima (psicologoRef nulo, chaveada por
 // customerEmail). No primeiro acesso autenticado, casamos pelo e-mail da conta
 // (que é o mesmo do pagamento, pois o convite trava o e-mail) e vinculamos o
-// lawyerRef de forma atômica, para os acessos seguintes irem direto pelo id.
+// psicologoRef de forma atômica, para os acessos seguintes irem direto pelo id.
 async function resolveRowForUser(
   req: Request,
 ): Promise<SubscriptionRow | undefined> {
@@ -270,11 +270,11 @@ function appPublicUrl(): string {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)[0];
-  return domain ? `https://${domain}` : "https://minhacausajusta.com.br";
+  return domain ? `https://${domain}` : "https://terapiaquecura.com.br";
 }
 
 // Emite um convite do Clerk (sem enviar e-mail do Clerk: notify=false) para o
-// e-mail do pagamento. O advogado clica, define a senha na nossa página
+// e-mail do pagamento. O psicólogo clica, define a senha na nossa página
 // /sign-up (o ticket vem embutido na URL) e a conta nasce travada nesse e-mail.
 // Idempotente (ignoreExisting) para poder ser reexecutado por eventos repetidos.
 async function createAccountInvitation(
@@ -296,7 +296,7 @@ async function createAccountInvitation(
   }
 }
 
-// Estado atual da assinatura do advogado.
+// Estado atual da assinatura do psicólogo.
 router.get("/assinatura", requireAuth, async (req, res): Promise<void> => {
   const row = await resolveRowForUser(req);
   if (!row) {
@@ -396,7 +396,7 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
     }
 
     const values = {
-      lawyerRef: req.userId!,
+      psicologoRef: req.userId!,
       asaasCustomerId: customer.id,
       asaasSubscriptionId: subscription.id,
       plan: plano,
@@ -456,7 +456,7 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
   }
 });
 
-// Cancela a assinatura do advogado.
+// Cancela a assinatura do psicólogo.
 router.post(
   "/assinatura/cancelar",
   requireAuth,
@@ -489,7 +489,7 @@ router.post(
   let accessUntil = computeAccessUntil(payments, row.cycle);
 
   // Fallback conservador: se a leitura de pagamentos falhou e o perfil estava
-  // ativo, NÃO desativamos na hora (o advogado tem período pago vigente).
+  // ativo, NÃO desativamos na hora (o psicólogo tem período pago vigente).
   // Preservamos a carência usando a próxima cobrança conhecida ou, na falta
   // dela, um ciclo a partir de hoje, para nunca rebaixar quem já pagou por
   // uma falha temporária da Asaas.
@@ -537,7 +537,7 @@ router.post(
 
 // Solicitação de reembolso (direito de arrependimento, 7 dias). Estorna o
 // pagamento na Asaas, cancela a assinatura recorrente e EXCLUI o perfil do
-// advogado automaticamente. Só é permitido dentro do prazo legal.
+// psicólogo automaticamente. Só é permitido dentro do prazo legal.
 router.post(
   "/assinatura/reembolso",
   requireAuth,
@@ -584,7 +584,7 @@ router.post(
     // seguras: PRIMEIRO cancelamos a assinatura recorrente (interrompe cobranças
     // futuras), DEPOIS estornamos, e só então excluímos os dados locais. Se algo
     // falhar no meio, nada local é apagado e o botão continua disponível (o
-    // pagamento segue pago e dentro do prazo), então o advogado pode repetir: um
+    // pagamento segue pago e dentro do prazo), então o psicólogo pode repetir: um
     // DELETE já feito retorna 404 (tratado como ok) e estornos já feitos não são
     // refeitos (só estornamos pagamentos ainda em status pago).
     try {
@@ -610,16 +610,16 @@ router.post(
       throw err;
     }
 
-    // Exclui o perfil do advogado e a assinatura local (teardown completo).
-    // Usa o id da conta autenticada (row.lawyerRef pode ser nulo antes do
+    // Exclui o perfil do psicólogo e a assinatura local (teardown completo).
+    // Usa o id da conta autenticada (row.psicologoRef pode ser nulo antes do
     // vínculo, mas resolveRowForUser já o backfila para o usuário atual).
     await db
-      .delete(advogadosTable)
-      .where(eq(advogadosTable.userId, req.userId!));
+      .delete(psicologosTable)
+      .where(eq(psicologosTable.userId, req.userId!));
     await db.delete(subscriptionsTable).where(eq(subscriptionsTable.id, row.id));
 
     req.log.info(
-      { lawyerRef: req.userId, motivo, estornos: paidPayments.length },
+      { psicologoRef: req.userId, motivo, estornos: paidPayments.length },
       "Reembolso processado e perfil excluído",
     );
 
@@ -727,9 +727,9 @@ router.post("/checkout", async (req, res): Promise<void> => {
     }
 
     const values = {
-      // Sem conta ainda: o vínculo com o advogado (lawyerRef) só acontece após
+      // Sem conta ainda: o vínculo com o psicólogo (psicologoRef) só acontece após
       // o pagamento e o primeiro login. A assinatura nasce chaveada pelo e-mail.
-      lawyerRef: null,
+      psicologoRef: null,
       leadId,
       asaasCustomerId: customer.id,
       asaasSubscriptionId: subscription.id,
@@ -741,7 +741,7 @@ router.post("/checkout", async (req, res): Promise<void> => {
       customerEmail: email,
       nextDueDate: subscription.nextDueDate ?? todayIso(),
       // Checkout novo: zera qualquer provisionamento/cancelamento anterior desta
-      // mesma tentativa de cadastro (o advogado voltou ao funil).
+      // mesma tentativa de cadastro (o psicólogo voltou ao funil).
       accountProvisionedAt: null,
       canceledAt: null,
       accessUntil: null,

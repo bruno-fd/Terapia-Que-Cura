@@ -18,29 +18,30 @@ export interface FunnelData {
   nome: string;
   email: string;
   telefone: string;
-  // CPF: coletado na etapa 1 para verificar a inscrição na OAB e para a
+  // CPF: coletado na etapa 1 para verificar a inscrição no CRP e para a
   // cobrança (Asaas). Fica apenas no localStorage do funil e NUNCA aparece no
   // perfil público. Em produção, considerar hash/criptografia em repouso.
   cpf: string;
-  // OAB e seccional são salvos no localStorage e também no lead do back-end,
+  // CRP e região são salvos no localStorage e também no lead do back-end,
   // pois a conta só é criada após o pagamento e o perfil é pré-preenchido a
-  // partir do lead (com re-verificação real da OAB no lado servidor).
-  oab: string;
-  seccional: string;
-  // Resultado da verificação real da inscrição na OAB (webservice CNA da OAB).
+  // partir do lead (com re-verificação real do CRP no lado servidor).
+  crp: string;
+  regiao: string;
+  // Resultado da verificação real da inscrição no CRP.
   // Preenchido ao concluir a etapa 1 e carregado para o perfil ao publicar.
-  oabVerificada: boolean;
-  oabSituacao: string | null;
-  oabNomeConfirmado: string | null;
-  oabVerificadaEm: string | null;
-  oabVerificacaoPendente: boolean;
+  crpVerificada: boolean;
+  crpSituacao: string | null;
+  crpNomeConfirmado: string | null;
+  crpVerificadaEm: string | null;
+  crpVerificacaoPendente: boolean;
   // Token assinado pelo servidor que comprova a verificação; enviado em
-  // PUT /perfil para que o back-end marque oabVerificada de forma confiável.
+  // PUT /perfil para que o back-end marque crpVerificada de forma confiável.
   oabToken: string | null;
   plano: Plano | null;
   areas: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido: string[];
   step: number;
 }
 
@@ -91,18 +92,19 @@ export function emptyFunnel(): FunnelData {
     email: "",
     telefone: "",
     cpf: "",
-    oab: "",
-    seccional: "",
-    oabVerificada: false,
-    oabSituacao: null,
-    oabNomeConfirmado: null,
-    oabVerificadaEm: null,
-    oabVerificacaoPendente: false,
+    crp: "",
+    regiao: "",
+    crpVerificada: false,
+    crpSituacao: null,
+    crpNomeConfirmado: null,
+    crpVerificadaEm: null,
+    crpVerificacaoPendente: false,
     oabToken: null,
     plano: null,
     areas: [],
     cidades: [],
     atendeOnline: false,
+    publicoAtendido: [],
     step: 1,
   };
 }
@@ -121,13 +123,13 @@ export function loadFunnel(): FunnelData | null {
       email: parsed.email ?? "",
       telefone: parsed.telefone ?? "",
       cpf: parsed.cpf ?? "",
-      oab: parsed.oab ?? "",
-      seccional: parsed.seccional ?? "",
-      oabVerificada: parsed.oabVerificada === true,
-      oabSituacao: parsed.oabSituacao ?? null,
-      oabNomeConfirmado: parsed.oabNomeConfirmado ?? null,
-      oabVerificadaEm: parsed.oabVerificadaEm ?? null,
-      oabVerificacaoPendente: parsed.oabVerificacaoPendente === true,
+      crp: parsed.crp ?? "",
+      regiao: parsed.regiao ?? "",
+      crpVerificada: parsed.crpVerificada === true,
+      crpSituacao: parsed.crpSituacao ?? null,
+      crpNomeConfirmado: parsed.crpNomeConfirmado ?? null,
+      crpVerificadaEm: parsed.crpVerificadaEm ?? null,
+      crpVerificacaoPendente: parsed.crpVerificacaoPendente === true,
       oabToken: parsed.oabToken ?? null,
       plano:
         parsed.plano === "mensal" || parsed.plano === "anual"
@@ -136,6 +138,9 @@ export function loadFunnel(): FunnelData | null {
       areas: Array.isArray(parsed.areas) ? parsed.areas : [],
       cidades: Array.isArray(parsed.cidades) ? parsed.cidades : [],
       atendeOnline: parsed.atendeOnline === true,
+      publicoAtendido: Array.isArray(parsed.publicoAtendido)
+        ? parsed.publicoAtendido
+        : [],
       step:
         typeof parsed.step === "number" && parsed.step >= 1
           ? Math.min(parsed.step, TOTAL_STEPS)
@@ -174,22 +179,23 @@ export async function syncLead(
     nome: data.nome,
     email: data.email,
     telefone: data.telefone,
-    // CPF/OAB/seccional e o resultado da verificação são enviados ao back-end
+    // CPF/CRP/região e o resultado da verificação são enviados ao back-end
     // para que, APÓS o pagamento confirmado (conta criada só então), o perfil
-    // seja pré-preenchido a partir do lead. A flag oabVerificada é apenas
-    // informativa: o back-end re-verifica a inscrição na OAB pelo lado servidor
+    // seja pré-preenchido a partir do lead. A flag crpVerificada é apenas
+    // informativa: o back-end re-verifica a inscrição no CRP pelo lado servidor
     // (nunca confia no booleano do cliente).
     cpf: data.cpf,
-    oab: data.oab,
-    seccional: data.seccional,
-    oabVerificada: data.oabVerificada,
-    oabSituacao: data.oabSituacao,
-    oabNomeConfirmado: data.oabNomeConfirmado,
-    oabVerificacaoPendente: data.oabVerificacaoPendente,
+    crp: data.crp,
+    regiao: data.regiao,
+    crpVerificada: data.crpVerificada,
+    crpSituacao: data.crpSituacao,
+    crpNomeConfirmado: data.crpNomeConfirmado,
+    crpVerificacaoPendente: data.crpVerificacaoPendente,
     plano: data.plano,
     areas: data.areas,
     cidades: data.cidades,
     atendeOnline: data.atendeOnline,
+    publicoAtendido: data.publicoAtendido,
     step: data.step,
     completed,
   };
@@ -210,22 +216,23 @@ export async function fetchLead(leadId: string): Promise<FunnelData | null> {
       nome: r.nome,
       email: r.email,
       telefone: r.telefone,
-      // CPF/OAB/verificação agora são persistidos no lead (necessários para o
+      // CPF/CRP/verificação agora são persistidos no lead (necessários para o
       // pré-preenchimento do perfil após o pagamento). O token assinado NÃO é
       // persistido; ao retomar por aqui, a etapa 1 refaz a verificação real.
       cpf: r.cpf ?? "",
-      oab: r.oab ?? "",
-      seccional: r.seccional ?? "",
-      oabVerificada: r.oabVerificada === true,
-      oabSituacao: r.oabSituacao ?? null,
-      oabNomeConfirmado: r.oabNomeConfirmado ?? null,
-      oabVerificadaEm: null,
-      oabVerificacaoPendente: r.oabVerificacaoPendente === true,
+      crp: r.crp ?? "",
+      regiao: r.regiao ?? "",
+      crpVerificada: r.crpVerificada === true,
+      crpSituacao: r.crpSituacao ?? null,
+      crpNomeConfirmado: r.crpNomeConfirmado ?? null,
+      crpVerificadaEm: null,
+      crpVerificacaoPendente: r.crpVerificacaoPendente === true,
       oabToken: null,
       plano: r.plano === "mensal" || r.plano === "anual" ? r.plano : null,
       areas: r.areas,
       cidades: r.cidades,
       atendeOnline: r.atendeOnline,
+      publicoAtendido: r.publicoAtendido ?? [],
       step: Math.min(Math.max(r.step, 1), TOTAL_STEPS),
     };
   } catch {

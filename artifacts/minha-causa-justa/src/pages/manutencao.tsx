@@ -6,7 +6,7 @@ export default function Manutencao() {
       <div className="flex w-full max-w-md flex-col items-center gap-8">
         <img
           src={logoUrl}
-          alt="Minha Causa Justa"
+          alt="Terapia Que Cura"
           className="h-16 w-auto sm:h-20"
         />
 

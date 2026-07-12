@@ -33,13 +33,13 @@ export default function Cadastro() {
   const beneficios = [
     {
       icon: TrendingUp,
-      title: "Visibilidade para quem já quer contratar",
-      desc: "O usuário que chega à Minha Causa Justa já identificou que tem um problema jurídico. Ele não está navegando por acaso, está procurando um profissional. Você aparece no momento certo."
+      title: "Visibilidade para quem já quer começar",
+      desc: "O usuário que chega à Terapia Que Cura já decidiu que precisa de apoio psicológico. Ele não está navegando por acaso, está procurando um profissional. Você aparece no momento certo."
     },
     {
       icon: UserCircle,
       title: "Perfil completo, do seu jeito",
-      desc: "Foto, especialidades, áreas de atuação, estados atendidos, descrição do seu trabalho e forma de contato. Tudo o que o cliente precisa saber antes de falar com você."
+      desc: "Foto, especialidades, áreas de atuação, público atendido, estados atendidos, descrição do seu trabalho e forma de contato. Tudo o que o cliente precisa saber antes de falar com você."
     },
     {
       icon: BarChart3,
@@ -49,16 +49,16 @@ export default function Cadastro() {
     {
       icon: Handshake,
       title: "Sem intermediário, sem comissão",
-      desc: "O contato é direto entre você e o cliente. A Minha Causa Justa não fica no meio da negociação, não cobra por contato e não leva percentual de honorários."
+      desc: "O contato é direto entre você e o cliente. A Terapia Que Cura não fica no meio da negociação, não cobra por contato e não leva percentual sobre o valor das sessões."
     }
   ];
 
   const paraQuem = [
-    "Você atua em causas populares: INSS e previdência, trabalho e emprego, família, plano de saúde, consumidor ou herança e inventário",
+    "Você atua com temas populares: ansiedade, depressão, relacionamentos e casais, família, autoconhecimento ou luto",
     "Está construindo sua carteira de clientes e precisa de visibilidade",
     "Atende pessoas físicas, não grandes empresas",
     "Quer aparecer para clientes na sua cidade ou estado",
-    "Está inscrito na OAB e atua de forma regular"
+    "Está inscrito no CRP e atua de forma regular"
   ];
 
   const faqs = [
@@ -68,7 +68,7 @@ export default function Cadastro() {
     },
     {
       q: "Quantos clientes vou receber?",
-      a: "Não trabalhamos com promessa de número de contatos. Nenhuma plataforma honesta faz isso. O que garantimos é que seu perfil ficará visível para todos os usuários que buscarem advogados na sua área e estado. O volume depende do tráfego da plataforma, que cresce a cada mês."
+      a: "Não trabalhamos com promessa de número de contatos. Nenhuma plataforma honesta faz isso. O que garantimos é que seu perfil ficará visível para todos os usuários que buscarem psicólogos na sua área e estado. O volume depende do tráfego da plataforma, que cresce a cada mês."
     },
     {
       q: "Preciso fechar contrato com a plataforma?",
@@ -79,7 +79,7 @@ export default function Cadastro() {
       a: "Não. O usuário vê suas informações de contato diretamente no perfil e fala com você pelo canal que preferir: WhatsApp, telefone ou e-mail. A plataforma não intermedia nem acompanha essa conversa."
     },
     {
-      q: "A plataforma cobra alguma comissão sobre os honorários?",
+      q: "A plataforma cobra alguma comissão sobre o valor das sessões?",
       a: "Não. Você paga apenas a mensalidade do perfil. O que você negocia e recebe dos seus clientes é inteiramente seu."
     },
     {
@@ -101,12 +101,12 @@ export default function Cadastro() {
     {
       icon: Crosshair,
       title: "Seja específico nas áreas de atuação",
-      desc: "\"Advogado trabalhista especializado em demissão sem justa causa e rescisão indireta\" comunica muito mais do que \"direito do trabalho\". Quanto mais específico, mais o cliente se identifica."
+      desc: "\"Psicólogo especializado em ansiedade e burnout no trabalho\" comunica muito mais do que \"psicologia clínica\". Quanto mais específico, mais o cliente se identifica."
     },
     {
       icon: MessageSquare,
       title: "Escreva como você fala",
-      desc: "O usuário da plataforma não é advogado. No campo \"sobre mim\", use linguagem simples. Explique o que você resolve, não o que você estudou."
+      desc: "O usuário da plataforma não é psicólogo. No campo \"sobre mim\", use linguagem simples. Explique o que você ajuda a resolver, não só onde você estudou."
     },
     {
       icon: Phone,
@@ -129,16 +129,16 @@ export default function Cadastro() {
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
               <div className="w-full lg:w-1/2">
                 <h1 className="text-4xl md:text-5xl lg:text-[52px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
-                  Pessoas com problemas jurídicos estão procurando um advogado agora.{" "}
+                  Pessoas buscando apoio psicológico estão procurando um profissional agora.{" "}
                   <span className="text-primary-500">Seu perfil está aqui?</span>
                 </h1>
 
                 <div className="space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
                   <p>
-                    Todo dia, brasileiros pesquisam na internet o que fazer quando o INSS nega um benefício, quando o plano de saúde recusa uma cirurgia, quando a pensão não chega. Eles estão com um problema real, já decidiram que precisam de ajuda e estão procurando alguém de confiança para falar.
+                    Todo dia, brasileiros pesquisam na internet o que fazer quando a ansiedade não passa, quando o relacionamento está em crise, quando o luto pesa demais, quando o esgotamento no trabalho vira rotina. Eles estão passando por um momento real, já decidiram que precisam de apoio e estão procurando alguém de confiança para conversar.
                   </p>
                   <p className="font-semibold text-primary-800 text-xl pt-2">
-                    A Minha Causa Justa é o lugar onde eles chegam. E onde você pode estar.
+                    A Terapia Que Cura é o lugar onde eles chegam. E onde você pode estar.
                   </p>
                 </div>
 
@@ -157,7 +157,7 @@ export default function Cadastro() {
                 <div className="relative h-[600px] w-full rounded-[100px] rounded-tl-[40px] rounded-br-[40px] overflow-hidden shadow-xl border-8 border-white">
                   <img
                     src={advogadoHero}
-                    alt="Advogada confiante em seu escritório"
+                    alt="Psicóloga confiante em seu consultório"
                     className="w-full h-full object-cover object-top"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-900/40 to-transparent"></div>
@@ -295,7 +295,7 @@ export default function Cadastro() {
                 <div className="relative h-[520px] w-full rounded-t-[260px] rounded-b-[40px] overflow-hidden shadow-2xl border-[12px] border-white z-10">
                   <img
                     src={advogadaPerfil}
-                    alt="Advogada trabalhando em seu escritório"
+                    alt="Psicóloga trabalhando em seu consultório"
                     className="w-full h-full object-cover object-center"
                   />
                 </div>
@@ -396,7 +396,7 @@ export default function Cadastro() {
 
               <div className="relative z-10 max-w-[800px] mx-auto flex flex-col items-center">
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">
-                  Sua próxima cliente pode estar procurando um advogado agora mesmo.
+                  Seu próximo cliente pode estar procurando um psicólogo agora mesmo.
                 </h2>
                 <p className="text-xl md:text-2xl text-primary-100 mb-12 font-light">
                   O cadastro leva menos de 10 minutos. Seu perfil entra no ar imediatamente.

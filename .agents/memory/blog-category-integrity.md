@@ -1,16 +1,17 @@
 ---
 name: Blog category integrity
-description: Single source of truth for site legal categories, why category must be validated server-side, and how public/static posts merge.
+description: Single source of truth for site psychology categories, why category must be validated server-side, and how public/static posts merge.
 ---
 
 # Site category + blog post category integrity
 
-Site legal categories have ONE frontend source of truth:
+Site psychology categories have ONE frontend source of truth:
 `artifacts/minha-causa-justa/src/data/categories.ts` (`CATEGORIAS` of
-`{nome, slug, emoji, descricao}`, `CATEGORIA_NOMES`, type `CategoriaNome`,
+`{nome, slug, descricao, subcategorias}` — no `emoji` field, the site does not
+display category emoji —, `CATEGORIA_NOMES`, type `CategoriaNome`,
 helpers `categoriaPorSlug`/`slugDaCategoria`). `BLOG_CATEGORIES` and the
 dashboard `AREAS` derive from it. Filtering is by slug query string
-(`?categoria=<slug>`) across `/advogados` and `/blog`.
+(`?categoria=<slug>`) across `/psicologos` and `/blog`.
 
 A generated post's macrocategory MUST equal a category `nome`, or it will not
 surface under any real blog filter.

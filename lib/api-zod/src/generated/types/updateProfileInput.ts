@@ -9,18 +9,20 @@ import type { Cidade } from './cidade';
 
 export interface UpdateProfileInput {
   nome: string;
-  oab: string;
+  crp: string;
   photo?: string | null;
   about: string;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido: string[];
+  precoSessao: string;
   whatsapp: string;
   instagram: string;
   linkedin: string;
   website: string;
   outro: string;
   oabToken?: string | null;
-  oabVerificacaoPendente?: boolean;
+  crpVerificacaoPendente?: boolean;
 }

@@ -15,11 +15,11 @@ tags:
   - name: admin-blog
     description: Admin blog generation and management
   - name: subscription
-    description: Lawyer subscription billing via Asaas
-  - name: lawyer
-    description: Lawyer profile and public directory
+    description: Psychologist subscription billing via Asaas
+  - name: psychologist
+    description: Psychologist profile and public directory
   - name: cadastro
-    description: Progressive lawyer registration funnel (lead capture)
+    description: Progressive psychologist registration funnel (lead capture)
   - name: Auth
     description: Browser and mobile authentication endpoints.
 paths:
@@ -215,31 +215,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
-  /admin/advogados:
+  /admin/psicologos:
     get:
-      operationId: listAdminAdvogados
-      tags: [admin-lawyer]
-      summary: List all registered lawyers for admin verification
+      operationId: listAdminPsicologos
+      tags: [admin-psychologist]
+      summary: List all registered psychologists for admin verification
       responses:
         "200":
-          description: List of lawyers
+          description: List of psychologists
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AdminAdvogado"
+                  $ref: "#/components/schemas/AdminPsicologo"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
-  /admin/advogados/{id}:
+  /admin/psicologos/{id}:
     get:
-      operationId: getAdminAdvogado
-      tags: [admin-lawyer]
-      summary: Get full lawyer detail with activity log
+      operationId: getAdminPsicologo
+      tags: [admin-psychologist]
+      summary: Get full psychologist detail with activity log
       parameters:
         - name: id
           in: path
@@ -248,11 +248,11 @@ paths:
             type: integer
       responses:
         "200":
-          description: Lawyer detail
+          description: Psychologist detail
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminAdvogadoDetail"
+                $ref: "#/components/schemas/AdminPsicologoDetail"
         "401":
           description: Unauthorized
           content:
@@ -266,9 +266,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
     patch:
-      operationId: updateAdminAdvogado
-      tags: [admin-lawyer]
-      summary: Update admin controls (active toggle, verified, OAB situation)
+      operationId: updateAdminPsicologo
+      tags: [admin-psychologist]
+      summary: Update admin controls (active toggle, verified, CRP situation)
       parameters:
         - name: id
           in: path
@@ -280,14 +280,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateAdminAdvogadoInput"
+              $ref: "#/components/schemas/UpdateAdminPsicologoInput"
       responses:
         "200":
-          description: Updated lawyer detail
+          description: Updated psychologist detail
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminAdvogadoDetail"
+                $ref: "#/components/schemas/AdminPsicologoDetail"
         "400":
           description: Invalid request
           content:
@@ -306,28 +306,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorResponse"
-  /advogados:
+  /psicologos:
     get:
-      operationId: listAdvogados
-      tags: [lawyer]
-      summary: List public lawyers (paying and with a complete profile)
-      description: Returns lawyers whose subscription is active and whose profile is complete.
+      operationId: listPsicologos
+      tags: [psychologist]
+      summary: List public psychologists (paying and with a complete profile)
+      description: Returns psychologists whose subscription is active and whose profile is complete.
       responses:
         "200":
-          description: List of public lawyers
+          description: List of public psychologists
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/PublicLawyer"
-  /advogados/contagem:
+                  $ref: "#/components/schemas/PublicPsicologo"
+  /psicologos/contagem:
     get:
-      operationId: contarAdvogados
+      operationId: contarPsicologos
       tags: [cadastro]
-      summary: Count active, visible lawyers by area and location
+      summary: Count active, visible psychologists by area and location
       description: >-
-        Returns counts of lawyers with an active subscription and a complete
+        Returns counts of psychologists with an active subscription and a complete
         profile, optionally filtered by area, city and state. Used to show real
         competition numbers during the registration funnel.
       parameters:
@@ -444,15 +444,15 @@ paths:
   /perfil:
     get:
       operationId: getPerfil
-      tags: [lawyer]
-      summary: Get the authenticated lawyer's profile
+      tags: [psychologist]
+      summary: Get the authenticated psychologist's profile
       responses:
         "200":
           description: Current profile
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LawyerProfile"
+                $ref: "#/components/schemas/PsicologoProfile"
         "401":
           description: Unauthorized
           content:
@@ -461,8 +461,8 @@ paths:
                 $ref: "#/components/schemas/ApiErrorResponse"
     put:
       operationId: updatePerfil
-      tags: [lawyer]
-      summary: Create or update the authenticated lawyer's profile
+      tags: [psychologist]
+      summary: Create or update the authenticated psychologist's profile
       requestBody:
         required: true
         content:
@@ -475,7 +475,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LawyerProfile"
+                $ref: "#/components/schemas/PsicologoProfile"
         "400":
           description: Invalid request
           content:
@@ -492,7 +492,7 @@ paths:
     get:
       operationId: getAssinatura
       tags: [subscription]
-      summary: Get the current subscription state for the lawyer
+      summary: Get the current subscription state for the psychologist
       responses:
         "200":
           description: Current subscription state
@@ -503,7 +503,7 @@ paths:
     post:
       operationId: createAssinatura
       tags: [subscription]
-      summary: Create a subscription for the lawyer via Asaas
+      summary: Create a subscription for the psychologist via Asaas
       requestBody:
         required: true
         content:
@@ -539,7 +539,7 @@ paths:
     post:
       operationId: cancelAssinatura
       tags: [subscription]
-      summary: Cancel the lawyer's subscription
+      summary: Cancel the psychologist's subscription
       requestBody:
         required: false
         content:
@@ -569,7 +569,7 @@ paths:
     post:
       operationId: solicitarReembolso
       tags: [subscription]
-      summary: Request a 7-day withdrawal refund and delete the lawyer profile
+      summary: Request a 7-day withdrawal refund and delete the psychologist profile
       requestBody:
         required: false
         content:
@@ -609,7 +609,7 @@ paths:
       description: >-
         Public (no auth): called at the end of the registration funnel. Creates
         the Asaas customer and recurring subscription from the lead data and
-        returns the hosted invoice URL where the lawyer pays by card. NO account
+        returns the hosted invoice URL where the psychologist pays by card. NO account
         is created here: the account is provisioned only after the payment is
         confirmed (Asaas webhook). Calling again always starts a fresh checkout
         instead of reopening a previous pending one.
@@ -888,7 +888,7 @@ components:
             $ref: "#/components/schemas/BlogPostSection"
         bodyHtml:
           type: string
-        oabClosing:
+        crpClosing:
           type: string
         published:
           type: boolean
@@ -910,7 +910,7 @@ components:
         - readingMinutes
         - body
         - bodyHtml
-        - oabClosing
+        - crpClosing
         - published
         - createdAt
     BlogIdeasInput:
@@ -960,7 +960,7 @@ components:
           type: string
         bodyHtml:
           type: string
-        oabClosing:
+        crpClosing:
           type: string
         published:
           type: boolean
@@ -1105,12 +1105,12 @@ components:
         - nome
         - uf
       additionalProperties: false
-    LawyerProfile:
+    PsicologoProfile:
       type: object
       properties:
         nome:
           type: string
-        oab:
+        crp:
           type: string
         photo:
           type: string
@@ -1131,6 +1131,14 @@ components:
             $ref: "#/components/schemas/Cidade"
         atendeOnline:
           type: boolean
+        # Público atendido (ex.: Adultos, Crianças, Casais, LGBTQIA+).
+        publicoAtendido:
+          type: array
+          items:
+            type: string
+        # Faixa de valor da sessão, em texto livre (ex.: "R$150 - R$250"). Opcional.
+        precoSessao:
+          type: string
         whatsapp:
           type: string
         instagram:
@@ -1149,30 +1157,32 @@ components:
           nullable: true
         visivel:
           type: boolean
-        oabVerificada:
+        crpVerificada:
           type: boolean
-        oabSituacao:
+        crpSituacao:
           type: string
           nullable: true
-        oabNomeConfirmado:
+        crpNomeConfirmado:
           type: string
           nullable: true
-        oabVerificadaEm:
+        crpVerificadaEm:
           type: string
           nullable: true
-        oabVerificacaoPendente:
+        crpVerificacaoPendente:
           type: boolean
         createdAt:
           type: string
           nullable: true
       required:
         - nome
-        - oab
+        - crp
         - about
         - areas
         - subcategorias
         - cidades
         - atendeOnline
+        - publicoAtendido
+        - precoSessao
         - whatsapp
         - instagram
         - linkedin
@@ -1180,14 +1190,14 @@ components:
         - outro
         - complete
         - visivel
-        - oabVerificada
-        - oabVerificacaoPendente
+        - crpVerificada
+        - crpVerificacaoPendente
     UpdateProfileInput:
       type: object
       properties:
         nome:
           type: string
-        oab:
+        crp:
           type: string
         photo:
           type: string
@@ -1208,6 +1218,12 @@ components:
             $ref: "#/components/schemas/Cidade"
         atendeOnline:
           type: boolean
+        publicoAtendido:
+          type: array
+          items:
+            type: string
+        precoSessao:
+          type: string
         whatsapp:
           type: string
         instagram:
@@ -1218,39 +1234,42 @@ components:
           type: string
         outro:
           type: string
-        # Token de verificação da OAB assinado pelo servidor (emitido por
-        # POST /verificar-oab quando valido=true). O status "verificado" é
-        # server-managed: o cliente NÃO grava oabVerificada diretamente, apenas
+        # Token de verificação do CRP assinado pelo servidor (emitido por
+        # POST /verificar-oab quando valido=true — endpoint ainda não migrado
+        # para o webservice do CRP, ver lib/oab.ts). O status "verificado" é
+        # server-managed: o cliente NÃO grava crpVerificada diretamente, apenas
         # apresenta este token, que o servidor valida antes de marcar verificado.
         oabToken:
           type: string
           nullable: true
-        # Sinaliza verificação pendente (revisão manual) quando o serviço da OAB
-        # falhou. É o estado de MENOR privilégio, então pode vir do cliente.
-        oabVerificacaoPendente:
+        # Sinaliza verificação pendente (revisão manual) quando o serviço do
+        # CRP falhou. É o estado de MENOR privilégio, então pode vir do cliente.
+        crpVerificacaoPendente:
           type: boolean
       required:
         - nome
-        - oab
+        - crp
         - about
         - areas
         - subcategorias
         - cidades
         - atendeOnline
+        - publicoAtendido
+        - precoSessao
         - whatsapp
         - instagram
         - linkedin
         - website
         - outro
       additionalProperties: false
-    PublicLawyer:
+    PublicPsicologo:
       type: object
       properties:
         id:
           type: integer
         nome:
           type: string
-        oab:
+        crp:
           type: string
         photo:
           type: string
@@ -1271,17 +1290,25 @@ components:
             $ref: "#/components/schemas/Cidade"
         atendeOnline:
           type: boolean
+        publicoAtendido:
+          type: array
+          items:
+            type: string
+        precoSessao:
+          type: string
         whatsapp:
           type: string
       required:
         - id
         - nome
-        - oab
+        - crp
         - about
         - areas
         - subcategorias
         - cidades
         - atendeOnline
+        - publicoAtendido
+        - precoSessao
         - whatsapp
     BlogDailyRunDay:
       type: object
@@ -1358,14 +1385,14 @@ components:
       required:
         - days
         - latest
-    AdminAdvogado:
+    AdminPsicologo:
       type: object
       properties:
         id:
           type: integer
         nome:
           type: string
-        oab:
+        crp:
           type: string
         email:
           type: string
@@ -1378,19 +1405,19 @@ components:
           nullable: true
         adminAtivo:
           type: boolean
-        oabVerificada:
+        crpVerificada:
           type: boolean
-        situacaoOab:
+        situacaoCrp:
           type: string
           enum: [regular, irregular, invalido]
           nullable: true
       required:
         - id
         - nome
-        - oab
+        - crp
         - email
         - adminAtivo
-        - oabVerificada
+        - crpVerificada
     AtividadeLog:
       type: object
       properties:
@@ -1407,14 +1434,14 @@ components:
         - acao
         - feitoPor
         - data
-    AdminAdvogadoDetail:
+    AdminPsicologoDetail:
       type: object
       properties:
         id:
           type: integer
         nome:
           type: string
-        oab:
+        crp:
           type: string
         email:
           type: string
@@ -1433,9 +1460,9 @@ components:
           nullable: true
         adminAtivo:
           type: boolean
-        oabVerificada:
+        crpVerificada:
           type: boolean
-        situacaoOab:
+        situacaoCrp:
           type: string
           enum: [regular, irregular, invalido]
           nullable: true
@@ -1453,6 +1480,12 @@ components:
             $ref: "#/components/schemas/Cidade"
         atendeOnline:
           type: boolean
+        publicoAtendido:
+          type: array
+          items:
+            type: string
+        precoSessao:
+          type: string
         atividades:
           type: array
           items:
@@ -1460,23 +1493,23 @@ components:
       required:
         - id
         - nome
-        - oab
+        - crp
         - email
         - adminAtivo
-        - oabVerificada
+        - crpVerificada
         - areas
         - subcategorias
         - cidades
         - atendeOnline
         - atividades
-    UpdateAdminAdvogadoInput:
+    UpdateAdminPsicologoInput:
       type: object
       properties:
         adminAtivo:
           type: boolean
-        oabVerificada:
+        crpVerificada:
           type: boolean
-        situacaoOab:
+        situacaoCrp:
           type: string
           enum: [regular, irregular, invalido]
           nullable: true
@@ -1561,19 +1594,19 @@ components:
           type: string
         cpf:
           type: string
-        oab:
+        crp:
           type: string
-        seccional:
+        regiao:
           type: string
-        oabVerificada:
+        crpVerificada:
           type: boolean
-        oabSituacao:
+        crpSituacao:
           type: string
           nullable: true
-        oabNomeConfirmado:
+        crpNomeConfirmado:
           type: string
           nullable: true
-        oabVerificacaoPendente:
+        crpVerificacaoPendente:
           type: boolean
         plano:
           type: string
@@ -1589,6 +1622,10 @@ components:
             $ref: "#/components/schemas/Cidade"
         atendeOnline:
           type: boolean
+        publicoAtendido:
+          type: array
+          items:
+            type: string
         step:
           type: integer
         completed:
@@ -1599,10 +1636,10 @@ components:
         - email
         - telefone
         - cpf
-        - oab
-        - seccional
-        - oabVerificada
-        - oabVerificacaoPendente
+        - crp
+        - regiao
+        - crpVerificada
+        - crpVerificacaoPendente
         - areas
         - cidades
         - atendeOnline
@@ -1622,19 +1659,19 @@ components:
           type: string
         cpf:
           type: string
-        oab:
+        crp:
           type: string
-        seccional:
+        regiao:
           type: string
-        oabVerificada:
+        crpVerificada:
           type: boolean
-        oabSituacao:
+        crpSituacao:
           type: string
           nullable: true
-        oabNomeConfirmado:
+        crpNomeConfirmado:
           type: string
           nullable: true
-        oabVerificacaoPendente:
+        crpVerificacaoPendente:
           type: boolean
         plano:
           type: string
@@ -1650,6 +1687,10 @@ components:
             $ref: "#/components/schemas/Cidade"
         atendeOnline:
           type: boolean
+        publicoAtendido:
+          type: array
+          items:
+            type: string
         step:
           type: integer
         completed:

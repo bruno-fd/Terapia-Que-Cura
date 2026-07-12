@@ -11,13 +11,13 @@ import { CityAutocomplete } from "@/components/CityAutocomplete";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { CategoriaAutocomplete } from "@/components/CategoriaAutocomplete";
 import { categoriaPorSlug, resolverBuscaCategoria, type ResultadoBusca } from "@/data/categories";
-import { useListAdvogados, type PublicLawyer } from "@workspace/api-client-react";
+import { useListPsicologos, type PublicPsicologo } from "@workspace/api-client-react";
 
-// Tipo de exibição derivado do advogado público vindo da API.
-interface Lawyer {
+// Tipo de exibição derivado do psicólogo público vindo da API.
+interface Psychologist {
   id: number;
   name: string;
-  oab: string;
+  crp: string;
   photo: string | null;
   primaryArea: string;
   secondaryArea: string;
@@ -25,6 +25,8 @@ interface Lawyer {
   online: boolean;
   badges: string[];
   subcategorias: string[];
+  publicoAtendido: string[];
+  precoSessao: string;
   about: string;
   phone: string;
   instagram: string;
@@ -32,20 +34,22 @@ interface Lawyer {
   linkedin: string;
 }
 
-function toViewLawyer(l: PublicLawyer): Lawyer {
+function toViewPsychologist(p: PublicPsicologo): Psychologist {
   return {
-    id: l.id,
-    name: l.nome,
-    oab: l.oab,
-    photo: l.photo ?? null,
-    primaryArea: l.areas[0] ?? "",
-    secondaryArea: l.areas[1] ?? "",
-    cities: l.cidades.map((c) => `${c.nome}, ${c.uf}`),
-    online: l.atendeOnline,
-    badges: l.areas,
-    subcategorias: l.subcategorias,
-    about: l.about,
-    phone: l.whatsapp,
+    id: p.id,
+    name: p.nome,
+    crp: p.crp,
+    photo: p.photo ?? null,
+    primaryArea: p.areas[0] ?? "",
+    secondaryArea: p.areas[1] ?? "",
+    cities: p.cidades.map((c) => `${c.nome}, ${c.uf}`),
+    online: p.atendeOnline,
+    badges: p.areas,
+    subcategorias: p.subcategorias,
+    publicoAtendido: p.publicoAtendido,
+    precoSessao: p.precoSessao,
+    about: p.about,
+    phone: p.whatsapp,
     instagram: "",
     website: "",
     linkedin: "",
@@ -77,7 +81,7 @@ function shuffleFair<T>(list: T[], seed: number): T[] {
   return arr;
 }
 
-export default function Advogados() {
+export default function Psicologos() {
   const [, setLocation] = useLocation();
   // Texto livre digitado na busca de categorias. É a fonte da verdade: ao clicar
   // em "Buscar" resolvemos o que está visível no campo, mesmo sem selecionar uma
@@ -88,56 +92,60 @@ export default function Advogados() {
   const [catSelecionada, setCatSelecionada] = useState<ResultadoBusca | null>(null);
   const [estado, setEstado] = useState<string>("");
   const [cidade, setCidade] = useState<string>("");
+  const [publicoFiltro, setPublicoFiltro] = useState<string>("");
   // Filtros efetivamente aplicados (só mudam ao clicar em "Buscar"), separados
   // do estado dos campos para que a lista não filtre enquanto o usuário digita.
-  const [applied, setApplied] = useState({ cat: "", sub: "", est: "", cid: "" });
+  const [applied, setApplied] = useState({ cat: "", sub: "", est: "", cid: "", publico: "" });
   // Ordem sorteada de forma justa, definida uma vez por visita (estável durante a navegação).
   const [rotationSeed] = useState(() => Date.now());
 
-  const { data: publicLawyers, isLoading } = useListAdvogados();
-  const rotatedLawyers = useMemo(
-    () => shuffleFair((publicLawyers ?? []).map(toViewLawyer), rotationSeed),
-    [publicLawyers, rotationSeed],
+  const { data: publicPsicologos, isLoading } = useListPsicologos();
+  const rotatedPsicologos = useMemo(
+    () => shuffleFair((publicPsicologos ?? []).map(toViewPsychologist), rotationSeed),
+    [publicPsicologos, rotationSeed],
   );
 
-  // Resultados em camadas de relevância: quando o cidadão busca um tema
+  // Resultados em camadas de relevância: quando o cliente busca um tema
   // específico (subcategoria), os "especialistas" (que marcaram aquele tema)
-  // aparecem primeiro; em seguida, os demais advogados da macrocategoria.
+  // aparecem primeiro; em seguida, os demais psicólogos da macrocategoria.
   const { especialistas, geral } = useMemo(() => {
-    let base: Lawyer[] = rotatedLawyers;
+    let base: Psychologist[] = rotatedPsicologos;
     if (applied.est) {
-      base = base.filter((l) => l.cities.some((c) => c.endsWith(`, ${applied.est}`)));
+      base = base.filter((p) => p.cities.some((c) => c.endsWith(`, ${applied.est}`)));
     }
     if (applied.cid) {
-      base = base.filter((l) => l.cities.includes(applied.cid));
+      base = base.filter((p) => p.cities.includes(applied.cid));
+    }
+    if (applied.publico) {
+      base = base.filter((p) => p.publicoAtendido.includes(applied.publico));
     }
 
     if (applied.sub) {
-      const esp = base.filter((l) => l.subcategorias.includes(applied.sub));
-      const espIds = new Set(esp.map((l) => l.id));
+      const esp = base.filter((p) => p.subcategorias.includes(applied.sub));
+      const espIds = new Set(esp.map((p) => p.id));
       const restantes = applied.cat
-        ? base.filter((l) => !espIds.has(l.id) && l.badges.includes(applied.cat))
+        ? base.filter((p) => !espIds.has(p.id) && p.badges.includes(applied.cat))
         : [];
       return { especialistas: esp, geral: restantes };
     }
 
     if (applied.cat && applied.cat !== "Outro") {
       return {
-        especialistas: base.filter((l) => l.badges.includes(applied.cat)),
-        geral: [] as Lawyer[],
+        especialistas: base.filter((p) => p.badges.includes(applied.cat)),
+        geral: [] as Psychologist[],
       };
     }
 
-    return { especialistas: base, geral: [] as Lawyer[] };
-  }, [rotatedLawyers, applied]);
+    return { especialistas: base, geral: [] as Psychologist[] };
+  }, [rotatedPsicologos, applied]);
 
   const totalResultados = especialistas.length + geral.length;
   // Só mostramos os cabeçalhos das camadas quando há uma subcategoria aplicada
   // e de fato existem dois grupos distintos para separar.
   const mostrarCamadas = Boolean(applied.sub);
 
-  const [contactLawyer, setContactLawyer] = useState<Lawyer | null>(null);
-  const [detailLawyer, setDetailLawyer] = useState<Lawyer | null>(null);
+  const [contactPsicologo, setContactPsicologo] = useState<Psychologist | null>(null);
+  const [detailPsicologo, setDetailPsicologo] = useState<Psychologist | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -145,6 +153,7 @@ export default function Advogados() {
     const subParam = params.get("subcategoria");
     const estParam = params.get("estado");
     const cidParam = params.get("cidade");
+    const publicoParam = params.get("publico");
 
     const catNome = catParam ? categoriaPorSlug(catParam)?.nome ?? "" : "";
     const subNome = subParam ?? "";
@@ -152,13 +161,15 @@ export default function Advogados() {
     if (subNome || catNome) setQueryCategoria(subNome || catNome);
     if (estParam) setEstado(estParam);
     if (cidParam) setCidade(cidParam);
+    if (publicoParam) setPublicoFiltro(publicoParam);
 
-    if (catNome || subNome || estParam || cidParam) {
+    if (catNome || subNome || estParam || cidParam || publicoParam) {
       setApplied({
         cat: catNome,
         sub: subNome,
         est: estParam || "",
         cid: cidParam || "",
+        publico: publicoParam || "",
       });
     }
   }, []);
@@ -171,7 +182,7 @@ export default function Advogados() {
     const subNome = resolvido?.subNome ?? "";
     const slug = resolvido?.slug;
 
-    setApplied({ cat: catNome, sub: subNome, est: estado, cid: cidade });
+    setApplied({ cat: catNome, sub: subNome, est: estado, cid: cidade, publico: publicoFiltro });
 
     // Update URL without reload (slug da macro + nome da subcategoria)
     const url = new URL(window.location.href);
@@ -186,6 +197,9 @@ export default function Advogados() {
 
     if (cidade) url.searchParams.set("cidade", cidade);
     else url.searchParams.delete("cidade");
+
+    if (publicoFiltro) url.searchParams.set("publico", publicoFiltro);
+    else url.searchParams.delete("publico");
 
     window.history.pushState({}, '', url);
   };
@@ -226,34 +240,34 @@ export default function Advogados() {
     }
   };
 
-  const formatLocation = (lawyer: Lawyer) => {
-    const shown = lawyer.cities.slice(0, 2).join(" · ");
+  const formatLocation = (psicologo: Psychologist) => {
+    const shown = psicologo.cities.slice(0, 2).join(" · ");
     const extra =
-      lawyer.cities.length > 2 ? ` · +${lawyer.cities.length - 2} cidades` : "";
-    const online = lawyer.online ? " · 🌐 Online" : "";
+      psicologo.cities.length > 2 ? ` · +${psicologo.cities.length - 2} cidades` : "";
+    const online = psicologo.online ? " · 🌐 Online" : "";
     return `${shown}${extra}${online}`;
   };
 
-  const SocialLinks = ({ lawyer, size = "sm" }: { lawyer: Lawyer; size?: "sm" | "lg" }) => {
+  const SocialLinks = ({ psicologo, size = "sm" }: { psicologo: Psychologist; size?: "sm" | "lg" }) => {
     const box = size === "lg" ? "h-9 w-9" : "h-7 w-7";
     const icon = size === "lg" ? "h-5 w-5" : "h-3.5 w-3.5";
     const links = [
-      lawyer.instagram && {
+      psicologo.instagram && {
         key: "ig",
-        href: `https://instagram.com/${lawyer.instagram}`,
-        label: `Instagram de ${lawyer.name}`,
+        href: `https://instagram.com/${psicologo.instagram}`,
+        label: `Instagram de ${psicologo.name}`,
         Icon: Instagram
       },
-      lawyer.website && safeUrl(lawyer.website) && {
+      psicologo.website && safeUrl(psicologo.website) && {
         key: "web",
-        href: lawyer.website,
-        label: `Site de ${lawyer.name}`,
+        href: psicologo.website,
+        label: `Site de ${psicologo.name}`,
         Icon: Globe
       },
-      lawyer.linkedin && safeUrl(lawyer.linkedin) && {
+      psicologo.linkedin && safeUrl(psicologo.linkedin) && {
         key: "in",
-        href: lawyer.linkedin,
-        label: `LinkedIn de ${lawyer.name}`,
+        href: psicologo.linkedin,
+        label: `LinkedIn de ${psicologo.name}`,
         Icon: Linkedin
       }
     ].filter(Boolean) as { key: string; href: string; label: string; Icon: typeof Instagram }[];
@@ -272,7 +286,7 @@ export default function Advogados() {
             title={label}
             onClick={(e) => e.stopPropagation()}
             className={`${box} rounded-full bg-primary-50 text-primary-600 flex items-center justify-center hover:bg-primary-100 hover:text-primary-700 transition-colors shrink-0`}
-            data-testid={`social-${key}-${lawyer.id}`}
+            data-testid={`social-${key}-${psicologo.id}`}
           >
             <Icon className={icon} strokeWidth={1.75} />
           </a>
@@ -282,12 +296,12 @@ export default function Advogados() {
   };
 
   // Sub-badges do card: no máximo 3 temas, com "e mais X" quando houver mais.
-  const renderSubBadges = (lawyer: Lawyer) => {
-    if (lawyer.subcategorias.length === 0) return null;
-    const visiveis = lawyer.subcategorias.slice(0, 3);
-    const extras = lawyer.subcategorias.length - visiveis.length;
+  const renderSubBadges = (psicologo: Psychologist) => {
+    if (psicologo.subcategorias.length === 0) return null;
+    const visiveis = psicologo.subcategorias.slice(0, 3);
+    const extras = psicologo.subcategorias.length - visiveis.length;
     return (
-      <div className="flex flex-wrap gap-1.5 mb-4" data-testid={`lawyer-subs-${lawyer.id}`}>
+      <div className="flex flex-wrap gap-1.5 mb-4" data-testid={`psicologo-subs-${psicologo.id}`}>
         {visiveis.map((sub) => (
           <span
             key={sub}
@@ -305,60 +319,63 @@ export default function Advogados() {
     );
   };
 
-  const renderCard = (lawyer: Lawyer) => (
-    <div key={lawyer.id} className="bg-white p-6 md:p-8 rounded-[28px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow flex flex-col h-full" data-testid={`lawyer-card-${lawyer.id}`}>
+  const renderCard = (psicologo: Psychologist) => (
+    <div key={psicologo.id} className="bg-white p-6 md:p-8 rounded-[28px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow flex flex-col h-full" data-testid={`psicologo-card-${psicologo.id}`}>
       <div className="flex gap-4 mb-5">
         <Avatar className="h-20 w-20 shrink-0 bg-primary-100 border-2 border-white shadow-sm">
-          {lawyer.photo && (
-            <AvatarImage src={lawyer.photo} alt={lawyer.name} className="object-cover" />
+          {psicologo.photo && (
+            <AvatarImage src={psicologo.photo} alt={psicologo.name} className="object-cover" />
           )}
-          <AvatarFallback className="text-primary-800 font-bold text-xl">{getInitials(lawyer.name)}</AvatarFallback>
+          <AvatarFallback className="text-primary-800 font-bold text-xl">{getInitials(psicologo.name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1.5">
-            <h3 className="font-bold text-lg text-primary-900 leading-tight">{lawyer.name}</h3>
-            <SocialLinks lawyer={lawyer} />
+            <h3 className="font-bold text-lg text-primary-900 leading-tight">{psicologo.name}</h3>
+            <SocialLinks psicologo={psicologo} />
           </div>
           <Badge variant="secondary" className="bg-[#1E7D4F]/10 text-[#1E7D4F] hover:bg-[#1E7D4F]/20 font-medium px-2 py-0.5 rounded-full border border-[#1E7D4F]/20">
-            <Check className="w-3 h-3 mr-1" /> {lawyer.oab}
+            <Check className="w-3 h-3 mr-1" /> {psicologo.crp}
           </Badge>
           <p className="text-neutral-700 text-sm mt-2">
-            {lawyer.primaryArea}
-            {lawyer.secondaryArea && <span> • {lawyer.secondaryArea}</span>}
+            {psicologo.primaryArea}
+            {psicologo.secondaryArea && <span> • {psicologo.secondaryArea}</span>}
           </p>
-          <p className="text-neutral-500 text-xs mt-1 flex items-center gap-1" data-testid={`lawyer-location-${lawyer.id}`}>
-            <MapPin className="w-3 h-3 shrink-0" /> {formatLocation(lawyer)}
+          <p className="text-neutral-500 text-xs mt-1 flex items-center gap-1" data-testid={`psicologo-location-${psicologo.id}`}>
+            <MapPin className="w-3 h-3 shrink-0" /> {formatLocation(psicologo)}
           </p>
+          {psicologo.precoSessao && (
+            <p className="text-neutral-500 text-xs mt-1">Sessão: {psicologo.precoSessao}</p>
+          )}
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {lawyer.badges.map(badge => (
+        {psicologo.badges.map(badge => (
           <Badge key={badge} variant="secondary" className="bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-full font-normal text-xs px-3 py-1">
             {badge}
           </Badge>
         ))}
       </div>
 
-      {renderSubBadges(lawyer)}
+      {renderSubBadges(psicologo)}
 
       <p className="text-neutral-600 text-sm mb-6 flex-grow line-clamp-2 italic">
-        "{lawyer.about}"
+        "{psicologo.about}"
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 mt-auto">
         <Button
           variant="outline"
           className="flex-1 h-12 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50 hover:border-primary-300 font-medium"
-          onClick={() => setDetailLawyer(lawyer)}
-          data-testid={`button-saiba-mais-${lawyer.id}`}
+          onClick={() => setDetailPsicologo(psicologo)}
+          data-testid={`button-saiba-mais-${psicologo.id}`}
         >
           Saiba mais
         </Button>
         <Button
           className="flex-1 h-12 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium shadow-sm hover:shadow-md transition-all"
-          onClick={() => setContactLawyer(lawyer)}
-          data-testid={`button-entrar-contato-${lawyer.id}`}
+          onClick={() => setContactPsicologo(psicologo)}
+          data-testid={`button-entrar-contato-${psicologo.id}`}
         >
           Entrar em contato
         </Button>
@@ -374,7 +391,7 @@ export default function Advogados() {
         {/* Hero with filters */}
         <section className="bg-white py-12 md:py-16 border-b border-neutral-100">
           <div className="container mx-auto px-6 max-w-[1200px]">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-900 mb-3 tracking-tight">Encontrar advogado</h1>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-900 mb-3 tracking-tight">Encontrar psicólogo</h1>
             <p className="text-neutral-600 text-lg mb-8 max-w-2xl">Use os filtros abaixo para encontrar um profissional na sua área e no seu estado.</p>
 
             <div className="bg-primary-50 p-4 md:p-6 rounded-[32px] border border-primary-100 shadow-sm">
@@ -421,21 +438,21 @@ export default function Advogados() {
           </div>
         </section>
 
-        {/* Lawyer cards section */}
+        {/* Psicólogo cards section */}
         <section className="py-16 bg-[#F5F4F2]">
           <div className="container mx-auto px-6 max-w-[1200px]">
             {isLoading ? (
-              <div className="flex items-center justify-center py-20" data-testid="advogados-carregando">
+              <div className="flex items-center justify-center py-20" data-testid="psicologos-carregando">
                 <Loader2 className="h-7 w-7 animate-spin text-primary-500" />
               </div>
             ) : totalResultados === 0 ? (
               <div className="text-center py-20">
-                <h3 className="text-2xl font-bold text-primary-900 mb-2">Nenhum advogado encontrado</h3>
+                <h3 className="text-2xl font-bold text-primary-900 mb-2">Nenhum psicólogo encontrado</h3>
                 <p className="text-neutral-600">Tente ajustar seus filtros para ver mais resultados.</p>
                 <Button
                   variant="outline"
                   className="mt-6 rounded-full border-primary-200 text-primary-700 hover:bg-primary-50"
-                  onClick={() => { setQueryCategoria(""); setEstado(""); setCidade(""); setApplied({ cat: "", sub: "", est: "", cid: "" }); }}
+                  onClick={() => { setQueryCategoria(""); setEstado(""); setCidade(""); setPublicoFiltro(""); setApplied({ cat: "", sub: "", est: "", cid: "", publico: "" }); }}
                   data-testid="button-limpar-filtros"
                 >
                   Limpar filtros
@@ -459,10 +476,10 @@ export default function Advogados() {
                 {geral.length > 0 && (
                   <div>
                     <h2 className="text-xl md:text-2xl font-bold text-primary-900 mb-1" data-testid="camada-geral-titulo">
-                      Advogados em {applied.cat}
+                      Psicólogos em {applied.cat}
                     </h2>
                     <p className="text-neutral-600 text-sm mb-6">
-                      Outros profissionais que atuam nesta área do direito.
+                      Outros profissionais que atuam nesta área.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {geral.map(renderCard)}
@@ -478,10 +495,10 @@ export default function Advogados() {
           </div>
         </section>
 
-        {/* CTA advogados */}
+        {/* CTA psicólogos */}
         <section className="bg-[#EEF5FC] py-16 text-center border-t border-border/40">
           <div className="container mx-auto px-6 max-w-[800px]">
-            <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-4 tracking-tight">Você é advogado e não está aqui?</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-primary-900 mb-4 tracking-tight">Você é psicólogo e não está aqui?</h2>
             <p className="text-lg text-neutral-600 mb-8">Cadastre seu perfil e apareça para pessoas que precisam exatamente do que você faz.</p>
             <Button
               size="lg"
@@ -498,39 +515,42 @@ export default function Advogados() {
       <Footer />
 
       {/* Detail Modal — Saiba mais */}
-      <Dialog open={!!detailLawyer} onOpenChange={(open) => !open && setDetailLawyer(null)}>
+      <Dialog open={!!detailPsicologo} onOpenChange={(open) => !open && setDetailPsicologo(null)}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-white rounded-[28px]" data-testid="modal-detalhe">
-          {detailLawyer && (
+          {detailPsicologo && (
             <>
               <DialogHeader className="sr-only">
-                <DialogTitle>Perfil de {detailLawyer.name}</DialogTitle>
-                <DialogDescription>Informações completas sobre {detailLawyer.name}.</DialogDescription>
+                <DialogTitle>Perfil de {detailPsicologo.name}</DialogTitle>
+                <DialogDescription>Informações completas sobre {detailPsicologo.name}.</DialogDescription>
               </DialogHeader>
 
               {/* Header band */}
               <div className="bg-primary-50 px-6 md:px-8 pt-8 pb-6 rounded-t-[28px]">
                 <div className="flex flex-col sm:flex-row gap-5 items-start">
                   <Avatar className="h-24 w-24 shrink-0 bg-primary-100 border-4 border-white shadow-md">
-                    {detailLawyer.photo && (
-                      <AvatarImage src={detailLawyer.photo} alt={detailLawyer.name} className="object-cover" />
+                    {detailPsicologo.photo && (
+                      <AvatarImage src={detailPsicologo.photo} alt={detailPsicologo.name} className="object-cover" />
                     )}
-                    <AvatarFallback className="text-primary-800 font-bold text-2xl">{getInitials(detailLawyer.name)}</AvatarFallback>
+                    <AvatarFallback className="text-primary-800 font-bold text-2xl">{getInitials(detailPsicologo.name)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <h2 className="text-2xl font-bold text-primary-900 leading-tight">{detailLawyer.name}</h2>
-                      <SocialLinks lawyer={detailLawyer} size="lg" />
+                      <h2 className="text-2xl font-bold text-primary-900 leading-tight">{detailPsicologo.name}</h2>
+                      <SocialLinks psicologo={detailPsicologo} size="lg" />
                     </div>
                     <Badge variant="secondary" className="bg-[#1E7D4F]/10 text-[#1E7D4F] font-medium px-2.5 py-0.5 rounded-full border border-[#1E7D4F]/20">
-                      <Check className="w-3 h-3 mr-1" /> {detailLawyer.oab}
+                      <Check className="w-3 h-3 mr-1" /> {detailPsicologo.crp}
                     </Badge>
                     <p className="text-neutral-700 mt-3 font-medium">
-                      {detailLawyer.primaryArea}
-                      {detailLawyer.secondaryArea && <span> • {detailLawyer.secondaryArea}</span>}
+                      {detailPsicologo.primaryArea}
+                      {detailPsicologo.secondaryArea && <span> • {detailPsicologo.secondaryArea}</span>}
                     </p>
                     <p className="text-neutral-500 text-sm mt-1 flex items-center gap-1.5">
-                      <MapPin className="w-4 h-4 shrink-0" /> {formatLocation(detailLawyer)}
+                      <MapPin className="w-4 h-4 shrink-0" /> {formatLocation(detailPsicologo)}
                     </p>
+                    {detailPsicologo.precoSessao && (
+                      <p className="text-neutral-500 text-sm mt-1">Sessão: {detailPsicologo.precoSessao}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -540,7 +560,7 @@ export default function Advogados() {
                 <div>
                   <h3 className="font-bold text-primary-900 mb-3">Especialidades</h3>
                   <div className="flex flex-wrap gap-2">
-                    {detailLawyer.badges.map(badge => (
+                    {detailPsicologo.badges.map(badge => (
                       <Badge key={badge} variant="secondary" className="bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-full font-normal text-sm px-3 py-1">
                         {badge}
                       </Badge>
@@ -548,11 +568,11 @@ export default function Advogados() {
                   </div>
                 </div>
 
-                {detailLawyer.subcategorias.length > 0 && (
+                {detailPsicologo.subcategorias.length > 0 && (
                   <div>
                     <h3 className="font-bold text-primary-900 mb-3">Temas de atuação</h3>
                     <div className="flex flex-wrap gap-2">
-                      {detailLawyer.subcategorias.map((sub) => (
+                      {detailPsicologo.subcategorias.map((sub) => (
                         <span
                           key={sub}
                           className="text-sm px-3 py-1 rounded-full bg-accent-50 text-accent-700 border border-accent-100"
@@ -564,21 +584,37 @@ export default function Advogados() {
                   </div>
                 )}
 
+                {detailPsicologo.publicoAtendido.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-primary-900 mb-3">Público atendido</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {detailPsicologo.publicoAtendido.map((publico) => (
+                        <span
+                          key={publico}
+                          className="text-sm px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200"
+                        >
+                          {publico}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <h3 className="font-bold text-primary-900 mb-3">Sobre mim</h3>
-                  <p className="text-neutral-600 leading-relaxed">{detailLawyer.about}</p>
+                  <p className="text-neutral-600 leading-relaxed">{detailPsicologo.about}</p>
                 </div>
 
                 <Button
                   className="w-full h-14 rounded-full bg-accent-500 hover:bg-accent-600 text-white text-base font-medium shadow-md hover:shadow-lg transition-all"
                   onClick={() => {
-                    const lawyer = detailLawyer;
-                    setDetailLawyer(null);
-                    setContactLawyer(lawyer);
+                    const psicologo = detailPsicologo;
+                    setDetailPsicologo(null);
+                    setContactPsicologo(psicologo);
                   }}
                   data-testid="button-detalhe-contato"
                 >
-                  <MessageCircle className="w-5 h-5 mr-2" /> Entrar em contato com {detailLawyer.name.replace("Dr. ", "").replace("Dra. ", "").split(" ")[0]}
+                  <MessageCircle className="w-5 h-5 mr-2" /> Entrar em contato com {detailPsicologo.name.replace("Dr. ", "").replace("Dra. ", "").split(" ")[0]}
                 </Button>
               </div>
             </>
@@ -587,12 +623,12 @@ export default function Advogados() {
       </Dialog>
 
       {/* Contact Modal */}
-      <Dialog open={!!contactLawyer} onOpenChange={(open) => !open && setContactLawyer(null)}>
+      <Dialog open={!!contactPsicologo} onOpenChange={(open) => !open && setContactPsicologo(null)}>
         <DialogContent className="sm:max-w-md text-center p-8 bg-white rounded-[28px]" data-testid="modal-contato">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-primary-900 text-center mb-2">Falar com advogado</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-primary-900 text-center mb-2">Falar com psicólogo</DialogTitle>
             <DialogDescription className="text-center text-neutral-600">
-              Entre em contato diretamente com {contactLawyer?.name}.
+              Entre em contato diretamente com {contactPsicologo?.name}.
             </DialogDescription>
           </DialogHeader>
 
@@ -600,14 +636,14 @@ export default function Advogados() {
             <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
               <Phone className="w-8 h-8" />
             </div>
-            <p className="text-3xl font-bold text-neutral-900 mb-2">{contactLawyer?.phone}</p>
+            <p className="text-3xl font-bold text-neutral-900 mb-2">{contactPsicologo?.phone}</p>
             <p className="text-sm text-neutral-500">WhatsApp disponível</p>
           </div>
 
           <div className="flex flex-col gap-3">
             <Button
               className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white text-lg h-12 rounded-full"
-              onClick={() => window.open(`https://wa.me/55${contactLawyer?.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Olá, encontrei seu perfil no Minha Causa Justa e preciso de ajuda jurídica')}`, '_blank')}
+              onClick={() => window.open(`https://wa.me/55${contactPsicologo?.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Olá, encontrei seu perfil na Terapia Que Cura e gostaria de agendar uma sessão')}`, '_blank')}
               data-testid="button-chamar-whatsapp"
             >
               <MessageCircle className="w-5 h-5 mr-2" /> Chamar no WhatsApp
@@ -615,7 +651,7 @@ export default function Advogados() {
             <Button
               variant="ghost"
               className="w-full text-neutral-500 hover:text-neutral-900 rounded-full"
-              onClick={() => setContactLawyer(null)}
+              onClick={() => setContactPsicologo(null)}
               data-testid="button-fechar-modal"
             >
               Fechar

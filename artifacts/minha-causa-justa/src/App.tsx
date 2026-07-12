@@ -20,7 +20,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import Advogados from "@/pages/advogados";
+import Psicologos from "@/pages/psicologos";
 import Cadastro from "@/pages/cadastro";
 import CadastroFluxo from "@/pages/cadastro-fluxo";
 import TermosDeUso from "@/pages/termos-de-uso";
@@ -231,7 +231,7 @@ function ClerkProviderWithRoutes() {
         signIn: {
           start: {
             title: "Acesse sua conta",
-            subtitle: "Área exclusiva para advogados cadastrados.",
+            subtitle: "Área exclusiva para psicólogos cadastrados.",
           },
         },
         signUp: {
@@ -251,7 +251,7 @@ function ClerkProviderWithRoutes() {
           <AnalyticsTracker />
           <Switch>
             <Route path="/" component={Home} />
-            <Route path="/advogados" component={Advogados} />
+            <Route path="/psicologos" component={Psicologos} />
             <Route path="/cadastro" component={Cadastro} />
             <Route path="/cadastro/fluxo" component={CadastroFluxo} />
             <Route path="/termos-de-uso" component={TermosDeUso} />

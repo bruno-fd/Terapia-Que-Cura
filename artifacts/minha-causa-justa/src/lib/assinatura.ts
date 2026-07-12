@@ -7,7 +7,7 @@ import {
 } from "@workspace/api-client-react";
 
 // ============================================================
-// Chamadas à API de assinatura (Asaas). O advogado é
+// Chamadas à API de assinatura (Asaas). O psicólogo é
 // identificado pela sessão autenticada (Clerk) no back-end;
 // o cookie de sessão vai junto por ser mesma origem (/api).
 // ============================================================
@@ -46,7 +46,7 @@ export type {
 };
 
 // Inicia o checkout ANÔNIMO (sem conta): cria a assinatura no Asaas atrelada ao
-// lead e devolve a URL da fatura hospedada (invoiceUrl). A conta do advogado só
+// lead e devolve a URL da fatura hospedada (invoiceUrl). A conta do psicólogo só
 // é criada pelo back-end APÓS o webhook confirmar o pagamento.
 export function iniciarCheckout(input: CheckoutInput): Promise<CheckoutResult> {
   return iniciarCheckoutApi(input);

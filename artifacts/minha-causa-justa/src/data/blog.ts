@@ -31,193 +31,218 @@ export interface BlogPost {
   // Campos preenchidos apenas em posts gerados pelo painel /admin
   subtitle?: string;
   keywords?: string[];
-  oabClosing?: string;
+  crpClosing?: string;
 }
 
 export const BLOG_POSTS: BlogPost[] = [
   {
-    slug: "inss-negou-seu-beneficio",
-    category: "INSS e Previdência",
-    title:
-      "INSS negou seu benefício? Veja o que diz a lei e quais são seus direitos",
+    slug: "ansiedade-nao-e-frescura",
+    category: "Ansiedade e Estresse",
+    subcategoria: "Ansiedade Generalizada",
+    title: "Ansiedade não é frescura: como identificar quando buscar ajuda",
     excerpt:
-      "Quando o INSS nega um pedido, a decisão não é definitiva. A lei prevê caminhos para revisão e garante ao cidadão o direito de entender o motivo da negativa.",
+      "A ansiedade é uma reação natural do corpo diante de situações de alerta. O problema começa quando ela se torna constante e passa a atrapalhar a rotina.",
     date: "12 de junho de 2026",
     readingMinutes: 4,
     body: [
       {
         paragraphs: [
-          "Receber uma negativa do INSS é uma situação mais comum do que muita gente imagina. Aposentadorias, auxílios e o BPC podem ser indeferidos por motivos que vão desde a falta de um documento até a interpretação das regras de contribuição. O que nem sempre fica claro é que a negativa inicial não encerra o assunto: a própria legislação prevê maneiras de revisar a decisão.",
+          "Sentir ansiedade antes de uma entrevista de emprego ou de uma prova é normal: é o corpo se preparando para lidar com um momento de tensão. O que muda de figura é quando essa sensação deixa de ser pontual e passa a aparecer quase todos os dias, mesmo sem um motivo claro.",
         ],
       },
       {
-        heading: "Por que um benefício pode ser negado",
+        heading: "Sinais de que a ansiedade passou do ponto",
         paragraphs: [
-          "As negativas costumam ter causas específicas. Entre as mais frequentes estão a ausência de carência mínima de contribuições, divergências no Cadastro Nacional de Informações Sociais (o famoso CNIS), períodos de trabalho que não constam no histórico e laudos médicos considerados insuficientes pela perícia.",
-          "Por lei, o INSS é obrigado a informar o motivo da recusa. Essa informação aparece na carta de indeferimento ou na própria plataforma Meu INSS. Entender exatamente qual foi a razão é o primeiro passo para saber se houve apenas um problema de documentação ou uma divergência sobre o direito em si.",
+          "Preocupação excessiva com situações do cotidiano, dificuldade para relaxar, tensão muscular, insônia e uma sensação constante de que algo ruim vai acontecer são sinais comuns. Também é frequente a pessoa perceber que já não consegue se concentrar no trabalho ou nos estudos por causa desses pensamentos.",
+          "Em alguns casos, a ansiedade se manifesta fisicamente: coração acelerado, falta de ar, tontura ou aperto no peito, mesmo sem nenhuma causa médica identificada.",
         ],
       },
       {
-        heading: "O que a lei garante depois da negativa",
+        heading: "Por que a ansiedade não desaparece sozinha",
         paragraphs: [
-          "A legislação previdenciária assegura o direito de contestar a decisão. Existe a possibilidade de recurso administrativo, analisado pelo Conselho de Recursos da Previdência Social, um órgão diferente daquele que negou o pedido inicialmente.",
-          "Também é possível pedir a revisão quando surgem novos documentos ou quando há correção de informações no histórico de contribuições. Em muitos casos, dados que faltavam podem ser incluídos e mudam completamente a análise do pedido.",
+          "É comum tentar lidar com a ansiedade sozinho, adiando o problema na esperança de que ele passe com o tempo. Mas, sem um espaço para entender de onde vêm esses pensamentos e como o corpo reage a eles, a tendência é que o quadro se mantenha ou piore, afetando relações pessoais e profissionais.",
         ],
       },
       {
-        heading: "Prazos e organização dos documentos",
+        heading: "O papel da psicoterapia",
         paragraphs: [
-          "Os recursos administrativos têm prazos definidos, normalmente contados a partir da data em que a pessoa toma conhecimento da negativa. Por isso, guardar a carta de indeferimento e anotar as datas é importante para não perder a oportunidade de contestar.",
-          "Reunir comprovantes de trabalho, carnês de contribuição, laudos e exames médicos ajuda a montar um quadro completo da situação. Quanto mais organizado o conjunto de documentos, mais clara fica a análise de quem vai reavaliar o pedido.",
+          "Um acompanhamento psicológico ajuda a identificar os gatilhos da ansiedade e a desenvolver formas mais saudáveis de lidar com eles, no ritmo e na abordagem que fizerem sentido para cada pessoa. Buscar esse apoio não é sinal de fraqueza, é um cuidado com a própria saúde mental.",
         ],
       },
     ],
   },
   {
-    slug: "demitido-sem-justa-causa",
-    category: "Trabalho e Emprego",
-    title: "Fui demitido sem justa causa: o que tenho direito a receber?",
+    slug: "depressao-sinais-e-mitos",
+    category: "Depressão e Transtornos de Humor",
+    subcategoria: "Depressão",
+    title: "Depressão: sinais, mitos e como a psicoterapia pode ajudar",
     excerpt:
-      "A demissão sem justa causa garante um conjunto de verbas previstas na CLT. Saber quais são ajuda o trabalhador a conferir se tudo foi pago corretamente.",
+      "Depressão vai muito além de tristeza. Reconhecer os sinais e desfazer alguns mitos comuns é o primeiro passo para buscar o apoio certo.",
     date: "5 de junho de 2026",
     readingMinutes: 3,
     body: [
       {
         paragraphs: [
-          "A demissão sem justa causa acontece quando a empresa decide encerrar o contrato sem que o trabalhador tenha cometido falta grave. Nesse cenário, a CLT prevê um conjunto de verbas que devem ser pagas na rescisão.",
+          "Ainda existe a ideia de que depressão é apenas uma tristeza mais forte, que passa com tempo ou força de vontade. Na prática, é um quadro que envolve o corpo e a mente como um todo, e que pode se manifestar de formas bem diferentes de pessoa para pessoa.",
         ],
       },
       {
-        heading: "As principais verbas rescisórias",
+        heading: "Sinais que vão além da tristeza",
         paragraphs: [
-          "Entre os valores normalmente devidos estão o saldo de salário dos dias trabalhados no mês, o aviso prévio, as férias vencidas e proporcionais acrescidas de um terço, e o décimo terceiro proporcional.",
-          "Além disso, a lei prevê o acesso ao saldo do FGTS e a uma multa sobre esse saldo, paga pela empresa nesse tipo de desligamento.",
+          "Perda de interesse em atividades que antes davam prazer, cansaço constante, alterações no sono e no apetite, dificuldade de concentração e uma sensação persistente de vazio são sinais frequentes. Em muitos casos, a pessoa continua cumprindo suas obrigações do dia a dia, o que torna o quadro mais difícil de ser percebido por quem está ao redor.",
         ],
       },
       {
-        heading: "Conferindo o termo de rescisão",
+        heading: "Alguns mitos comuns",
         paragraphs: [
-          "Todas as verbas aparecem discriminadas no termo de rescisão do contrato de trabalho. Comparar os valores com o que a lei prevê ajuda a entender se algo ficou de fora.",
-          "Guardar holerites, o contrato e o termo de rescisão facilita a conferência e mantém um registro completo da relação de trabalho.",
+          "\"Depressão é falta de vontade\" e \"basta pensar positivo\" são frases que, além de não ajudarem, podem fazer a pessoa se sentir ainda mais culpada. Depressão não é escolha nem fraqueza: é uma condição de saúde que envolve fatores biológicos, psicológicos e sociais.",
+        ],
+      },
+      {
+        heading: "Buscando apoio profissional",
+        paragraphs: [
+          "A psicoterapia oferece um espaço para entender o que está por trás do quadro depressivo e construir, aos poucos, formas de lidar com ele. Quando necessário, o psicólogo também pode indicar o acompanhamento conjunto com um psiquiatra, já que em alguns casos o tratamento combinado costuma trazer melhores resultados.",
         ],
       },
     ],
   },
   {
-    slug: "pensao-alimenticia-como-funciona",
-    category: "Família",
-    title: "Pensão alimentícia: como funciona e quem tem direito",
+    slug: "terapia-de-casal-quando-procurar",
+    category: "Relacionamentos e Casais",
+    subcategoria: "Conflitos Amorosos",
+    title: "Terapia de casal: quando e por que buscar ajuda profissional",
     excerpt:
-      "A pensão alimentícia existe para garantir o sustento de quem precisa. A lei define quem pode receber e quais critérios são usados para calcular o valor.",
+      "Discussões fazem parte de qualquer relacionamento. O sinal de alerta aparece quando os conflitos se repetem sempre da mesma forma, sem solução.",
     date: "28 de maio de 2026",
     readingMinutes: 3,
     body: [
       {
         paragraphs: [
-          "A pensão alimentícia é um valor pago para garantir as necessidades básicas de quem não tem condições de prover o próprio sustento. Ela está prevista no Código Civil e pode envolver diferentes membros de uma família.",
+          "Todo relacionamento passa por momentos de atrito. O que diferencia um casal que atravessa bem essas fases de outro que sofre com elas costuma ser a forma como os dois conseguem conversar sobre o que sentem, e nem sempre isso é simples de fazer sozinhos.",
         ],
       },
       {
-        heading: "Quem pode receber",
+        heading: "Sinais de que pode ser hora de buscar ajuda",
         paragraphs: [
-          "O caso mais conhecido é o dos filhos, que têm direito à pensão até atingirem a maioridade e, em algumas situações, enquanto estiverem estudando. Mas a lei também prevê a possibilidade entre cônjuges e, em certos casos, entre pais e filhos adultos.",
+          "Discussões que sempre terminam do mesmo jeito, sem chegar a lugar nenhum, distanciamento afetivo, dificuldade de confiar após uma crise, ou a sensação de que a comunicação virou só cobrança, são sinais comuns de que o casal pode se beneficiar de um espaço mediado por um profissional.",
         ],
       },
       {
-        heading: "Como o valor é definido",
+        heading: "O que a terapia de casal não é",
         paragraphs: [
-          "O cálculo segue o chamado binômio necessidade e possibilidade: de um lado, o que a pessoa precisa para viver, de outro, o quanto quem paga tem condições de contribuir.",
-          "Esse valor pode ser revisto ao longo do tempo, quando há mudança na situação financeira de qualquer uma das partes.",
+          "A terapia de casal não existe para apontar quem está certo ou errado, nem para salvar toda e qualquer relação a qualquer custo. O objetivo é ajudar os dois a se entenderem melhor, e, a partir daí, decidirem juntos os próximos passos, seja para fortalecer o vínculo, seja para uma separação mais saudável.",
+        ],
+      },
+      {
+        heading: "Como funciona na prática",
+        paragraphs: [
+          "As sessões geralmente incluem momentos com o casal junto e, quando necessário, conversas individuais. O psicólogo atua como um mediador neutro, ajudando cada um a se expressar sem que a conversa vire uma disputa.",
         ],
       },
     ],
   },
   {
-    slug: "aposentadoria-por-tempo-de-contribuicao",
-    category: "INSS e Previdência",
-    title:
-      "Aposentadoria por tempo de contribuição: quem pode pedir e como calcular",
+    slug: "conflitos-familiares-na-adolescencia",
+    category: "Família e Parentalidade",
+    subcategoria: "Conflitos Familiares",
+    title: "Conflitos familiares na adolescência: como a terapia pode ajudar",
     excerpt:
-      "As regras de aposentadoria mudaram com a reforma da Previdência. Entender as regras de transição é essencial para saber em qual situação cada pessoa se encaixa.",
+      "A adolescência traz mudanças rápidas que costumam gerar atrito em casa. Entender o que está por trás dos conflitos ajuda a família a se reorganizar.",
     date: "20 de maio de 2026",
     readingMinutes: 4,
     body: [
       {
         paragraphs: [
-          "A aposentadoria por tempo de contribuição passou por mudanças importantes com a reforma da Previdência. Hoje, quem já contribuía antes da reforma pode se encaixar em regras de transição, enquanto quem começou depois segue as novas regras.",
+          "É comum que a relação entre pais e filhos adolescentes fique mais tensa nessa fase. Mudanças de humor, busca por independência e a formação da própria identidade fazem parte do desenvolvimento, mas também podem gerar bastante desgaste em casa.",
         ],
       },
       {
-        heading: "As regras de transição",
+        heading: "Por que os conflitos aumentam nessa fase",
         paragraphs: [
-          "As regras de transição foram criadas para quem já estava perto de se aposentar quando as mudanças entraram em vigor. Elas combinam fatores como idade, tempo de contribuição e, em alguns casos, uma pontuação que soma os dois.",
+          "O adolescente está testando limites e formando sua própria visão de mundo, o que naturalmente entra em choque com as regras estabelecidas pelos pais. Ao mesmo tempo, os pais lidam com a insegurança de saber até onde ceder e até onde manter os limites necessários.",
         ],
       },
       {
-        heading: "A importância do histórico de contribuições",
+        heading: "O papel da orientação psicológica",
         paragraphs: [
-          "Conferir o histórico no CNIS é fundamental para saber quanto tempo de contribuição já existe registrado. Períodos de trabalho que não aparecem podem ser incluídos com a documentação correta.",
-          "Esse acompanhamento ajuda cada pessoa a entender em qual regra se encaixa e quanto tempo ainda falta, de acordo com o seu próprio histórico.",
+          "Um acompanhamento com o adolescente, com os pais ou com a família como um todo ajuda a abrir espaço para que cada lado seja ouvido. Muitas vezes, o conflito visível esconde uma dificuldade de comunicação que já vem de antes, e que pode ser trabalhada aos poucos.",
+          "Orientação de pais também é um recurso valioso: ajuda a entender o momento de desenvolvimento do filho e a encontrar formas de dialogar sem abrir mão dos limites que forem necessários.",
+        ],
+      },
+      {
+        heading: "Quando buscar apoio",
+        paragraphs: [
+          "Se os conflitos estão constantes, se há isolamento excessivo do adolescente ou mudanças bruscas de comportamento, vale considerar uma conversa com um psicólogo especializado em infância e adolescência.",
         ],
       },
     ],
   },
   {
-    slug: "plano-de-saude-negou-cobertura",
-    category: "Plano de Saúde",
-    title: "Plano de saúde negou cobertura? Entenda quando isso é ilegal",
+    slug: "luto-como-a-psicoterapia-ajuda",
+    category: "Luto, Envelhecimento e Cuidados Paliativos",
+    subcategoria: "Luto e Morte",
+    title: "Luto: como a psicoterapia ajuda a atravessar o processo",
     excerpt:
-      "Nem toda negativa de plano de saúde está de acordo com a lei. Existem regras claras sobre coberturas obrigatórias e prazos de atendimento.",
+      "Cada pessoa vive o luto de um jeito diferente, e não existe um prazo certo para essa dor passar. A psicoterapia oferece um espaço para atravessar esse processo.",
     date: "14 de maio de 2026",
     readingMinutes: 3,
     body: [
       {
         paragraphs: [
-          "Receber uma negativa de cobertura do plano de saúde gera dúvida e insegurança. Em muitos casos, a recusa é legítima, mas existem situações em que ela contraria as regras definidas pela legislação e pela agência reguladora.",
+          "A perda de alguém importante mexe com a vida de formas que nem sempre conseguimos prever. Não existe um roteiro certo para o luto, e comparar a própria dor com a de outra pessoa raramente ajuda.",
         ],
       },
       {
-        heading: "O rol de procedimentos",
+        heading: "O luto não segue um cronograma",
         paragraphs: [
-          "A ANS, agência que regula os planos de saúde, mantém uma lista de procedimentos de cobertura obrigatória. Tratamentos previstos nessa lista, dentro das condições estabelecidas, devem ser oferecidos pelas operadoras.",
+          "É comum ouvir frases como \"já faz tempo, precisa seguir em frente\", mas o processo de elaborar uma perda não tem prazo fixo. Cada pessoa lida com o luto no seu próprio ritmo, e isso inclui momentos de tristeza, raiva, culpa e, aos poucos, aceitação.",
         ],
       },
       {
-        heading: "Negativas que precisam de justificativa",
+        heading: "Quando o luto pode precisar de atenção",
         paragraphs: [
-          "Quando há uma recusa, a operadora deve informar o motivo de forma clara e por escrito, sempre que solicitada. Essa explicação ajuda a entender se a negativa segue ou não as regras aplicáveis ao contrato.",
-          "Guardar pedidos médicos, protocolos de atendimento e a resposta da operadora mantém um registro útil de toda a situação.",
+          "Quando a dor permanece tão intensa que impede a pessoa de retomar a rotina por um período prolongado, ou quando surgem sentimentos de culpa muito fortes, pode ser importante buscar apoio profissional para que o luto não se transforme em um sofrimento mais prolongado.",
+        ],
+      },
+      {
+        heading: "Como a terapia pode ajudar",
+        paragraphs: [
+          "A psicoterapia oferece um espaço seguro para falar sobre a pessoa que se foi, elaborar sentimentos difíceis e, aos poucos, encontrar formas de seguir a vida com essa perda. Esse acompanhamento também pode ser importante para famílias que enfrentam cuidados paliativos, ajudando a lidar com a antecipação da despedida.",
         ],
       },
     ],
   },
   {
-    slug: "inventario-e-heranca",
-    category: "Herança e Inventário",
-    title:
-      "Inventário e herança: o que acontece com os bens depois que alguém falece",
+    slug: "autoestima-baixa-como-a-terapia-ajuda",
+    category: "Autoconhecimento e Desenvolvimento Pessoal",
+    subcategoria: "Autoestima",
+    title: "Autoestima baixa: como a terapia pode ajudar a reconstruir a confiança",
     excerpt:
-      "O inventário é o processo que organiza a partilha dos bens deixados por uma pessoa. Conhecer as etapas ajuda a entender como tudo funciona.",
+      "A forma como enxergamos a nós mesmos molda decisões importantes da vida. Quando essa visão está distorcida, a terapia pode ajudar a reconstruí-la.",
     date: "6 de maio de 2026",
-    readingMinutes: 4,
+    readingMinutes: 3,
     body: [
       {
         paragraphs: [
-          "Quando uma pessoa falece, os bens que ela deixou precisam passar por um processo chamado inventário. É por meio dele que se identifica o patrimônio, se calculam eventuais tributos e se define como os bens serão partilhados entre os herdeiros.",
+          "Autoestima baixa não é apenas uma questão de vaidade ou de aparência: ela influencia decisões de carreira, relacionamentos e a forma como a pessoa se permite (ou não) buscar o que quer para a própria vida.",
         ],
       },
       {
-        heading: "As formas de inventário",
+        heading: "Como a autoestima baixa se manifesta",
         paragraphs: [
-          "O inventário pode ser feito de forma judicial ou, quando há acordo entre os herdeiros e não existem menores ou incapazes envolvidos, de forma extrajudicial, em cartório.",
-          "A escolha do caminho depende da situação específica de cada família e da existência ou não de testamento.",
+          "Autocrítica excessiva, dificuldade de aceitar elogios, medo constante de errar e comparação frequente com outras pessoas são sinais comuns. Muitas vezes, a origem está em experiências antigas, como cobranças na infância ou relações marcadas por críticas constantes.",
         ],
       },
       {
-        heading: "Herdeiros e partilha",
+        heading: "O papel do autoconhecimento",
         paragraphs: [
-          "A lei define uma ordem de sucessão, que indica quem são os herdeiros e em qual proporção cada um participa da partilha. Cônjuge, filhos e outros parentes podem entrar nessa ordem conforme o caso.",
-          "Reunir documentos dos bens e das pessoas envolvidas é um passo importante para que o processo transcorra de forma organizada.",
+          "Entender de onde vêm essas crenças sobre si mesmo é um passo importante para começar a mudá-las. Isso não acontece da noite para o dia, mas com um acompanhamento constante é possível construir uma relação mais gentil consigo mesmo.",
+        ],
+      },
+      {
+        heading: "Como a terapia contribui nesse processo",
+        paragraphs: [
+          "Em terapia, é possível identificar os padrões de pensamento que alimentam a baixa autoestima e substituí-los, aos poucos, por uma visão mais realista e menos punitiva de si mesmo. O processo é gradual, mas os efeitos costumam se refletir em várias áreas da vida.",
         ],
       },
     ],

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { verificarOab as verificarOabApi } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import {
@@ -8,7 +7,7 @@ import {
   maskCpf,
   type FunnelData,
 } from "@/lib/cadastro-funnel";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 
 interface Props {
@@ -17,78 +16,33 @@ interface Props {
   onNext: () => void;
 }
 
+// NOTA: a verificação automática da inscrição no CRP (equivalente ao que este
+// componente fazia contra o webservice da OAB) ainda não foi migrada — ver
+// plano de migração. Por ora, todo cadastro segue para revisão manual do
+// admin (crpVerificacaoPendente: true), sem chamar nenhum webservice externo.
 export function StepIdentificacao({ data, update, onNext }: Props) {
   const [nomeErro, setNomeErro] = useState("");
   const [emailErro, setEmailErro] = useState("");
   const [cpfErro, setCpfErro] = useState("");
-  const [oabErro, setOabErro] = useState("");
-  const [verificando, setVerificando] = useState(false);
+  const [crpErro, setCrpErro] = useState("");
 
-  const oabDigitos = data.oab.replace(/\D/g, "");
-  const oabPreenchida = oabDigitos.length >= 3 && !!data.seccional;
+  const crpDigitos = data.crp.replace(/\D/g, "");
+  const crpPreenchido = crpDigitos.length >= 3 && !!data.regiao;
   const nomeCompleto =
     data.nome.trim().split(/\s+/).filter(Boolean).length >= 2;
 
-  // Habilita o "Continuar" quando os campos locais estão válidos. A verificação
-  // real na OAB acontece no clique (verificarEContinuar).
   const tudoValido =
     nomeCompleto &&
     isEmailValido(data.email) &&
     isCpfValido(data.cpf) &&
-    oabPreenchida;
+    crpPreenchido;
 
-  const focar = (id: string) => {
-    document.getElementById(id)?.focus();
-  };
+  const inputCls = (erro: string) =>
+    `w-full h-12 px-4 rounded-lg border text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+      erro ? "border-[#C0392B]" : "border-neutral-300"
+    }`;
 
-  const aplicarErroMotivo = (motivo: string | null | undefined) => {
-    switch (motivo) {
-      case "cpf_nao_encontrado":
-        setCpfErro(
-          "Não encontramos esse CPF na base da OAB. Confira o número informado.",
-        );
-        focar("cad-cpf");
-        break;
-      case "oab_divergente":
-        setOabErro(
-          "O número da OAB e a seccional não conferem com esse CPF.",
-        );
-        focar("cad-oab");
-        break;
-      case "nome_divergente":
-        setNomeErro(
-          "O nome informado não confere com o registrado na OAB para esse CPF.",
-        );
-        focar("cad-nome");
-        break;
-      case "inscricao_inativa":
-        setOabErro(
-          "Sua inscrição na OAB não consta como ativa. Verifique sua situação junto à seccional.",
-        );
-        focar("cad-oab");
-        break;
-      default:
-        setOabErro(
-          "Não foi possível confirmar sua inscrição agora. Tente novamente.",
-        );
-    }
-  };
-
-  // Marca a verificação como pendente (revisão manual) e segue o funil. Usado
-  // quando o serviço da OAB está indisponível: não bloqueamos o cadastro.
-  const seguirPendente = () => {
-    update({
-      oabVerificada: false,
-      oabVerificacaoPendente: true,
-      oabVerificadaEm: null,
-      oabSituacao: null,
-      oabNomeConfirmado: null,
-      oabToken: null,
-    });
-    onNext();
-  };
-
-  const verificarEContinuar = async () => {
+  const continuar = () => {
     let ok = true;
     if (!nomeCompleto) {
       setNomeErro("Informe seu nome completo (nome e sobrenome).");
@@ -102,48 +56,23 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
       setCpfErro("Informe um CPF válido.");
       ok = false;
     }
-    if (!oabPreenchida) {
-      setOabErro("Informe o número da OAB e a seccional.");
+    if (!crpPreenchido) {
+      setCrpErro("Informe o número do CRP e a região.");
       ok = false;
     }
     if (!ok) return;
 
-    setVerificando(true);
-    try {
-      const r = await verificarOabApi({
-        cpf: data.cpf,
-        oab: data.oab,
-        seccional: data.seccional,
-        nome: data.nome,
-      });
-      if (r.valido) {
-        update({
-          oabVerificada: true,
-          oabSituacao: r.situacao ?? null,
-          oabNomeConfirmado: r.nomeOab ?? null,
-          oabVerificadaEm: new Date().toISOString(),
-          oabVerificacaoPendente: false,
-          oabToken: r.token ?? null,
-        });
-        onNext();
-        return;
-      }
-      if (r.motivo === "erro_servico") {
-        seguirPendente();
-        return;
-      }
-      aplicarErroMotivo(r.motivo);
-      setVerificando(false);
-    } catch {
-      // Falha de rede/inesperada: trata como verificação pendente e segue.
-      seguirPendente();
-    }
+    // Verificação pendente de revisão manual (ver nota acima).
+    update({
+      crpVerificada: false,
+      crpVerificacaoPendente: true,
+      crpVerificadaEm: null,
+      crpSituacao: null,
+      crpNomeConfirmado: null,
+      oabToken: null,
+    });
+    onNext();
   };
-
-  const inputCls = (erro: string) =>
-    `w-full h-12 px-4 rounded-lg border text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-      erro ? "border-[#C0392B]" : "border-neutral-300"
-    }`;
 
   return (
     <div data-testid="step-identificacao">
@@ -247,7 +176,7 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
             </p>
           )}
           <p className="mt-1.5 text-xs text-neutral-500">
-            Usamos seu CPF apenas para confirmar sua inscrição na OAB. Ele nunca
+            Usamos seu CPF apenas para confirmar sua inscrição no CRP. Ele nunca
             aparece no seu perfil público.
           </p>
         </div>
@@ -255,77 +184,61 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-4">
           <div>
             <label
-              htmlFor="cad-oab"
+              htmlFor="cad-crp"
               className="block text-sm font-bold text-neutral-700 mb-1.5"
             >
-              Número da OAB<span className="text-[#C0392B]"> *</span>
+              Número do CRP<span className="text-[#C0392B]"> *</span>
             </label>
             <input
-              id="cad-oab"
+              id="cad-crp"
               type="text"
               inputMode="numeric"
-              value={data.oab}
+              value={data.crp}
               onChange={(e) => {
-                update({ oab: e.target.value });
-                if (oabErro) setOabErro("");
+                update({ crp: e.target.value });
+                if (crpErro) setCrpErro("");
               }}
               placeholder="Ex: 145782"
-              className={inputCls(oabErro)}
-              data-testid="input-oab"
+              className={inputCls(crpErro)}
+              data-testid="input-crp"
             />
           </div>
           <div>
             <span className="block text-sm font-bold text-neutral-700 mb-1.5">
-              Seccional<span className="text-[#C0392B]"> *</span>
+              Região<span className="text-[#C0392B]"> *</span>
             </span>
             <StateAutocomplete
-              value={data.seccional}
+              value={data.regiao}
               onSelect={(uf) => {
-                update({ seccional: uf });
-                if (oabErro) setOabErro("");
+                update({ regiao: uf });
+                if (crpErro) setCrpErro("");
               }}
               placeholder="UF"
               inputClassName="w-full bg-white pr-9"
-              testId="select-seccional"
+              testId="select-regiao"
             />
           </div>
         </div>
 
-        {verificando && (
-          <p
-            className="flex items-center gap-2 text-sm text-neutral-600"
-            data-testid="oab-verificando"
-          >
-            <Loader2 className="h-4 w-4 animate-spin" /> Verificando sua
-            inscrição na OAB...
-          </p>
-        )}
-        {oabErro && (
-          <p className="text-sm text-[#C0392B]" data-testid="erro-oab">
-            {oabErro}
+        {crpErro && (
+          <p className="text-sm text-[#C0392B]" data-testid="erro-crp">
+            {crpErro}
           </p>
         )}
         <p className="text-xs text-neutral-500">
-          Confirmamos seu número diretamente na base do Conselho Federal da OAB.
+          Nossa equipe confere manualmente sua inscrição no Conselho Regional
+          de Psicologia antes de ativar seu perfil no diretório.
         </p>
       </div>
 
       <div className="mt-8 flex justify-end">
         <Button
-          onClick={verificarEContinuar}
-          disabled={!tudoValido || verificando}
+          onClick={continuar}
+          disabled={!tudoValido}
           className="h-12 px-7 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium disabled:opacity-50"
           data-testid="button-avancar"
         >
-          {verificando ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando...
-            </>
-          ) : (
-            <>
-              Continuar <ArrowRight className="ml-2 h-4 w-4" />
-            </>
-          )}
+          Continuar <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
     </div>

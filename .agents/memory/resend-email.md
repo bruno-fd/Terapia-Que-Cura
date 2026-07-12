@@ -15,6 +15,6 @@ Email is sent via the **Replit Resend connector**, not a raw API key. Use `@repl
 
 **Webhook dedupe must be race-safe.** Asaas fires both PAYMENT_CONFIRMED and PAYMENT_RECEIVED for one payment. Do the status UPDATE conditionally (`where status != newStatus`) and read `.returning()`: only send the email when a row actually changed. A read-then-compare check is race-prone under concurrent/retried deliveries; the conditional update is the safe pattern.
 
-**Config:** `EMAIL_FROM` (default `contato@minhacausajusta.com.br`) and `APP_PUBLIC_URL` (default `https://minhacausajusta.com.br`). The sender domain MUST be verified in Resend (DNS) or production sends fail; unverified Resend only sends test mail from `onboarding@resend.dev` to the account owner.
+**Config:** `EMAIL_FROM` (default `contato@terapiaquecura.com.br`) and `APP_PUBLIC_URL` (default `https://terapiaquecura.com.br`). The sender domain MUST be verified in Resend (DNS) or production sends fail; unverified Resend only sends test mail from `onboarding@resend.dev` to the account owner.
 
 **Copy rule:** all email copy is pt-BR with NO em dashes in user-facing text (allowed only in code comments).

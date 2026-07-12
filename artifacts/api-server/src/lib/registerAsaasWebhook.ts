@@ -19,7 +19,7 @@ const WEBHOOK_EVENTS = [
   "PAYMENT_REFUNDED",
 ];
 
-const WEBHOOK_NAME = "Minha Causa Justa, assinaturas";
+const WEBHOOK_NAME = "Terapia Que Cura, assinaturas";
 const WEBHOOK_PATH = "/api/assinatura/webhook";
 
 // URL pública por onde a Asaas alcança este servidor. Em produção, o primeiro

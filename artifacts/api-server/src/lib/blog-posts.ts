@@ -41,7 +41,7 @@ export async function persistGeneratedPost(
   const slug = await ensureUniqueSlug(generated.title);
   const readingMinutes = computeReadingMinutes(
     generated.body,
-    generated.oabClosing,
+    generated.crpClosing,
   );
 
   // A IA pode sugerir um tema específico (subcategoria); só persistimos se ele
@@ -65,7 +65,7 @@ export async function persistGeneratedPost(
       readingMinutes,
       body: generated.body,
       bodyHtml: sectionsToHtml(generated.body),
-      oabClosing: generated.oabClosing,
+      crpClosing: generated.crpClosing,
       published: opts.publish,
       // A data de publicação só é registrada quando o post já vai ao ar.
       publishedAt: opts.publish ? new Date() : null,

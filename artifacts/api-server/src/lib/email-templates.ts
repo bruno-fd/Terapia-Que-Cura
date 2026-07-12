@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 
 const APP_URL = (
-  process.env["APP_PUBLIC_URL"] ?? "https://minhacausajusta.com.br"
+  process.env["APP_PUBLIC_URL"] ?? "https://terapiaquecura.com.br"
 ).replace(/\/$/, "");
 
 const PRIMARY = "#2260AA";
@@ -44,14 +44,14 @@ function layout(bodyHtml: string): string {
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
         <tr><td style="background:${PRIMARY};padding:20px 32px;">
-          <span style="color:#ffffff;font-size:18px;font-weight:700;">Minha Causa Justa</span>
+          <span style="color:#ffffff;font-size:18px;font-weight:700;">Terapia Que Cura</span>
         </td></tr>
         <tr><td style="padding:32px;">
           ${bodyHtml}
         </td></tr>
         <tr><td style="padding:20px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;">
           <p style="margin:0;font-size:12px;color:${MUTED};line-height:1.5;">
-            Você recebeu este e-mail porque tem um cadastro na Minha Causa Justa.<br>
+            Você recebeu este e-mail porque tem um cadastro na Terapia Que Cura.<br>
             <a href="${APP_URL}" style="color:${PRIMARY};text-decoration:none;">${APP_URL.replace(/^https?:\/\//, "")}</a>
           </p>
         </td></tr>
@@ -81,13 +81,13 @@ export function welcomeEmail(nome?: string | null): EmailContent {
     .join("");
 
   const body = `
-    <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Bem-vindo(a) à Minha Causa Justa</h1>
+    <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Bem-vindo(a) à Terapia Que Cura</h1>
     ${paragraph(`${greeting(nome)} que bom ter você com a gente. Em poucos passos o seu perfil pode estar no ar para novos clientes encontrarem você.`)}
     <ol style="margin:0 0 24px;padding-left:20px;">${steps}</ol>
     ${button(`${APP_URL}/painel/assinatura`, "Começar agora")}
   `;
   return {
-    subject: "Bem-vindo(a) à Minha Causa Justa",
+    subject: "Bem-vindo(a) à Terapia Que Cura",
     html: layout(body),
   };
 }
@@ -116,7 +116,7 @@ export function subscriptionCreatedEmail(p: {
 }
 
 // 2b. Conta criada após a confirmação do pagamento (checkout primeiro). Leva o
-// advogado a criar a senha e, em seguida, cair no perfil. O link "Entrar" é o
+// psicólogo a criar a senha e, em seguida, cair no perfil. O link "Entrar" é o
 // convite do Clerk (define a senha e vincula a conta ao e-mail do pagamento).
 export function accountCreatedEmail(p: {
   nome?: string | null;
@@ -124,13 +124,13 @@ export function accountCreatedEmail(p: {
 }): EmailContent {
   const body = `
     <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Sua conta foi criada com sucesso</h1>
-    ${paragraph(`${greeting(p.nome)} recebemos a confirmação do seu pagamento e já criamos a sua conta na Minha Causa Justa.`)}
+    ${paragraph(`${greeting(p.nome)} recebemos a confirmação do seu pagamento e já criamos a sua conta na Terapia Que Cura.`)}
     ${paragraph("Para acessar, defina a sua senha no botão abaixo:")}
     ${button(p.entrarUrl, "Entrar")}
     ${paragraph(`<span style="font-size:13px;color:${MUTED};">P.S.: logo após entrar, você poderá completar o seu perfil profissional para começar a ser encontrado por novos clientes.</span>`)}
   `;
   return {
-    subject: "Minha Causa Justa: Conta Criada com Sucesso",
+    subject: "Terapia Que Cura: Conta Criada com Sucesso",
     html: layout(body),
   };
 }
@@ -156,8 +156,8 @@ export function remarketingEmail(p: {
 }): EmailContent {
   const plano = p.planoLabel?.trim();
   const linha = plano
-    ? `Você começou seu cadastro e escolheu o ${escapeHtml(plano)}. Falta pouco para o seu perfil aparecer para quem está procurando um advogado agora.`
-    : "Você começou seu cadastro na Minha Causa Justa. Falta pouco para o seu perfil aparecer para quem está procurando um advogado agora.";
+    ? `Você começou seu cadastro e escolheu o ${escapeHtml(plano)}. Falta pouco para o seu perfil aparecer para quem está procurando um psicólogo agora.`
+    : "Você começou seu cadastro na Terapia Que Cura. Falta pouco para o seu perfil aparecer para quem está procurando um psicólogo agora.";
   const body = `
     <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Seu cadastro está quase pronto</h1>
     ${paragraph(`${greeting(p.nome)} ${linha}`)}
@@ -171,36 +171,36 @@ export function remarketingEmail(p: {
   };
 }
 
-// 6. Verificação: situação irregular. Disparado quando o admin classifica a
-// OAB do advogado como "Irregular". O perfil permanece visível por ora.
+// 6. Verificação: situação irregular. Disparado quando o admin classifica o
+// CRP do psicólogo como "Irregular". O perfil permanece visível por ora.
 export function situacaoIrregularEmail(nome?: string | null): EmailContent {
   const body = `
     <h1 style="margin:0 0 16px;font-size:22px;color:${ACCENT};">Verificação necessária no seu perfil</h1>
     ${paragraph(`${greeting(nome)}`)}
-    ${paragraph("Verificamos os dados do seu perfil na Minha Causa Justa e identificamos uma inconsistência nas informações cadastradas. Seu perfil permanece visível na plataforma por enquanto, mas precisamos que você regularize a situação.")}
-    ${paragraph("Por favor, acesse seu painel e revise as informações cadastradas, especialmente seus dados da OAB. Se acreditar que há um erro da nossa parte, entre em contato pelo e-mail contato@minhacausajusta.com.br.")}
+    ${paragraph("Verificamos os dados do seu perfil na Terapia Que Cura e identificamos uma inconsistência nas informações cadastradas. Seu perfil permanece visível na plataforma por enquanto, mas precisamos que você regularize a situação.")}
+    ${paragraph("Por favor, acesse seu painel e revise as informações cadastradas, especialmente seus dados do CRP. Se acreditar que há um erro da nossa parte, entre em contato pelo e-mail contato@terapiaquecura.com.br.")}
     ${button(`${APP_URL}/painel/perfil`, "Revisar meu perfil")}
-    ${paragraph(`<span style="font-size:13px;color:${MUTED};">Atenciosamente, Equipe Minha Causa Justa.</span>`)}
+    ${paragraph(`<span style="font-size:13px;color:${MUTED};">Atenciosamente, Equipe Terapia Que Cura.</span>`)}
   `;
   return {
-    subject: "Seu perfil na Minha Causa Justa: verificação necessária",
+    subject: "Seu perfil na Terapia Que Cura: verificação necessária",
     html: layout(body),
   };
 }
 
-// 7. Verificação: dados inválidos. Disparado quando o admin classifica a OAB
+// 7. Verificação: dados inválidos. Disparado quando o admin classifica o CRP
 // como "Inválido". O perfil já foi desativado automaticamente antes do envio.
 export function dadosInvalidosEmail(nome?: string | null): EmailContent {
   const body = `
     <h1 style="margin:0 0 16px;font-size:22px;color:${PRIMARY};">Seu perfil foi suspenso</h1>
     ${paragraph(`${greeting(nome)}`)}
-    ${paragraph("Verificamos os dados do seu perfil na Minha Causa Justa e não foi possível confirmar a validade das informações cadastradas. Por isso, seu perfil foi temporariamente suspenso da plataforma.")}
-    ${paragraph("Se você acredita que houve um engano, entre em contato pelo e-mail contato@minhacausajusta.com.br com seus dados da OAB e resolveremos o mais breve possível.")}
+    ${paragraph("Verificamos os dados do seu perfil na Terapia Que Cura e não foi possível confirmar a validade das informações cadastradas. Por isso, seu perfil foi temporariamente suspenso da plataforma.")}
+    ${paragraph("Se você acredita que houve um engano, entre em contato pelo e-mail contato@terapiaquecura.com.br com seus dados do CRP e resolveremos o mais breve possível.")}
     ${paragraph("Caso os dados cadastrados sejam de outra pessoa, sua conta será encerrada definitivamente.")}
-    ${paragraph(`<span style="font-size:13px;color:${MUTED};">Atenciosamente, Equipe Minha Causa Justa.</span>`)}
+    ${paragraph(`<span style="font-size:13px;color:${MUTED};">Atenciosamente, Equipe Terapia Que Cura.</span>`)}
   `;
   return {
-    subject: "Seu perfil na Minha Causa Justa foi suspenso",
+    subject: "Seu perfil na Terapia Que Cura foi suspenso",
     html: layout(body),
   };
 }

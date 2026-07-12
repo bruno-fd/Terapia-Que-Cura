@@ -6,14 +6,14 @@ import { TrendingUp } from "lucide-react";
 // lugar, para facilitar o ajuste conforme dados reais da plataforma.
 export const PROVA_SOCIAL = {
   identificacao:
-    "Mais de 7.500 pessoas visitam o Minha Causa Justa todos os dias procurando um advogado.",
+    "Mais de 7.500 pessoas visitam a Terapia Que Cura todos os dias procurando um psicólogo.",
   atuacao:
-    "Centenas de pessoas procuraram assessoria jurídica na última hora. Diga sua área e região para aparecer nas buscas certas.",
-  plano: "Cada dia fora do diretório é um cliente que encontra outro advogado.",
+    "Centenas de pessoas procuraram apoio psicológico na última hora. Diga sua área e região para aparecer nas buscas certas.",
+  plano: "Cada dia fora do diretório é um cliente que encontra outro psicólogo.",
   conta:
     "Falta pouco: sua conta garante que os contatos dos clientes cheguem só a você.",
   pagamento:
-    "Ative seu perfil hoje e comece a aparecer para milhares de buscas por advogados.",
+    "Ative seu perfil hoje e comece a aparecer para milhares de buscas por psicólogos.",
   perfil:
     "Perfis completos recebem muito mais contatos. Capriche no seu para se destacar.",
 } as const;

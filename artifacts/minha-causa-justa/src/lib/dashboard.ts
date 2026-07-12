@@ -1,4 +1,4 @@
-// Helpers da área logada do advogado. O perfil agora é persistido no banco
+// Helpers da área logada do psicólogo. O perfil agora é persistido no banco
 // via API (hooks gerados em @workspace/api-client-react). Aqui ficam apenas
 // utilidades de UI e listas estáticas reutilizadas por várias telas.
 
@@ -6,6 +6,20 @@ import { CATEGORIA_NOMES } from "@/data/categories";
 
 // Áreas de atuação = categorias do site (fonte única em data/categories.ts)
 export const AREAS = CATEGORIA_NOMES;
+
+// Público atendido pelo psicólogo, marcado no cadastro e filtrável na busca.
+export const PUBLICO_ATENDIDO = [
+  "Adultos",
+  "Crianças",
+  "Adolescentes",
+  "Idosos",
+  "Casais",
+  "Famílias",
+  "Grupos",
+  "Homens",
+  "Mulheres",
+  "Comunidade LGBTQIA+",
+] as const;
 
 export const ESTADOS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",

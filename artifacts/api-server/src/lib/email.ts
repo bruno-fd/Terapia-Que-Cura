@@ -7,7 +7,7 @@ import { logger } from "./logger";
 // @replit/connectors-sdk cuida da identidade e do refresh de token
 // automaticamente; nunca lidamos com a chave de API diretamente.
 //
-// Remetente: definido por EMAIL_FROM (padrão contato@minhacausajusta.com.br).
+// Remetente: definido por EMAIL_FROM (padrão contato@terapiaquecura.com.br).
 // IMPORTANTE: o domínio do remetente precisa estar verificado no Resend para
 // que os envios funcionem em produção.
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ const connectors = new ReplitConnectors();
 
 const EMAIL_FROM =
   process.env["EMAIL_FROM"] ??
-  "Minha Causa Justa <contato@minhacausajusta.com.br>";
+  "Terapia Que Cura <contato@terapiaquecura.com.br>";
 
 export interface SendEmailInput {
   to: string;

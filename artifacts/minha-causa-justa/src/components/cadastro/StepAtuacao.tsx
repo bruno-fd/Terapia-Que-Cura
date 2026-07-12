@@ -4,10 +4,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import {
-  contarAdvogados,
+  contarPsicologos,
   type ConcorrenciaResult,
 } from "@workspace/api-client-react";
-import { AREAS } from "@/lib/dashboard";
+import { AREAS, PUBLICO_ATENDIDO } from "@/lib/dashboard";
 import type { FunnelData } from "@/lib/cadastro-funnel";
 import { ArrowRight, ArrowLeft, X, Loader2, Users } from "lucide-react";
 import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
@@ -29,7 +29,7 @@ function mensagemConcorrencia(
     return `Você pode ser um dos primeiros em ${area} em ${local}. Quem chega cedo aparece primeiro para quem procura.`;
   }
   if (count <= 5) {
-    return `Espaço aberto: poucos advogados de ${area} aparecem em ${local}. É a hora ideal para garantir destaque.`;
+    return `Espaço aberto: poucos psicólogos de ${area} aparecem em ${local}. É a hora ideal para garantir destaque.`;
   }
   if (count <= 20) {
     return `A procura por ${area} em ${local} está aquecida. Com um perfil completo, você se destaca dos demais.`;
@@ -57,7 +57,7 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
     }
     let ativo = true;
     setLoadingCount(true);
-    contarAdvogados({
+    contarPsicologos({
       area: primeiraArea,
       cidade: primeiraCidade.nome,
       uf: primeiraCidade.uf,
@@ -82,6 +82,14 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
       areas: data.areas.includes(area)
         ? data.areas.filter((a) => a !== area)
         : [...data.areas, area],
+    });
+  };
+
+  const togglePublico = (publico: string) => {
+    update({
+      publicoAtendido: data.publicoAtendido.includes(publico)
+        ? data.publicoAtendido.filter((p) => p !== publico)
+        : [...data.publicoAtendido, publico],
     });
   };
 
@@ -224,6 +232,29 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
         )}
       </div>
 
+      <div className="mt-8">
+        <h3 className="text-sm font-bold text-neutral-700 mb-3">
+          Público atendido
+        </h3>
+        <p className="text-sm text-neutral-500 mb-3">
+          Opcional. Ajuda quem busca um psicólogo para um perfil específico a
+          encontrar você.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {PUBLICO_ATENDIDO.map((publico) => (
+            <button
+              key={publico}
+              type="button"
+              onClick={() => togglePublico(publico)}
+              className={badgeClass(data.publicoAtendido.includes(publico))}
+              data-testid={`badge-publico-${publico}`}
+            >
+              {publico}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {mostrarCard && (
         <div
           className="mt-8 rounded-2xl border border-primary-100 bg-[#EEF5FC] p-6"
@@ -244,7 +275,7 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
               </span>
               <div>
                 <p className="text-lg font-bold text-primary-900">
-                  {counts.naAreaECidade} advogado(s) de {primeiraArea} em{" "}
+                  {counts.naAreaECidade} psicólogo(s) de {primeiraArea} em{" "}
                   {localLabel}
                 </p>
                 <p className="mt-1 text-sm text-neutral-700">

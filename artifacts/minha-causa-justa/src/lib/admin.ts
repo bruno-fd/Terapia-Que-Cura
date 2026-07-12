@@ -1,15 +1,15 @@
 import type {
   BlogPost as ApiBlogPost,
-  AdminAdvogado,
-  AdminAdvogadoDetail,
-  UpdateAdminAdvogadoInput,
+  AdminPsicologo,
+  AdminPsicologoDetail,
+  UpdateAdminPsicologoInput,
   BlogDailyRunsResponse,
 } from "@workspace/api-client-react";
 
 // ============================================================
 // Chamadas autenticadas ao painel /admin. O acesso é controlado pela sessão
 // segura de login (cookie same-origin "sid" enviado automaticamente para /api),
-// totalmente separada da base de advogados; o back-end exige um e-mail
+// totalmente separada da base de psicólogos; o back-end exige um e-mail
 // autorizado. Não há senha compartilhada.
 // ============================================================
 
@@ -74,7 +74,7 @@ export interface UpdatePostInput {
   subtitle?: string;
   excerpt?: string;
   bodyHtml?: string;
-  oabClosing?: string;
+  crpClosing?: string;
   published?: boolean;
 }
 
@@ -102,22 +102,22 @@ export function listBlogDailyRuns(): Promise<BlogDailyRunsResponse> {
 }
 
 // ============================================================
-// Verificação de advogados (aba "Verificação" do painel /admin)
+// Verificação de psicólogos (aba "Verificação" do painel /admin)
 // ============================================================
 
-export function listAdminAdvogados(): Promise<AdminAdvogado[]> {
-  return adminFetch("/admin/advogados");
+export function listAdminPsicologos(): Promise<AdminPsicologo[]> {
+  return adminFetch("/admin/psicologos");
 }
 
-export function getAdminAdvogado(id: number): Promise<AdminAdvogadoDetail> {
-  return adminFetch(`/admin/advogados/${id}`);
+export function getAdminPsicologo(id: number): Promise<AdminPsicologoDetail> {
+  return adminFetch(`/admin/psicologos/${id}`);
 }
 
-export function updateAdminAdvogado(
+export function updateAdminPsicologo(
   id: number,
-  input: UpdateAdminAdvogadoInput,
-): Promise<AdminAdvogadoDetail> {
-  return adminFetch(`/admin/advogados/${id}`, {
+  input: UpdateAdminPsicologoInput,
+): Promise<AdminPsicologoDetail> {
+  return adminFetch(`/admin/psicologos/${id}`, {
     method: "PATCH",
     body: input,
   });

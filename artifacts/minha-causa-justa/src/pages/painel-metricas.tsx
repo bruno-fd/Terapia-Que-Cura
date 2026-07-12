@@ -6,7 +6,7 @@ import { useGetPerfil } from "@workspace/api-client-react";
 
 type Period = "mes" | "trimestre" | "total";
 
-// Janela inicial de indexação: nos primeiros 15 dias de cadastro o advogado vê
+// Janela inicial de indexação: nos primeiros 15 dias de cadastro o psicólogo vê
 // a tela de boas-vindas; depois disso as métricas passam a aparecer sozinhas.
 const DIAS_INDEXACAO = 15;
 
@@ -134,7 +134,7 @@ function WelcomeState({ hasPhoto }: { hasPhoto: boolean }) {
         <ul className="space-y-3">
           {[
             "Perfis com foto recebem 3x mais visualizações",
-            "Advogados com 3 ou mais áreas selecionadas aparecem em mais buscas",
+            "Psicólogos com 3 ou mais áreas selecionadas aparecem em mais buscas",
             "Uma descrição clara no 'Sobre mim' aumenta os cliques em contato",
           ].map((tip) => (
             <li key={tip} className="flex items-start gap-2 text-sm text-neutral-700">

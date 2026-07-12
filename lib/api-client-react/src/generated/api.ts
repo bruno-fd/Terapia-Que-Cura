@@ -20,8 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AdminAdvogado,
-  AdminAdvogadoDetail,
+  AdminPsicologo,
+  AdminPsicologoDetail,
   ApiErrorResponse,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
@@ -35,18 +35,18 @@ import type {
   CheckoutInput,
   CheckoutResult,
   ConcorrenciaResult,
-  ContarAdvogadosParams,
+  ContarPsicologosParams,
   CreateSubscriptionInput,
   ErrorEnvelope,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
-  LawyerProfile,
   LogoutSuccess,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
-  PublicLawyer,
+  PsicologoProfile,
+  PublicPsicologo,
   SubscriptionState,
-  UpdateAdminAdvogadoInput,
+  UpdateAdminPsicologoInput,
   UpdateBlogPostInput,
   UpdateProfileInput,
   UpsertCadastroLeadInput,
@@ -672,20 +672,20 @@ export function useListBlogDailyRuns<TData = Awaited<ReturnType<typeof listBlogD
 
 
 
-export const getListAdminAdvogadosUrl = () => {
+export const getListAdminPsicologosUrl = () => {
 
 
 
 
-  return `/api/admin/advogados`
+  return `/api/admin/psicologos`
 }
 
 /**
- * @summary List all registered lawyers for admin verification
+ * @summary List all registered psychologists for admin verification
  */
-export const listAdminAdvogados = async ( options?: RequestInit): Promise<AdminAdvogado[]> => {
+export const listAdminPsicologos = async ( options?: RequestInit): Promise<AdminPsicologo[]> => {
 
-  return customFetch<AdminAdvogado[]>(getListAdminAdvogadosUrl(),
+  return customFetch<AdminPsicologo[]>(getListAdminPsicologosUrl(),
   {
     ...options,
     method: 'GET'
@@ -698,45 +698,45 @@ export const listAdminAdvogados = async ( options?: RequestInit): Promise<AdminA
 
 
 
-export const getListAdminAdvogadosQueryKey = () => {
+export const getListAdminPsicologosQueryKey = () => {
     return [
-    `/api/admin/advogados`
+    `/api/admin/psicologos`
     ] as const;
     }
 
 
-export const getListAdminAdvogadosQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAdvogados>>, TError = ErrorType<ApiErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListAdminPsicologosQueryOptions = <TData = Awaited<ReturnType<typeof listAdminPsicologos>>, TError = ErrorType<ApiErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPsicologos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAdminAdvogadosQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListAdminPsicologosQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAdvogados>>> = ({ signal }) => listAdminAdvogados({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminPsicologos>>> = ({ signal }) => listAdminPsicologos({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAdvogados>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminPsicologos>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ListAdminAdvogadosQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAdvogados>>>
-export type ListAdminAdvogadosQueryError = ErrorType<ApiErrorResponse>
+export type ListAdminPsicologosQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminPsicologos>>>
+export type ListAdminPsicologosQueryError = ErrorType<ApiErrorResponse>
 
 
 /**
- * @summary List all registered lawyers for admin verification
+ * @summary List all registered psychologists for admin verification
  */
 
-export function useListAdminAdvogados<TData = Awaited<ReturnType<typeof listAdminAdvogados>>, TError = ErrorType<ApiErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListAdminPsicologos<TData = Awaited<ReturnType<typeof listAdminPsicologos>>, TError = ErrorType<ApiErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminPsicologos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListAdminAdvogadosQueryOptions(options)
+  const queryOptions = getListAdminPsicologosQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -749,20 +749,20 @@ export function useListAdminAdvogados<TData = Awaited<ReturnType<typeof listAdmi
 
 
 
-export const getGetAdminAdvogadoUrl = (id: number,) => {
+export const getGetAdminPsicologoUrl = (id: number,) => {
 
 
 
 
-  return `/api/admin/advogados/${id}`
+  return `/api/admin/psicologos/${id}`
 }
 
 /**
- * @summary Get full lawyer detail with activity log
+ * @summary Get full psychologist detail with activity log
  */
-export const getAdminAdvogado = async (id: number, options?: RequestInit): Promise<AdminAdvogadoDetail> => {
+export const getAdminPsicologo = async (id: number, options?: RequestInit): Promise<AdminPsicologoDetail> => {
 
-  return customFetch<AdminAdvogadoDetail>(getGetAdminAdvogadoUrl(id),
+  return customFetch<AdminPsicologoDetail>(getGetAdminPsicologoUrl(id),
   {
     ...options,
     method: 'GET'
@@ -775,45 +775,45 @@ export const getAdminAdvogado = async (id: number, options?: RequestInit): Promi
 
 
 
-export const getGetAdminAdvogadoQueryKey = (id: number,) => {
+export const getGetAdminPsicologoQueryKey = (id: number,) => {
     return [
-    `/api/admin/advogados/${id}`
+    `/api/admin/psicologos/${id}`
     ] as const;
     }
 
 
-export const getGetAdminAdvogadoQueryOptions = <TData = Awaited<ReturnType<typeof getAdminAdvogado>>, TError = ErrorType<ApiErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAdvogado>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetAdminPsicologoQueryOptions = <TData = Awaited<ReturnType<typeof getAdminPsicologo>>, TError = ErrorType<ApiErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminPsicologo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminAdvogadoQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminPsicologoQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminAdvogado>>> = ({ signal }) => getAdminAdvogado(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminPsicologo>>> = ({ signal }) => getAdminPsicologo(id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAdvogado>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminPsicologo>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type GetAdminAdvogadoQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAdvogado>>>
-export type GetAdminAdvogadoQueryError = ErrorType<ApiErrorResponse>
+export type GetAdminPsicologoQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminPsicologo>>>
+export type GetAdminPsicologoQueryError = ErrorType<ApiErrorResponse>
 
 
 /**
- * @summary Get full lawyer detail with activity log
+ * @summary Get full psychologist detail with activity log
  */
 
-export function useGetAdminAdvogado<TData = Awaited<ReturnType<typeof getAdminAdvogado>>, TError = ErrorType<ApiErrorResponse>>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminAdvogado>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetAdminPsicologo<TData = Awaited<ReturnType<typeof getAdminPsicologo>>, TError = ErrorType<ApiErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminPsicologo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetAdminAdvogadoQueryOptions(id,options)
+  const queryOptions = getGetAdminPsicologoQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -826,37 +826,37 @@ export function useGetAdminAdvogado<TData = Awaited<ReturnType<typeof getAdminAd
 
 
 
-export const getUpdateAdminAdvogadoUrl = (id: number,) => {
+export const getUpdateAdminPsicologoUrl = (id: number,) => {
 
 
 
 
-  return `/api/admin/advogados/${id}`
+  return `/api/admin/psicologos/${id}`
 }
 
 /**
- * @summary Update admin controls (active toggle, verified, OAB situation)
+ * @summary Update admin controls (active toggle, verified, CRP situation)
  */
-export const updateAdminAdvogado = async (id: number,
-    updateAdminAdvogadoInput: UpdateAdminAdvogadoInput, options?: RequestInit): Promise<AdminAdvogadoDetail> => {
+export const updateAdminPsicologo = async (id: number,
+    updateAdminPsicologoInput: UpdateAdminPsicologoInput, options?: RequestInit): Promise<AdminPsicologoDetail> => {
 
-  return customFetch<AdminAdvogadoDetail>(getUpdateAdminAdvogadoUrl(id),
+  return customFetch<AdminPsicologoDetail>(getUpdateAdminPsicologoUrl(id),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateAdminAdvogadoInput)
+    body: JSON.stringify(updateAdminPsicologoInput)
   }
 );}
 
 
 
 
-export const getUpdateAdminAdvogadoMutationOptions = <TError = ErrorType<ApiErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAdvogado>>, TError,{id: number;data: BodyType<UpdateAdminAdvogadoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateAdminAdvogado>>, TError,{id: number;data: BodyType<UpdateAdminAdvogadoInput>}, TContext> => {
+export const getUpdateAdminPsicologoMutationOptions = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminPsicologo>>, TError,{id: number;data: BodyType<UpdateAdminPsicologoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminPsicologo>>, TError,{id: number;data: BodyType<UpdateAdminPsicologoInput>}, TContext> => {
 
-const mutationKey = ['updateAdminAdvogado'];
+const mutationKey = ['updateAdminPsicologo'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -866,10 +866,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminAdvogado>>, {id: number;data: BodyType<UpdateAdminAdvogadoInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminPsicologo>>, {id: number;data: BodyType<UpdateAdminPsicologoInput>}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  updateAdminAdvogado(id,data,requestOptions)
+          return  updateAdminPsicologo(id,data,requestOptions)
         }
 
 
@@ -879,39 +879,39 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateAdminAdvogadoMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminAdvogado>>>
-    export type UpdateAdminAdvogadoMutationBody = BodyType<UpdateAdminAdvogadoInput>
-    export type UpdateAdminAdvogadoMutationError = ErrorType<ApiErrorResponse>
+    export type UpdateAdminPsicologoMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminPsicologo>>>
+    export type UpdateAdminPsicologoMutationBody = BodyType<UpdateAdminPsicologoInput>
+    export type UpdateAdminPsicologoMutationError = ErrorType<ApiErrorResponse>
 
     /**
- * @summary Update admin controls (active toggle, verified, OAB situation)
+ * @summary Update admin controls (active toggle, verified, CRP situation)
  */
-export const useUpdateAdminAdvogado = <TError = ErrorType<ApiErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAdvogado>>, TError,{id: number;data: BodyType<UpdateAdminAdvogadoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useUpdateAdminPsicologo = <TError = ErrorType<ApiErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminPsicologo>>, TError,{id: number;data: BodyType<UpdateAdminPsicologoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof updateAdminAdvogado>>,
+        Awaited<ReturnType<typeof updateAdminPsicologo>>,
         TError,
-        {id: number;data: BodyType<UpdateAdminAdvogadoInput>},
+        {id: number;data: BodyType<UpdateAdminPsicologoInput>},
         TContext
       > => {
-      return useMutation(getUpdateAdminAdvogadoMutationOptions(options));
+      return useMutation(getUpdateAdminPsicologoMutationOptions(options));
     }
 
-export const getListAdvogadosUrl = () => {
+export const getListPsicologosUrl = () => {
 
 
 
 
-  return `/api/advogados`
+  return `/api/psicologos`
 }
 
 /**
- * Returns lawyers whose subscription is active and whose profile is complete.
- * @summary List public lawyers (paying and with a complete profile)
+ * Returns psychologists whose subscription is active and whose profile is complete.
+ * @summary List public psychologists (paying and with a complete profile)
  */
-export const listAdvogados = async ( options?: RequestInit): Promise<PublicLawyer[]> => {
+export const listPsicologos = async ( options?: RequestInit): Promise<PublicPsicologo[]> => {
 
-  return customFetch<PublicLawyer[]>(getListAdvogadosUrl(),
+  return customFetch<PublicPsicologo[]>(getListPsicologosUrl(),
   {
     ...options,
     method: 'GET'
@@ -924,45 +924,45 @@ export const listAdvogados = async ( options?: RequestInit): Promise<PublicLawye
 
 
 
-export const getListAdvogadosQueryKey = () => {
+export const getListPsicologosQueryKey = () => {
     return [
-    `/api/advogados`
+    `/api/psicologos`
     ] as const;
     }
 
 
-export const getListAdvogadosQueryOptions = <TData = Awaited<ReturnType<typeof listAdvogados>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListPsicologosQueryOptions = <TData = Awaited<ReturnType<typeof listPsicologos>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPsicologos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAdvogadosQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListPsicologosQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdvogados>>> = ({ signal }) => listAdvogados({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPsicologos>>> = ({ signal }) => listPsicologos({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdvogados>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPsicologos>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ListAdvogadosQueryResult = NonNullable<Awaited<ReturnType<typeof listAdvogados>>>
-export type ListAdvogadosQueryError = ErrorType<unknown>
+export type ListPsicologosQueryResult = NonNullable<Awaited<ReturnType<typeof listPsicologos>>>
+export type ListPsicologosQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List public lawyers (paying and with a complete profile)
+ * @summary List public psychologists (paying and with a complete profile)
  */
 
-export function useListAdvogados<TData = Awaited<ReturnType<typeof listAdvogados>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListPsicologos<TData = Awaited<ReturnType<typeof listPsicologos>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPsicologos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListAdvogadosQueryOptions(options)
+  const queryOptions = getListPsicologosQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -975,7 +975,7 @@ export function useListAdvogados<TData = Awaited<ReturnType<typeof listAdvogados
 
 
 
-export const getContarAdvogadosUrl = (params?: ContarAdvogadosParams,) => {
+export const getContarPsicologosUrl = (params?: ContarPsicologosParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -987,16 +987,16 @@ export const getContarAdvogadosUrl = (params?: ContarAdvogadosParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/advogados/contagem?${stringifiedParams}` : `/api/advogados/contagem`
+  return stringifiedParams.length > 0 ? `/api/psicologos/contagem?${stringifiedParams}` : `/api/psicologos/contagem`
 }
 
 /**
- * Returns counts of lawyers with an active subscription and a complete profile, optionally filtered by area, city and state. Used to show real competition numbers during the registration funnel.
- * @summary Count active, visible lawyers by area and location
+ * Returns counts of psychologists with an active subscription and a complete profile, optionally filtered by area, city and state. Used to show real competition numbers during the registration funnel.
+ * @summary Count active, visible psychologists by area and location
  */
-export const contarAdvogados = async (params?: ContarAdvogadosParams, options?: RequestInit): Promise<ConcorrenciaResult> => {
+export const contarPsicologos = async (params?: ContarPsicologosParams, options?: RequestInit): Promise<ConcorrenciaResult> => {
 
-  return customFetch<ConcorrenciaResult>(getContarAdvogadosUrl(params),
+  return customFetch<ConcorrenciaResult>(getContarPsicologosUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1009,45 +1009,45 @@ export const contarAdvogados = async (params?: ContarAdvogadosParams, options?: 
 
 
 
-export const getContarAdvogadosQueryKey = (params?: ContarAdvogadosParams,) => {
+export const getContarPsicologosQueryKey = (params?: ContarPsicologosParams,) => {
     return [
-    `/api/advogados/contagem`, ...(params ? [params] : [])
+    `/api/psicologos/contagem`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getContarAdvogadosQueryOptions = <TData = Awaited<ReturnType<typeof contarAdvogados>>, TError = ErrorType<unknown>>(params?: ContarAdvogadosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof contarAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getContarPsicologosQueryOptions = <TData = Awaited<ReturnType<typeof contarPsicologos>>, TError = ErrorType<unknown>>(params?: ContarPsicologosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof contarPsicologos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getContarAdvogadosQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getContarPsicologosQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof contarAdvogados>>> = ({ signal }) => contarAdvogados(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof contarPsicologos>>> = ({ signal }) => contarPsicologos(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof contarAdvogados>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof contarPsicologos>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ContarAdvogadosQueryResult = NonNullable<Awaited<ReturnType<typeof contarAdvogados>>>
-export type ContarAdvogadosQueryError = ErrorType<unknown>
+export type ContarPsicologosQueryResult = NonNullable<Awaited<ReturnType<typeof contarPsicologos>>>
+export type ContarPsicologosQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Count active, visible lawyers by area and location
+ * @summary Count active, visible psychologists by area and location
  */
 
-export function useContarAdvogados<TData = Awaited<ReturnType<typeof contarAdvogados>>, TError = ErrorType<unknown>>(
- params?: ContarAdvogadosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof contarAdvogados>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useContarPsicologos<TData = Awaited<ReturnType<typeof contarPsicologos>>, TError = ErrorType<unknown>>(
+ params?: ContarPsicologosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof contarPsicologos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getContarAdvogadosQueryOptions(params,options)
+  const queryOptions = getContarPsicologosQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1288,11 +1288,11 @@ export const getGetPerfilUrl = () => {
 }
 
 /**
- * @summary Get the authenticated lawyer's profile
+ * @summary Get the authenticated psychologist's profile
  */
-export const getPerfil = async ( options?: RequestInit): Promise<LawyerProfile> => {
+export const getPerfil = async ( options?: RequestInit): Promise<PsicologoProfile> => {
 
-  return customFetch<LawyerProfile>(getGetPerfilUrl(),
+  return customFetch<PsicologoProfile>(getGetPerfilUrl(),
   {
     ...options,
     method: 'GET'
@@ -1335,7 +1335,7 @@ export type GetPerfilQueryError = ErrorType<ApiErrorResponse>
 
 
 /**
- * @summary Get the authenticated lawyer's profile
+ * @summary Get the authenticated psychologist's profile
  */
 
 export function useGetPerfil<TData = Awaited<ReturnType<typeof getPerfil>>, TError = ErrorType<ApiErrorResponse>>(
@@ -1365,11 +1365,11 @@ export const getUpdatePerfilUrl = () => {
 }
 
 /**
- * @summary Create or update the authenticated lawyer's profile
+ * @summary Create or update the authenticated psychologist's profile
  */
-export const updatePerfil = async (updateProfileInput: UpdateProfileInput, options?: RequestInit): Promise<LawyerProfile> => {
+export const updatePerfil = async (updateProfileInput: UpdateProfileInput, options?: RequestInit): Promise<PsicologoProfile> => {
 
-  return customFetch<LawyerProfile>(getUpdatePerfilUrl(),
+  return customFetch<PsicologoProfile>(getUpdatePerfilUrl(),
   {
     ...options,
     method: 'PUT',
@@ -1413,7 +1413,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdatePerfilMutationError = ErrorType<ApiErrorResponse>
 
     /**
- * @summary Create or update the authenticated lawyer's profile
+ * @summary Create or update the authenticated psychologist's profile
  */
 export const useUpdatePerfil = <TError = ErrorType<ApiErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePerfil>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1435,7 +1435,7 @@ export const getGetAssinaturaUrl = () => {
 }
 
 /**
- * @summary Get the current subscription state for the lawyer
+ * @summary Get the current subscription state for the psychologist
  */
 export const getAssinatura = async ( options?: RequestInit): Promise<SubscriptionState> => {
 
@@ -1482,7 +1482,7 @@ export type GetAssinaturaQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get the current subscription state for the lawyer
+ * @summary Get the current subscription state for the psychologist
  */
 
 export function useGetAssinatura<TData = Awaited<ReturnType<typeof getAssinatura>>, TError = ErrorType<unknown>>(
@@ -1512,7 +1512,7 @@ export const getCreateAssinaturaUrl = () => {
 }
 
 /**
- * @summary Create a subscription for the lawyer via Asaas
+ * @summary Create a subscription for the psychologist via Asaas
  */
 export const createAssinatura = async (createSubscriptionInput: CreateSubscriptionInput, options?: RequestInit): Promise<SubscriptionState> => {
 
@@ -1560,7 +1560,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateAssinaturaMutationError = ErrorType<ApiErrorResponse>
 
     /**
- * @summary Create a subscription for the lawyer via Asaas
+ * @summary Create a subscription for the psychologist via Asaas
  */
 export const useCreateAssinatura = <TError = ErrorType<ApiErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssinatura>>, TError,{data: BodyType<CreateSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1582,7 +1582,7 @@ export const getCancelAssinaturaUrl = () => {
 }
 
 /**
- * @summary Cancel the lawyer's subscription
+ * @summary Cancel the psychologist's subscription
  */
 export const cancelAssinatura = async (cancelSubscriptionInput?: CancelSubscriptionInput, options?: RequestInit): Promise<SubscriptionState> => {
 
@@ -1630,7 +1630,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CancelAssinaturaMutationError = ErrorType<ApiErrorResponse>
 
     /**
- * @summary Cancel the lawyer's subscription
+ * @summary Cancel the psychologist's subscription
  */
 export const useCancelAssinatura = <TError = ErrorType<ApiErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelAssinatura>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1652,7 +1652,7 @@ export const getSolicitarReembolsoUrl = () => {
 }
 
 /**
- * @summary Request a 7-day withdrawal refund and delete the lawyer profile
+ * @summary Request a 7-day withdrawal refund and delete the psychologist profile
  */
 export const solicitarReembolso = async (cancelSubscriptionInput?: CancelSubscriptionInput, options?: RequestInit): Promise<SubscriptionState> => {
 
@@ -1700,7 +1700,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SolicitarReembolsoMutationError = ErrorType<ApiErrorResponse>
 
     /**
- * @summary Request a 7-day withdrawal refund and delete the lawyer profile
+ * @summary Request a 7-day withdrawal refund and delete the psychologist profile
  */
 export const useSolicitarReembolso = <TError = ErrorType<ApiErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof solicitarReembolso>>, TError,{data?: BodyType<CancelSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1722,7 +1722,7 @@ export const getIniciarCheckoutUrl = () => {
 }
 
 /**
- * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the lawyer pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
+ * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the psychologist pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
  * @summary Start an anonymous checkout (no account required)
  */
 export const iniciarCheckout = async (checkoutInput: CheckoutInput, options?: RequestInit): Promise<CheckoutResult> => {

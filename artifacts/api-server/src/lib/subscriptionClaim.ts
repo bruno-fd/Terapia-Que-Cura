@@ -1,11 +1,11 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, subscriptionsTable, type SubscriptionRow } from "@workspace/db";
 
-// Resolve (e vincula) a assinatura do advogado autenticado no modelo "checkout
-// primeiro". A assinatura nasce anônima (lawyerRef nulo, chaveada por
+// Resolve (e vincula) a assinatura do psicólogo autenticado no modelo "checkout
+// primeiro". A assinatura nasce anônima (psicologoRef nulo, chaveada por
 // customerEmail = e-mail do pagamento). No primeiro acesso autenticado casamos
 // pelo e-mail da conta (travado pelo convite, então igual ao do pagamento) e
-// vinculamos o lawyerRef de forma ATÔMICA, para os acessos seguintes irem
+// vinculamos o psicologoRef de forma ATÔMICA, para os acessos seguintes irem
 // direto pelo id. Este helper é compartilhado pela rota de assinatura e pelo
 // prefill do perfil, para que a mesma regra de vínculo valha nos dois lugares.
 export async function claimSubscriptionForUser(
@@ -16,7 +16,7 @@ export async function claimSubscriptionForUser(
   const [owned] = await db
     .select()
     .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.lawyerRef, userId))
+    .where(eq(subscriptionsTable.psicologoRef, userId))
     .limit(1);
   if (owned) return owned;
 
@@ -31,7 +31,7 @@ export async function claimSubscriptionForUser(
     .where(
       and(
         eq(subscriptionsTable.customerEmail, email),
-        isNull(subscriptionsTable.lawyerRef),
+        isNull(subscriptionsTable.psicologoRef),
       ),
     )
     .orderBy(
@@ -43,11 +43,11 @@ export async function claimSubscriptionForUser(
 
   const [claimed] = await db
     .update(subscriptionsTable)
-    .set({ lawyerRef: userId, updatedAt: new Date() })
+    .set({ psicologoRef: userId, updatedAt: new Date() })
     .where(
       and(
         eq(subscriptionsTable.id, candidate.id),
-        isNull(subscriptionsTable.lawyerRef),
+        isNull(subscriptionsTable.psicologoRef),
       ),
     )
     .returning();

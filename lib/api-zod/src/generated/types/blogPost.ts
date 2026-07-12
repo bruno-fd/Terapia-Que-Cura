@@ -19,7 +19,7 @@ export interface BlogPost {
   readingMinutes: number;
   body: BlogPostSection[];
   bodyHtml: string;
-  oabClosing: string;
+  crpClosing: string;
   published: boolean;
   publishedAt?: Date | null;
   createdAt: Date;

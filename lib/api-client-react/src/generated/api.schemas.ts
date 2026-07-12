@@ -73,7 +73,7 @@ export interface BlogPost {
   readingMinutes: number;
   body: BlogPostSection[];
   bodyHtml: string;
-  oabClosing: string;
+  crpClosing: string;
   published: boolean;
   publishedAt?: string | null;
   createdAt: string;
@@ -104,7 +104,7 @@ export interface UpdateBlogPostInput {
   subtitle?: string;
   excerpt?: string;
   bodyHtml?: string;
-  oabClosing?: string;
+  crpClosing?: string;
   published?: boolean;
 }
 
@@ -216,69 +216,75 @@ export interface Cidade {
   uf: string;
 }
 
-export type LawyerProfileSubscriptionStatus = typeof LawyerProfileSubscriptionStatus[keyof typeof LawyerProfileSubscriptionStatus] | null;
+export type PsicologoProfileSubscriptionStatus = typeof PsicologoProfileSubscriptionStatus[keyof typeof PsicologoProfileSubscriptionStatus] | null;
 
 
-export const LawyerProfileSubscriptionStatus = {
+export const PsicologoProfileSubscriptionStatus = {
   pendente: 'pendente',
   ativa: 'ativa',
   atrasada: 'atrasada',
   inativa: 'inativa',
 } as const;
 
-export interface LawyerProfile {
+export interface PsicologoProfile {
   nome: string;
-  oab: string;
+  crp: string;
   photo?: string | null;
   about: string;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido: string[];
+  precoSessao: string;
   whatsapp: string;
   instagram: string;
   linkedin: string;
   website: string;
   outro: string;
   complete: boolean;
-  subscriptionStatus?: LawyerProfileSubscriptionStatus;
+  subscriptionStatus?: PsicologoProfileSubscriptionStatus;
   visivel: boolean;
-  oabVerificada: boolean;
-  oabSituacao?: string | null;
-  oabNomeConfirmado?: string | null;
-  oabVerificadaEm?: string | null;
-  oabVerificacaoPendente: boolean;
+  crpVerificada: boolean;
+  crpSituacao?: string | null;
+  crpNomeConfirmado?: string | null;
+  crpVerificadaEm?: string | null;
+  crpVerificacaoPendente: boolean;
   createdAt?: string | null;
 }
 
 export interface UpdateProfileInput {
   nome: string;
-  oab: string;
+  crp: string;
   photo?: string | null;
   about: string;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido: string[];
+  precoSessao: string;
   whatsapp: string;
   instagram: string;
   linkedin: string;
   website: string;
   outro: string;
   oabToken?: string | null;
-  oabVerificacaoPendente?: boolean;
+  crpVerificacaoPendente?: boolean;
 }
 
-export interface PublicLawyer {
+export interface PublicPsicologo {
   id: number;
   nome: string;
-  oab: string;
+  crp: string;
   photo?: string | null;
   about: string;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido: string[];
+  precoSessao: string;
   whatsapp: string;
 }
 
@@ -322,35 +328,35 @@ export interface BlogDailyRunsResponse {
   latest: BlogDailyRunLatest;
 }
 
-export type AdminAdvogadoPaymentStatus = typeof AdminAdvogadoPaymentStatus[keyof typeof AdminAdvogadoPaymentStatus] | null;
+export type AdminPsicologoPaymentStatus = typeof AdminPsicologoPaymentStatus[keyof typeof AdminPsicologoPaymentStatus] | null;
 
 
-export const AdminAdvogadoPaymentStatus = {
+export const AdminPsicologoPaymentStatus = {
   pendente: 'pendente',
   ativa: 'ativa',
   atrasada: 'atrasada',
   inativa: 'inativa',
 } as const;
 
-export type AdminAdvogadoSituacaoOab = typeof AdminAdvogadoSituacaoOab[keyof typeof AdminAdvogadoSituacaoOab] | null;
+export type AdminPsicologoSituacaoCrp = typeof AdminPsicologoSituacaoCrp[keyof typeof AdminPsicologoSituacaoCrp] | null;
 
 
-export const AdminAdvogadoSituacaoOab = {
+export const AdminPsicologoSituacaoCrp = {
   regular: 'regular',
   irregular: 'irregular',
   invalido: 'invalido',
 } as const;
 
-export interface AdminAdvogado {
+export interface AdminPsicologo {
   id: number;
   nome: string;
-  oab: string;
+  crp: string;
   email: string;
   createdAt?: string | null;
-  paymentStatus?: AdminAdvogadoPaymentStatus;
+  paymentStatus?: AdminPsicologoPaymentStatus;
   adminAtivo: boolean;
-  oabVerificada: boolean;
-  situacaoOab?: AdminAdvogadoSituacaoOab;
+  crpVerificada: boolean;
+  situacaoCrp?: AdminPsicologoSituacaoCrp;
 }
 
 export interface AtividadeLog {
@@ -360,57 +366,59 @@ export interface AtividadeLog {
   data: string;
 }
 
-export type AdminAdvogadoDetailPaymentStatus = typeof AdminAdvogadoDetailPaymentStatus[keyof typeof AdminAdvogadoDetailPaymentStatus] | null;
+export type AdminPsicologoDetailPaymentStatus = typeof AdminPsicologoDetailPaymentStatus[keyof typeof AdminPsicologoDetailPaymentStatus] | null;
 
 
-export const AdminAdvogadoDetailPaymentStatus = {
+export const AdminPsicologoDetailPaymentStatus = {
   pendente: 'pendente',
   ativa: 'ativa',
   atrasada: 'atrasada',
   inativa: 'inativa',
 } as const;
 
-export type AdminAdvogadoDetailSituacaoOab = typeof AdminAdvogadoDetailSituacaoOab[keyof typeof AdminAdvogadoDetailSituacaoOab] | null;
+export type AdminPsicologoDetailSituacaoCrp = typeof AdminPsicologoDetailSituacaoCrp[keyof typeof AdminPsicologoDetailSituacaoCrp] | null;
 
 
-export const AdminAdvogadoDetailSituacaoOab = {
+export const AdminPsicologoDetailSituacaoCrp = {
   regular: 'regular',
   irregular: 'irregular',
   invalido: 'invalido',
 } as const;
 
-export interface AdminAdvogadoDetail {
+export interface AdminPsicologoDetail {
   id: number;
   nome: string;
-  oab: string;
+  crp: string;
   email: string;
   cpf?: string | null;
   createdAt?: string | null;
-  paymentStatus?: AdminAdvogadoDetailPaymentStatus;
+  paymentStatus?: AdminPsicologoDetailPaymentStatus;
   plano?: string | null;
   adminAtivo: boolean;
-  oabVerificada: boolean;
-  situacaoOab?: AdminAdvogadoDetailSituacaoOab;
+  crpVerificada: boolean;
+  situacaoCrp?: AdminPsicologoDetailSituacaoCrp;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido?: string[];
+  precoSessao?: string;
   atividades: AtividadeLog[];
 }
 
-export type UpdateAdminAdvogadoInputSituacaoOab = typeof UpdateAdminAdvogadoInputSituacaoOab[keyof typeof UpdateAdminAdvogadoInputSituacaoOab] | null;
+export type UpdateAdminPsicologoInputSituacaoCrp = typeof UpdateAdminPsicologoInputSituacaoCrp[keyof typeof UpdateAdminPsicologoInputSituacaoCrp] | null;
 
 
-export const UpdateAdminAdvogadoInputSituacaoOab = {
+export const UpdateAdminPsicologoInputSituacaoCrp = {
   regular: 'regular',
   irregular: 'irregular',
   invalido: 'invalido',
 } as const;
 
-export interface UpdateAdminAdvogadoInput {
+export interface UpdateAdminPsicologoInput {
   adminAtivo?: boolean;
-  oabVerificada?: boolean;
-  situacaoOab?: UpdateAdminAdvogadoInputSituacaoOab;
+  crpVerificada?: boolean;
+  situacaoCrp?: UpdateAdminPsicologoInputSituacaoCrp;
 }
 
 export interface ConcorrenciaResult {
@@ -462,16 +470,17 @@ export interface CadastroLead {
   email: string;
   telefone: string;
   cpf: string;
-  oab: string;
-  seccional: string;
-  oabVerificada: boolean;
-  oabSituacao?: string | null;
-  oabNomeConfirmado?: string | null;
-  oabVerificacaoPendente: boolean;
+  crp: string;
+  regiao: string;
+  crpVerificada: boolean;
+  crpSituacao?: string | null;
+  crpNomeConfirmado?: string | null;
+  crpVerificacaoPendente: boolean;
   plano?: CadastroLeadPlano;
   areas: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido?: string[];
   step: number;
   completed: boolean;
 }
@@ -491,16 +500,17 @@ export interface UpsertCadastroLeadInput {
   email?: string;
   telefone?: string;
   cpf?: string;
-  oab?: string;
-  seccional?: string;
-  oabVerificada?: boolean;
-  oabSituacao?: string | null;
-  oabNomeConfirmado?: string | null;
-  oabVerificacaoPendente?: boolean;
+  crp?: string;
+  regiao?: string;
+  crpVerificada?: boolean;
+  crpSituacao?: string | null;
+  crpNomeConfirmado?: string | null;
+  crpVerificacaoPendente?: boolean;
   plano?: UpsertCadastroLeadInputPlano;
   areas?: string[];
   cidades?: Cidade[];
   atendeOnline?: boolean;
+  publicoAtendido?: string[];
   step?: number;
   completed?: boolean;
 }
@@ -510,7 +520,7 @@ export interface UpsertCadastroLeadInput {
  */
 export type AuthorizationSessionHeaderParameter = string;
 
-export type ContarAdvogadosParams = {
+export type ContarPsicologosParams = {
 area?: string;
 cidade?: string;
 uf?: string;

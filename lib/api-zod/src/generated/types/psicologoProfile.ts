@@ -6,29 +6,31 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Cidade } from './cidade';
-import type { LawyerProfileSubscriptionStatus } from './lawyerProfileSubscriptionStatus';
+import type { PsicologoProfileSubscriptionStatus } from './psicologoProfileSubscriptionStatus';
 
-export interface LawyerProfile {
+export interface PsicologoProfile {
   nome: string;
-  oab: string;
+  crp: string;
   photo?: string | null;
   about: string;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido: string[];
+  precoSessao: string;
   whatsapp: string;
   instagram: string;
   linkedin: string;
   website: string;
   outro: string;
   complete: boolean;
-  subscriptionStatus?: LawyerProfileSubscriptionStatus;
+  subscriptionStatus?: PsicologoProfileSubscriptionStatus;
   visivel: boolean;
-  oabVerificada: boolean;
-  oabSituacao?: string | null;
-  oabNomeConfirmado?: string | null;
-  oabVerificadaEm?: string | null;
-  oabVerificacaoPendente: boolean;
+  crpVerificada: boolean;
+  crpSituacao?: string | null;
+  crpNomeConfirmado?: string | null;
+  crpVerificadaEm?: string | null;
+  crpVerificacaoPendente: boolean;
   createdAt?: string | null;
 }

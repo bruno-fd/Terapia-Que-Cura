@@ -11,7 +11,7 @@ declare global {
 }
 
 // Exige um usuário autenticado via Clerk. Em caso de sucesso, popula
-// req.userId com o id do advogado autenticado (usado como chave única
+// req.userId com o id do psicólogo autenticado (usado como chave única
 // em perfis e assinaturas).
 export function requireAuth(
   req: Request,

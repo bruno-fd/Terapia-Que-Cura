@@ -5,26 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminAdvogadoDetailPaymentStatus } from './adminAdvogadoDetailPaymentStatus';
-import type { AdminAdvogadoDetailSituacaoOab } from './adminAdvogadoDetailSituacaoOab';
+import type { AdminPsicologoDetailPaymentStatus } from './adminPsicologoDetailPaymentStatus';
+import type { AdminPsicologoDetailSituacaoCrp } from './adminPsicologoDetailSituacaoCrp';
 import type { AtividadeLog } from './atividadeLog';
 import type { Cidade } from './cidade';
 
-export interface AdminAdvogadoDetail {
+export interface AdminPsicologoDetail {
   id: number;
   nome: string;
-  oab: string;
+  crp: string;
   email: string;
   cpf?: string | null;
   createdAt?: string | null;
-  paymentStatus?: AdminAdvogadoDetailPaymentStatus;
+  paymentStatus?: AdminPsicologoDetailPaymentStatus;
   plano?: string | null;
   adminAtivo: boolean;
-  oabVerificada: boolean;
-  situacaoOab?: AdminAdvogadoDetailSituacaoOab;
+  crpVerificada: boolean;
+  situacaoCrp?: AdminPsicologoDetailSituacaoCrp;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido?: string[];
+  precoSessao?: string;
   atividades: AtividadeLog[];
 }
