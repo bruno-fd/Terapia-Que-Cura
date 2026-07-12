@@ -3,3 +3,4 @@
 - [Blog writer/reviewer prompt consistency](blog-writer-reviewer-consistency.md) — daily-gen writer/reviewer/corrector prompts must not contradict, or the correction loop never converges.
 - [Long-running one-shot scripts](long-running-oneshot-scripts.md) — ad-hoc/setsid bg processes get reaped; run multi-minute one-shots as a temp console workflow, poll the DB, then removeWorkflow.
 - [Daily auto-blog veracity gate](daily-blog-veracity-gate.md) — auto-published AI legal posts need 2 deterministic reject layers over the model verdict; daily job day-boundary must be UTC in both label and idempotency.
+- [Manual table rename stale objects](manual-table-rename-stale-objects.md) — ALTER TABLE RENAME leaves PK/unique/index/sequence names on the old table name; rename them (dev only) or Drizzle publish diff stays noisy.
