@@ -362,7 +362,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Section 5 — Blog */}
+        {/* Section 5 — Blog (só aparece quando há posts publicados) */}
+        {postsHome.length > 0 && (
         <section className="bg-white py-20 md:py-32">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
@@ -402,6 +403,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Section 6 — CTA principal */}
         <section className="py-12 md:py-24 px-6">
