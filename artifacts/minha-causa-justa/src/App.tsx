@@ -38,7 +38,7 @@ import logoUrl from "@assets/minhacausajusta_1782681470221.webp";
 // Interruptor de manutenção. Enquanto "true", o site inteiro exibe apenas a
 // página "Site em construção". Para religar o site normalmente, basta trocar
 // para "false" (nada foi apagado).
-const MODO_MANUTENCAO = true;
+const MODO_MANUTENCAO = false;
 
 declare global {
   interface Window {
