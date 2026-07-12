@@ -7,15 +7,17 @@
  */
 import type { Cidade } from './cidade';
 
-export interface PublicLawyer {
+export interface PublicPsicologo {
   id: number;
   nome: string;
-  oab: string;
+  crp: string;
   photo?: string | null;
   about: string;
   areas: string[];
   subcategorias: string[];
   cidades: Cidade[];
   atendeOnline: boolean;
+  publicoAtendido: string[];
+  precoSessao: string;
   whatsapp: string;
 }

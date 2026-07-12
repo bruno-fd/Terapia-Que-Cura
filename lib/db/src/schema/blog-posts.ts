@@ -28,7 +28,7 @@ export const blogPostsTable = pgTable("blog_posts", {
   readingMinutes: integer("reading_minutes").notNull(),
   body: jsonb("body").$type<BlogPostSection[]>().notNull(),
   bodyHtml: text("body_html").notNull().default(""),
-  oabClosing: text("oab_closing").notNull(),
+  crpClosing: text("crp_closing").notNull(),
   published: boolean("published").notNull().default(true),
   // Data da primeira publicação. Nulo enquanto o post é rascunho.
   publishedAt: timestamp("published_at", { withTimezone: true }),

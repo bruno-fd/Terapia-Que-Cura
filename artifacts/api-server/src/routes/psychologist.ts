@@ -2,10 +2,10 @@ import { Router, type IRouter } from "express";
 import { eq, and, or, isNull, gt } from "drizzle-orm";
 import {
   db,
-  advogadosTable,
+  psicologosTable,
   subscriptionsTable,
   cadastroLeadsTable,
-  type AdvogadoRow,
+  type PsicologoRow,
   type CadastroLeadRow,
   type Cidade,
 } from "@workspace/db";
@@ -13,8 +13,8 @@ import {
   GetPerfilResponse,
   UpdatePerfilBody,
   UpdatePerfilResponse,
-  ListAdvogadosResponse,
-  ContarAdvogadosResponse,
+  ListPsicologosResponse,
+  ContarPsicologosResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { getAuth, clerkClient } from "@clerk/express";
@@ -45,68 +45,79 @@ async function getAuthedEmail(req: Request): Promise<string | null> {
   }
 }
 
-// Verificação da OAB para o perfil recém-criado. NÃO confiamos no booleano
+// Verificação do CRP para o perfil recém-criado. NÃO confiamos no booleano
 // gravado no lead (a rota de upsert do lead é pública e forjável): refazemos a
-// checagem REAL no webservice da OAB no servidor, tornando o selo "verificada"
+// checagem REAL no webservice do CRP no servidor, tornando o selo "verificada"
 // inforjável. Falha de serviço vira "pendente" (revisão manual), nunca bloqueia.
-async function verificarOabDoLead(
+//
+// NOTA: a chamada abaixo ainda usa `verificarInscricaoOab` (lib/oab.ts), que
+// consulta o webservice da OAB, não do CRP. A migração para o webservice real
+// do CRP (lib/crp.ts) é um trabalho à parte, pendente de validação com uma
+// chave de API real (ver plano de migração). Até lá, este caminho fica
+// efetivamente inativo: sem CPF/CRP/região válidos o lead cai em revisão manual.
+async function verificarCrpDoLead(
   lead: CadastroLeadRow,
   log: Logger,
 ): Promise<{
-  oabVerificada: boolean;
-  oabSituacao: string | null;
-  oabNomeConfirmado: string | null;
-  oabVerificadaEm: Date | null;
-  oabVerificacaoPendente: boolean;
+  crpVerificada: boolean;
+  crpSituacao: string | null;
+  crpNomeConfirmado: string | null;
+  crpVerificadaEm: Date | null;
+  crpVerificacaoPendente: boolean;
 }> {
   const naoVerificado = {
-    oabVerificada: false,
-    oabSituacao: null,
-    oabNomeConfirmado: null,
-    oabVerificadaEm: null,
-    oabVerificacaoPendente: true,
+    crpVerificada: false,
+    crpSituacao: null,
+    crpNomeConfirmado: null,
+    crpVerificadaEm: null,
+    crpVerificacaoPendente: true,
   };
   const cpf = lead.cpf.trim();
-  const oab = lead.oab.trim();
-  const seccional = lead.seccional.trim();
+  const crp = lead.crp.trim();
+  const regiao = lead.regiao.trim();
   const nome = lead.nome.trim();
-  if (!cpf || !oab || !seccional || !nome) {
+  if (!cpf || !crp || !regiao || !nome) {
     // Sem dados de identificação suficientes: deixa para revisão manual.
     return naoVerificado;
   }
   try {
-    const resultado = await verificarInscricaoOab({ cpf, oab, seccional, nome });
+    const resultado = await verificarInscricaoOab({
+      cpf,
+      oab: crp,
+      seccional: regiao,
+      nome,
+    });
     if (resultado.valido) {
       return {
-        oabVerificada: true,
-        oabSituacao: resultado.situacao,
-        oabNomeConfirmado: resultado.nomeOab,
-        oabVerificadaEm: new Date(),
-        oabVerificacaoPendente: false,
+        crpVerificada: true,
+        crpSituacao: resultado.situacao,
+        crpNomeConfirmado: resultado.nomeOab,
+        crpVerificadaEm: new Date(),
+        crpVerificacaoPendente: false,
       };
     }
     return naoVerificado;
   } catch (err) {
-    log.error({ err }, "Falha ao reverificar OAB no primeiro acesso ao perfil");
+    log.error({ err }, "Falha ao reverificar CRP no primeiro acesso ao perfil");
     return naoVerificado;
   }
 }
 
 // Prefill do perfil no primeiro acesso, a partir do lead do funil casado pelo
 // e-mail da conta (que é o e-mail do pagamento). Copia apenas dados não
-// sensíveis; o selo da OAB é reverificado no servidor (ver acima).
+// sensíveis; o selo do CRP é reverificado no servidor (ver acima).
 async function buildPrefillFromLead(
   req: Request,
-): Promise<Partial<typeof advogadosTable.$inferInsert>> {
+): Promise<Partial<typeof psicologosTable.$inferInsert>> {
   const email = await getAuthedEmail(req);
   if (!email) return {};
   const userId = getAuth(req).userId;
   if (!userId) return {};
 
   // Casa (e vincula atomicamente) a assinatura paga a este usuário. No modelo
-  // "checkout primeiro" a assinatura nasce anônima (lawyerRef nulo); no primeiro
-  // acesso ela é vinculada aqui pelo e-mail da conta (= e-mail do pagamento).
-  // Vinculamos o prefill ao lead EXATO que gerou esse pagamento
+  // "checkout primeiro" a assinatura nasce anônima (psicologoRef nulo); no
+  // primeiro acesso ela é vinculada aqui pelo e-mail da conta (= e-mail do
+  // pagamento). Vinculamos o prefill ao lead EXATO que gerou esse pagamento
   // (subscriptions.leadId), não ao "último lead com este e-mail", para que um
   // upsert público de lead não injete dados de terceiros no primeiro acesso.
   const sub = await claimSubscriptionForUser(userId, email);
@@ -123,19 +134,20 @@ async function buildPrefillFromLead(
     return {};
   }
 
-  const oabFormatada =
-    lead.oab.trim() && lead.seccional.trim()
-      ? `OAB/${lead.seccional.trim().toUpperCase()} ${lead.oab.trim()}`
+  const crpFormatada =
+    lead.crp.trim() && lead.regiao.trim()
+      ? `CRP ${lead.regiao.trim().toUpperCase()}/${lead.crp.trim()}`
       : "";
-  const verificacao = await verificarOabDoLead(lead, req.log);
+  const verificacao = await verificarCrpDoLead(lead, req.log);
 
   return {
     nome: lead.nome,
-    oab: oabFormatada,
+    crp: crpFormatada,
     whatsapp: lead.telefone,
     areas: lead.areas ?? [],
     cidades: (lead.cidades ?? []) as Cidade[],
     atendeOnline: lead.atendeOnline,
+    publicoAtendido: lead.publicoAtendido ?? [],
     ...verificacao,
   };
 }
@@ -143,14 +155,14 @@ async function buildPrefillFromLead(
 type SubStatus = "pendente" | "ativa" | "atrasada" | "inativa";
 
 // Um perfil está "completo" quando tem o mínimo para aparecer no diretório:
-// nome, OAB, descrição, ao menos uma área, ao menos uma cidade OU atendimento
+// nome, CRP, descrição, ao menos uma área, ao menos uma cidade OU atendimento
 // online, e um WhatsApp para contato.
-function isComplete(row: AdvogadoRow): boolean {
+function isComplete(row: PsicologoRow): boolean {
   const hasLocal =
     (row.cidades?.length ?? 0) > 0 || row.atendeOnline === true;
   return Boolean(
     row.nome.trim() &&
-      row.oab.trim() &&
+      row.crp.trim() &&
       row.about.trim() &&
       (row.areas?.length ?? 0) > 0 &&
       hasLocal &&
@@ -159,19 +171,21 @@ function isComplete(row: AdvogadoRow): boolean {
 }
 
 function toProfile(
-  row: AdvogadoRow,
+  row: PsicologoRow,
   subscriptionStatus: SubStatus | null,
 ) {
   const complete = isComplete(row);
   return {
     nome: row.nome,
-    oab: row.oab,
+    crp: row.crp,
     photo: row.photo,
     about: row.about,
     areas: row.areas ?? [],
     subcategorias: row.subcategorias ?? [],
     cidades: row.cidades ?? [],
     atendeOnline: row.atendeOnline,
+    publicoAtendido: row.publicoAtendido ?? [],
+    precoSessao: row.precoSessao,
     whatsapp: row.whatsapp,
     instagram: row.instagram,
     linkedin: row.linkedin,
@@ -180,13 +194,13 @@ function toProfile(
     complete,
     subscriptionStatus,
     visivel: complete && subscriptionStatus === "ativa" && row.adminAtivo,
-    oabVerificada: row.oabVerificada,
-    oabSituacao: row.oabSituacao ?? null,
-    oabNomeConfirmado: row.oabNomeConfirmado ?? null,
-    oabVerificadaEm: row.oabVerificadaEm
-      ? row.oabVerificadaEm.toISOString()
+    crpVerificada: row.crpVerificada,
+    crpSituacao: row.crpSituacao ?? null,
+    crpNomeConfirmado: row.crpNomeConfirmado ?? null,
+    crpVerificadaEm: row.crpVerificadaEm
+      ? row.crpVerificadaEm.toISOString()
       : null,
-    oabVerificacaoPendente: row.oabVerificacaoPendente,
+    crpVerificacaoPendente: row.crpVerificacaoPendente,
     createdAt: row.createdAt ? row.createdAt.toISOString() : null,
   };
 }
@@ -201,7 +215,7 @@ function hojeIso(): string {
 // interrompe cobranças futuras: o perfil permanece visível até accessUntil.
 function assinaturaVisivel() {
   return and(
-    eq(advogadosTable.adminAtivo, true),
+    eq(psicologosTable.adminAtivo, true),
     eq(subscriptionsTable.status, "ativa"),
     or(
       isNull(subscriptionsTable.canceledAt),
@@ -220,7 +234,7 @@ async function getSubscriptionStatus(
       accessUntil: subscriptionsTable.accessUntil,
     })
     .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.lawyerRef, userId));
+    .where(eq(subscriptionsTable.psicologoRef, userId));
   if (!sub) return null;
   // Assinatura cancelada cujo período pago já venceu conta como inativa, mesmo
   // que o status persistido ainda não tenha sido recalculado por um GET.
@@ -234,37 +248,39 @@ async function getSubscriptionStatus(
   return (sub.status as SubStatus | undefined) ?? null;
 }
 
-// Diretório público: somente advogados pagantes (assinatura "ativa") com
+// Diretório público: somente psicólogos pagantes (assinatura "ativa") com
 // perfil completo.
-router.get("/advogados", async (_req, res): Promise<void> => {
+router.get("/psicologos", async (_req, res): Promise<void> => {
   const rows = await db
     .select({
-      advogado: advogadosTable,
+      psicologo: psicologosTable,
       status: subscriptionsTable.status,
     })
-    .from(advogadosTable)
+    .from(psicologosTable)
     .innerJoin(
       subscriptionsTable,
-      eq(subscriptionsTable.lawyerRef, advogadosTable.userId),
+      eq(subscriptionsTable.psicologoRef, psicologosTable.userId),
     )
     .where(assinaturaVisivel());
 
   const visible = rows
-    .filter(({ advogado }) => isComplete(advogado))
-    .map(({ advogado }) => ({
-      id: advogado.id,
-      nome: advogado.nome,
-      oab: advogado.oab,
-      photo: advogado.photo,
-      about: advogado.about,
-      areas: advogado.areas ?? [],
-      subcategorias: advogado.subcategorias ?? [],
-      cidades: advogado.cidades ?? [],
-      atendeOnline: advogado.atendeOnline,
-      whatsapp: advogado.whatsapp,
+    .filter(({ psicologo }) => isComplete(psicologo))
+    .map(({ psicologo }) => ({
+      id: psicologo.id,
+      nome: psicologo.nome,
+      crp: psicologo.crp,
+      photo: psicologo.photo,
+      about: psicologo.about,
+      areas: psicologo.areas ?? [],
+      subcategorias: psicologo.subcategorias ?? [],
+      cidades: psicologo.cidades ?? [],
+      atendeOnline: psicologo.atendeOnline,
+      publicoAtendido: psicologo.publicoAtendido ?? [],
+      precoSessao: psicologo.precoSessao,
+      whatsapp: psicologo.whatsapp,
     }));
 
-  res.json(ListAdvogadosResponse.parse(visible));
+  res.json(ListPsicologosResponse.parse(visible));
 });
 
 // Normaliza texto para comparação (sem acentos, minúsculo, sem espaços extras).
@@ -276,11 +292,11 @@ function normalizar(value: string): string {
     .toLowerCase();
 }
 
-// Contagem de concorrência: advogados pagantes (assinatura "ativa") com perfil
+// Contagem de concorrência: psicólogos pagantes (assinatura "ativa") com perfil
 // completo, opcionalmente filtrados por área, cidade e UF. Usado no funil de
 // cadastro para mostrar números reais de concorrência. Reaproveita a mesma
 // regra de visibilidade do diretório público (join + isComplete).
-router.get("/advogados/contagem", async (req, res): Promise<void> => {
+router.get("/psicologos/contagem", async (req, res): Promise<void> => {
   const area =
     typeof req.query["area"] === "string" ? req.query["area"] : "";
   const cidade =
@@ -293,27 +309,27 @@ router.get("/advogados/contagem", async (req, res): Promise<void> => {
 
   const rows = await db
     .select({
-      advogado: advogadosTable,
+      psicologo: psicologosTable,
       status: subscriptionsTable.status,
     })
-    .from(advogadosTable)
+    .from(psicologosTable)
     .innerJoin(
       subscriptionsTable,
-      eq(subscriptionsTable.lawyerRef, advogadosTable.userId),
+      eq(subscriptionsTable.psicologoRef, psicologosTable.userId),
     )
     .where(assinaturaVisivel());
 
   const visiveis = rows
-    .map(({ advogado }) => advogado)
-    .filter((advogado) => isComplete(advogado));
+    .map(({ psicologo }) => psicologo)
+    .filter((psicologo) => isComplete(psicologo));
 
-  const matchesArea = (adv: AdvogadoRow): boolean =>
-    !areaN || (adv.areas ?? []).some((a) => normalizar(a) === areaN);
+  const matchesArea = (p: PsicologoRow): boolean =>
+    !areaN || (p.areas ?? []).some((a) => normalizar(a) === areaN);
 
-  const matchesLocal = (adv: AdvogadoRow): boolean => {
+  const matchesLocal = (p: PsicologoRow): boolean => {
     if (!cidadeN && !ufN) return true;
-    if (adv.atendeOnline) return true;
-    return (adv.cidades ?? []).some((c) => {
+    if (p.atendeOnline) return true;
+    return (p.cidades ?? []).some((c) => {
       const okCidade = !cidadeN || normalizar(c.nome) === cidadeN;
       const okUf = !ufN || normalizar(c.uf) === ufN;
       return okCidade && okUf;
@@ -323,11 +339,11 @@ router.get("/advogados/contagem", async (req, res): Promise<void> => {
   const naArea = visiveis.filter(matchesArea);
   const naCidade = visiveis.filter(matchesLocal);
   const naAreaECidade = visiveis.filter(
-    (adv) => matchesArea(adv) && matchesLocal(adv),
+    (p) => matchesArea(p) && matchesLocal(p),
   );
 
   res.json(
-    ContarAdvogadosResponse.parse({
+    ContarPsicologosResponse.parse({
       total: visiveis.length,
       naArea: naArea.length,
       naCidade: naCidade.length,
@@ -336,23 +352,23 @@ router.get("/advogados/contagem", async (req, res): Promise<void> => {
   );
 });
 
-// Perfil do advogado autenticado. Cria um registro vazio na primeira leitura
+// Perfil do psicólogo autenticado. Cria um registro vazio na primeira leitura
 // para simplificar o fluxo do painel.
 router.get("/perfil", requireAuth, async (req, res): Promise<void> => {
   const userId = req.userId!;
   let [row] = await db
     .select()
-    .from(advogadosTable)
-    .where(eq(advogadosTable.userId, userId));
+    .from(psicologosTable)
+    .where(eq(psicologosTable.userId, userId));
 
   if (!row) {
     // Primeiro acesso ao painel: cria o perfil já pré-preenchido com os dados
     // do funil de cadastro (casados pelo e-mail da conta, que é o e-mail do
-    // pagamento). O selo da OAB é reverificado no servidor. Sem e-mail de
+    // pagamento). O selo do CRP é reverificado no servidor. Sem e-mail de
     // boas-vindas aqui: o e-mail "Conta criada" já foi enviado no pagamento.
     const prefill = await buildPrefillFromLead(req);
     [row] = await db
-      .insert(advogadosTable)
+      .insert(psicologosTable)
       .values({ userId, ...prefill })
       .returning();
   }
@@ -361,7 +377,7 @@ router.get("/perfil", requireAuth, async (req, res): Promise<void> => {
   res.json(GetPerfilResponse.parse(toProfile(row, status)));
 });
 
-// Cria ou atualiza o perfil do advogado autenticado.
+// Cria ou atualiza o perfil do psicólogo autenticado.
 router.put("/perfil", requireAuth, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const parsed = UpdatePerfilBody.safeParse(req.body);
@@ -384,61 +400,63 @@ router.put("/perfil", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  // Status de verificação da OAB é server-managed: só marcamos oabVerificada a
+  // Status de verificação do CRP é server-managed: só marcamos crpVerificada a
   // partir de um token assinado por /verificar-oab (impede o cliente forjar o
   // status). "Pendente" é o estado de menor privilégio e pode vir do cliente.
   // Edições comuns no painel (sem token nem flag) preservam o valor persistido.
-  let oabPatch: {
-    oabVerificada?: boolean;
-    oabSituacao?: string | null;
-    oabNomeConfirmado?: string | null;
-    oabVerificadaEm?: Date;
-    oabVerificacaoPendente?: boolean;
+  let crpPatch: {
+    crpVerificada?: boolean;
+    crpSituacao?: string | null;
+    crpNomeConfirmado?: string | null;
+    crpVerificadaEm?: Date;
+    crpVerificacaoPendente?: boolean;
   } = {};
   const tokenPayload = data.oabToken ? verificarOabToken(data.oabToken) : null;
-  // O perfil grava a OAB no formato "OAB/UF 123456"; extraímos a seccional para
-  // exigir que o token bata também na UF (não só no número da inscrição).
-  const ufMatch = data.oab.match(/OAB\/([A-Za-z]{2})/i);
-  const seccionalPerfil = ufMatch?.[1];
+  // O perfil grava o CRP no formato "CRP UF/123456"; extraímos a região para
+  // exigir que o token bata também na região (não só no número da inscrição).
+  const regiaoMatch = data.crp.match(/CRP\s*([A-Za-z]{2})/i);
+  const regiaoPerfil = regiaoMatch?.[1];
   if (
     tokenPayload &&
-    tokenCombinaComOab(tokenPayload, data.oab, seccionalPerfil)
+    tokenCombinaComOab(tokenPayload, data.crp, regiaoPerfil)
   ) {
-    oabPatch = {
-      oabVerificada: true,
-      oabSituacao: tokenPayload.situacao,
-      oabNomeConfirmado: tokenPayload.nomeOab,
-      oabVerificadaEm: new Date(),
-      oabVerificacaoPendente: false,
+    crpPatch = {
+      crpVerificada: true,
+      crpSituacao: tokenPayload.situacao,
+      crpNomeConfirmado: tokenPayload.nomeOab,
+      crpVerificadaEm: new Date(),
+      crpVerificacaoPendente: false,
     };
-  } else if (data.oabVerificacaoPendente !== undefined) {
-    oabPatch = { oabVerificacaoPendente: data.oabVerificacaoPendente };
+  } else if (data.crpVerificacaoPendente !== undefined) {
+    crpPatch = { crpVerificacaoPendente: data.crpVerificacaoPendente };
   }
 
   const values = {
     userId,
     nome: data.nome,
-    oab: data.oab,
+    crp: data.crp,
     photo: data.photo ?? null,
     about: data.about,
     areas: data.areas,
     subcategorias: Array.from(new Set(subsRecebidas)),
     cidades: data.cidades as Cidade[],
     atendeOnline: data.atendeOnline,
+    publicoAtendido: data.publicoAtendido ?? [],
+    precoSessao: data.precoSessao ?? "",
     whatsapp: data.whatsapp,
     instagram: data.instagram,
     linkedin: data.linkedin,
     website: data.website,
     outro: data.outro,
     updatedAt: new Date(),
-    ...oabPatch,
+    ...crpPatch,
   };
 
   const [row] = await db
-    .insert(advogadosTable)
+    .insert(psicologosTable)
     .values(values)
     .onConflictDoUpdate({
-      target: advogadosTable.userId,
+      target: psicologosTable.userId,
       set: values,
     })
     .returning();

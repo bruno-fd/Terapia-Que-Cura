@@ -28,7 +28,7 @@ export default function PoliticaDePrivacidade() {
 
             <p className="text-lg text-neutral-700 leading-relaxed mb-8">
               A sua privacidade importa para nós. Esta página explica, de forma clara e direta,
-              quais dados coletamos quando você usa a Minha Causa Justa, para que servem, como
+              quais dados coletamos quando você usa a Terapia Que Cura, para que servem, como
               protegemos essas informações e quais são os seus direitos.
             </p>
             <p className="text-neutral-700 leading-relaxed mb-10">
@@ -38,17 +38,17 @@ export default function PoliticaDePrivacidade() {
 
             <h2 className="text-2xl font-bold text-primary-900 mt-12 mb-4">Quem somos</h2>
             <p className="text-neutral-700 leading-relaxed mb-6">
-              A Minha Causa Justa é operada pela empresa responsável pelo site
-              minhacausajusta.com.br, com sede no Brasil.
+              A Terapia Que Cura é operada pela empresa responsável pelo site
+              terapiaquecura.com.br, com sede no Brasil.
             </p>
             <p className="text-neutral-700 leading-relaxed mb-10">
               Para dúvidas sobre privacidade e proteção de dados, entre em contato com nosso
               responsável pelo tema pelo e-mail{" "}
               <a
-                href="mailto:privacidade@minhacausajusta.com.br"
+                href="mailto:privacidade@terapiaquecura.com.br"
                 className="text-primary-600 hover:underline"
               >
-                privacidade@minhacausajusta.com.br
+                privacidade@terapiaquecura.com.br
               </a>
               .
             </p>
@@ -78,14 +78,14 @@ export default function PoliticaDePrivacidade() {
             </p>
 
             <h3 className="text-xl font-bold text-primary-800 mt-8 mb-3">
-              Se você é advogado e se cadastra
+              Se você é psicólogo e se cadastra
             </h3>
             <p className="text-neutral-700 leading-relaxed mb-6">
               Para criar e manter seu perfil na plataforma, precisamos dos seguintes dados:
-              nome completo, número de inscrição e seccional da OAB, CPF para verificação de
+              nome completo, número de inscrição e região do CRP, CPF para verificação de
               identidade e cumprimento de obrigações fiscais, e-mail, telefone ou WhatsApp para
-              exibição no perfil, foto, áreas de atuação, especialidades, estados onde atende e
-              texto de apresentação.
+              exibição no perfil, foto, áreas de atuação, especialidades, público atendido,
+              estados onde atende e texto de apresentação.
             </p>
             <p className="text-neutral-700 leading-relaxed mb-6">
               Também coletamos dados de acesso à plataforma, como data, hora e IP de login,
@@ -113,9 +113,10 @@ export default function PoliticaDePrivacidade() {
               Usamos seus dados exclusivamente para as seguintes finalidades:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-neutral-700 leading-relaxed mb-10">
-              <li>Operar a plataforma e exibir o diretório de advogados</li>
+              <li>Operar a plataforma e exibir o diretório de psicólogos</li>
               <li>
-                Verificar sua inscrição na OAB por meio do sistema público do Conselho Federal
+                Verificar sua inscrição no CRP, quando aplicável por meio de fontes públicas do
+                Conselho Federal de Psicologia (CFP)
               </li>
               <li>Gerenciar sua conta e processar pagamentos</li>
               <li>
@@ -148,7 +149,7 @@ export default function PoliticaDePrivacidade() {
               <li>
                 Com ferramentas de análise de uso do site – de forma anonimizada
               </li>
-              <li>Com o sistema público da OAB para verificar sua inscrição</li>
+              <li>Com fontes públicas do CFP/CRP para verificar sua inscrição</li>
               <li>Com autoridades públicas quando exigido por lei ou por ordem judicial</li>
             </ul>
             <p className="text-neutral-700 leading-relaxed mb-6">
@@ -156,7 +157,7 @@ export default function PoliticaDePrivacidade() {
               tratá-los de forma segura e apenas para a finalidade contratada.
             </p>
             <p className="text-neutral-700 leading-relaxed mb-10">
-              As informações do seu perfil público – nome, OAB, foto, especialidades e contato
+              As informações do seu perfil público – nome, CRP, foto, especialidades e contato
               – ficam visíveis para qualquer visitante do site. Isso é parte essencial do
               serviço que você contratou e para o qual você deu seu consentimento ao se
               cadastrar.
@@ -222,10 +223,10 @@ export default function PoliticaDePrivacidade() {
             <p className="text-neutral-700 leading-relaxed mb-10">
               Para exercer qualquer um desses direitos, envie um e-mail para{" "}
               <a
-                href="mailto:privacidade@minhacausajusta.com.br"
+                href="mailto:privacidade@terapiaquecura.com.br"
                 className="text-primary-600 hover:underline"
               >
-                privacidade@minhacausajusta.com.br
+                privacidade@terapiaquecura.com.br
               </a>{" "}
               informando seu nome, o e-mail cadastrado e o que você está solicitando. Respondemos
               em até 15 dias corridos.
@@ -235,14 +236,14 @@ export default function PoliticaDePrivacidade() {
               Crianças e adolescentes
             </h2>
             <p className="text-neutral-700 leading-relaxed mb-10">
-              A Minha Causa Justa não é destinada a menores de 18 anos e não coleta dados de
+              A Terapia Que Cura não é destinada a menores de 18 anos e não coleta dados de
               menores intencionalmente. Se você identificar que um menor teve dados coletados
               pela plataforma, entre em contato pelo e-mail{" "}
               <a
-                href="mailto:privacidade@minhacausajusta.com.br"
+                href="mailto:privacidade@terapiaquecura.com.br"
                 className="text-primary-600 hover:underline"
               >
-                privacidade@minhacausajusta.com.br
+                privacidade@terapiaquecura.com.br
               </a>{" "}
               e excluiremos as informações imediatamente.
             </p>
@@ -261,7 +262,7 @@ export default function PoliticaDePrivacidade() {
             </h2>
             <p className="text-neutral-700 leading-relaxed mb-10">
               Podemos atualizar esta Política quando necessário. Sempre que fizermos alterações
-              relevantes, avisaremos os advogados cadastrados por e-mail com pelo menos 15 dias
+              relevantes, avisaremos os psicólogos cadastrados por e-mail com pelo menos 15 dias
               de antecedência. A data da última atualização aparece sempre no topo desta
               página.
             </p>
@@ -273,10 +274,10 @@ export default function PoliticaDePrivacidade() {
               Para qualquer dúvida, solicitação ou reclamação sobre o uso dos seus dados, entre
               em contato com nosso responsável de privacidade pelo e-mail{" "}
               <a
-                href="mailto:privacidade@minhacausajusta.com.br"
+                href="mailto:privacidade@terapiaquecura.com.br"
                 className="text-primary-600 hover:underline"
               >
-                privacidade@minhacausajusta.com.br
+                privacidade@terapiaquecura.com.br
               </a>
               . Respondemos em até 15 dias corridos.
             </p>
@@ -284,7 +285,7 @@ export default function PoliticaDePrivacidade() {
 
           <div className="mt-16 pt-8 border-t border-neutral-200 text-center">
             <p className="text-sm text-neutral-500 italic">
-              Minha Causa Justa – minhacausajusta.com.br
+              Terapia Que Cura – terapiaquecura.com.br
             </p>
           </div>
         </div>

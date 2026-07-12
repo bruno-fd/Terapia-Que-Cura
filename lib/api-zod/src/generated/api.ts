@@ -36,7 +36,7 @@ export const ListPublishedPostsResponseItem = zod.object({
   "paragraphs": zod.array(zod.string())
 })),
   "bodyHtml": zod.string(),
-  "oabClosing": zod.string(),
+  "crpClosing": zod.string(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -77,7 +77,7 @@ export const ListAdminPostsResponseItem = zod.object({
   "paragraphs": zod.array(zod.string())
 })),
   "bodyHtml": zod.string(),
-  "oabClosing": zod.string(),
+  "crpClosing": zod.string(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -112,7 +112,7 @@ export const CreateBlogPostResponse = zod.object({
   "paragraphs": zod.array(zod.string())
 })),
   "bodyHtml": zod.string(),
-  "oabClosing": zod.string(),
+  "crpClosing": zod.string(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -137,7 +137,7 @@ export const UpdateBlogPostBody = zod.object({
   "subtitle": zod.string().optional(),
   "excerpt": zod.string().optional(),
   "bodyHtml": zod.string().optional(),
-  "oabClosing": zod.string().optional(),
+  "crpClosing": zod.string().optional(),
   "published": zod.boolean().optional()
 })
 
@@ -156,7 +156,7 @@ export const UpdateBlogPostResponse = zod.object({
   "paragraphs": zod.array(zod.string())
 })),
   "bodyHtml": zod.string(),
-  "oabClosing": zod.string(),
+  "crpClosing": zod.string(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -202,54 +202,56 @@ export const ListBlogDailyRunsResponse = zod.object({
 
 
 /**
- * @summary List all registered lawyers for admin verification
+ * @summary List all registered psychologists for admin verification
  */
-export const ListAdminAdvogadosResponseItem = zod.object({
+export const ListAdminPsicologosResponseItem = zod.object({
   "id": zod.number(),
   "nome": zod.string(),
-  "oab": zod.string(),
+  "crp": zod.string(),
   "email": zod.string(),
   "createdAt": zod.string().nullish(),
   "paymentStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
   "adminAtivo": zod.boolean(),
-  "oabVerificada": zod.boolean(),
-  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish()
+  "crpVerificada": zod.boolean(),
+  "situacaoCrp": zod.enum(['regular', 'irregular', 'invalido']).nullish()
 })
-export const ListAdminAdvogadosResponse = zod.array(ListAdminAdvogadosResponseItem)
+export const ListAdminPsicologosResponse = zod.array(ListAdminPsicologosResponseItem)
 
 
 /**
- * @summary Get full lawyer detail with activity log
+ * @summary Get full psychologist detail with activity log
  */
-export const GetAdminAdvogadoParams = zod.object({
+export const GetAdminPsicologoParams = zod.object({
   "id": zod.coerce.number()
 })
 
 
-export const getAdminAdvogadoResponseCidadesItemUfMin = 2;
-export const getAdminAdvogadoResponseCidadesItemUfMax = 2;
+export const getAdminPsicologoResponseCidadesItemUfMin = 2;
+export const getAdminPsicologoResponseCidadesItemUfMax = 2;
 
 
 
-export const GetAdminAdvogadoResponse = zod.object({
+export const GetAdminPsicologoResponse = zod.object({
   "id": zod.number(),
   "nome": zod.string(),
-  "oab": zod.string(),
+  "crp": zod.string(),
   "email": zod.string(),
   "cpf": zod.string().nullish(),
   "createdAt": zod.string().nullish(),
   "paymentStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
   "plano": zod.string().nullish(),
   "adminAtivo": zod.boolean(),
-  "oabVerificada": zod.boolean(),
-  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
+  "crpVerificada": zod.boolean(),
+  "situacaoCrp": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
   "areas": zod.array(zod.string()),
   "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
-  "uf": zod.string().min(getAdminAdvogadoResponseCidadesItemUfMin).max(getAdminAdvogadoResponseCidadesItemUfMax)
+  "uf": zod.string().min(getAdminPsicologoResponseCidadesItemUfMin).max(getAdminPsicologoResponseCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()).optional(),
+  "precoSessao": zod.string().optional(),
   "atividades": zod.array(zod.object({
   "id": zod.number(),
   "acao": zod.string(),
@@ -260,43 +262,45 @@ export const GetAdminAdvogadoResponse = zod.object({
 
 
 /**
- * @summary Update admin controls (active toggle, verified, OAB situation)
+ * @summary Update admin controls (active toggle, verified, CRP situation)
  */
-export const UpdateAdminAdvogadoParams = zod.object({
+export const UpdateAdminPsicologoParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const UpdateAdminAdvogadoBody = zod.object({
+export const UpdateAdminPsicologoBody = zod.object({
   "adminAtivo": zod.boolean().optional(),
-  "oabVerificada": zod.boolean().optional(),
-  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish()
+  "crpVerificada": zod.boolean().optional(),
+  "situacaoCrp": zod.enum(['regular', 'irregular', 'invalido']).nullish()
 })
 
 
-export const updateAdminAdvogadoResponseCidadesItemUfMin = 2;
-export const updateAdminAdvogadoResponseCidadesItemUfMax = 2;
+export const updateAdminPsicologoResponseCidadesItemUfMin = 2;
+export const updateAdminPsicologoResponseCidadesItemUfMax = 2;
 
 
 
-export const UpdateAdminAdvogadoResponse = zod.object({
+export const UpdateAdminPsicologoResponse = zod.object({
   "id": zod.number(),
   "nome": zod.string(),
-  "oab": zod.string(),
+  "crp": zod.string(),
   "email": zod.string(),
   "cpf": zod.string().nullish(),
   "createdAt": zod.string().nullish(),
   "paymentStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
   "plano": zod.string().nullish(),
   "adminAtivo": zod.boolean(),
-  "oabVerificada": zod.boolean(),
-  "situacaoOab": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
+  "crpVerificada": zod.boolean(),
+  "situacaoCrp": zod.enum(['regular', 'irregular', 'invalido']).nullish(),
   "areas": zod.array(zod.string()),
   "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
-  "uf": zod.string().min(updateAdminAdvogadoResponseCidadesItemUfMin).max(updateAdminAdvogadoResponseCidadesItemUfMax)
+  "uf": zod.string().min(updateAdminPsicologoResponseCidadesItemUfMin).max(updateAdminPsicologoResponseCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()).optional(),
+  "precoSessao": zod.string().optional(),
   "atividades": zod.array(zod.object({
   "id": zod.number(),
   "acao": zod.string(),
@@ -307,44 +311,46 @@ export const UpdateAdminAdvogadoResponse = zod.object({
 
 
 /**
- * Returns lawyers whose subscription is active and whose profile is complete.
- * @summary List public lawyers (paying and with a complete profile)
+ * Returns psychologists whose subscription is active and whose profile is complete.
+ * @summary List public psychologists (paying and with a complete profile)
  */
 
-export const listAdvogadosResponseCidadesItemUfMin = 2;
-export const listAdvogadosResponseCidadesItemUfMax = 2;
+export const listPsicologosResponseCidadesItemUfMin = 2;
+export const listPsicologosResponseCidadesItemUfMax = 2;
 
 
 
-export const ListAdvogadosResponseItem = zod.object({
+export const ListPsicologosResponseItem = zod.object({
   "id": zod.number(),
   "nome": zod.string(),
-  "oab": zod.string(),
+  "crp": zod.string(),
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
   "subcategorias": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
   "nome": zod.string().min(1),
-  "uf": zod.string().min(listAdvogadosResponseCidadesItemUfMin).max(listAdvogadosResponseCidadesItemUfMax)
+  "uf": zod.string().min(listPsicologosResponseCidadesItemUfMin).max(listPsicologosResponseCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()),
+  "precoSessao": zod.string(),
   "whatsapp": zod.string()
 })
-export const ListAdvogadosResponse = zod.array(ListAdvogadosResponseItem)
+export const ListPsicologosResponse = zod.array(ListPsicologosResponseItem)
 
 
 /**
- * Returns counts of lawyers with an active subscription and a complete profile, optionally filtered by area, city and state. Used to show real competition numbers during the registration funnel.
- * @summary Count active, visible lawyers by area and location
+ * Returns counts of psychologists with an active subscription and a complete profile, optionally filtered by area, city and state. Used to show real competition numbers during the registration funnel.
+ * @summary Count active, visible psychologists by area and location
  */
-export const ContarAdvogadosQueryParams = zod.object({
+export const ContarPsicologosQueryParams = zod.object({
   "area": zod.coerce.string().optional(),
   "cidade": zod.coerce.string().optional(),
   "uf": zod.coerce.string().optional()
 })
 
-export const ContarAdvogadosResponse = zod.object({
+export const ContarPsicologosResponse = zod.object({
   "total": zod.number(),
   "naArea": zod.number(),
   "naCidade": zod.number(),
@@ -369,12 +375,12 @@ export const UpsertCadastroLeadBody = zod.object({
   "email": zod.string().optional(),
   "telefone": zod.string().optional(),
   "cpf": zod.string().optional(),
-  "oab": zod.string().optional(),
-  "seccional": zod.string().optional(),
-  "oabVerificada": zod.boolean().optional(),
-  "oabSituacao": zod.string().nullish(),
-  "oabNomeConfirmado": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean().optional(),
+  "crp": zod.string().optional(),
+  "regiao": zod.string().optional(),
+  "crpVerificada": zod.boolean().optional(),
+  "crpSituacao": zod.string().nullish(),
+  "crpNomeConfirmado": zod.string().nullish(),
+  "crpVerificacaoPendente": zod.boolean().optional(),
   "plano": zod.enum(['mensal', 'anual']).nullish(),
   "areas": zod.array(zod.string()).optional(),
   "cidades": zod.array(zod.object({
@@ -382,6 +388,7 @@ export const UpsertCadastroLeadBody = zod.object({
   "uf": zod.string().min(upsertCadastroLeadBodyCidadesItemUfMin).max(upsertCadastroLeadBodyCidadesItemUfMax)
 })).optional(),
   "atendeOnline": zod.boolean().optional(),
+  "publicoAtendido": zod.array(zod.string()).optional(),
   "step": zod.number().optional(),
   "completed": zod.boolean().optional()
 })
@@ -398,12 +405,12 @@ export const UpsertCadastroLeadResponse = zod.object({
   "email": zod.string(),
   "telefone": zod.string(),
   "cpf": zod.string(),
-  "oab": zod.string(),
-  "seccional": zod.string(),
-  "oabVerificada": zod.boolean(),
-  "oabSituacao": zod.string().nullish(),
-  "oabNomeConfirmado": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean(),
+  "crp": zod.string(),
+  "regiao": zod.string(),
+  "crpVerificada": zod.boolean(),
+  "crpSituacao": zod.string().nullish(),
+  "crpNomeConfirmado": zod.string().nullish(),
+  "crpVerificacaoPendente": zod.boolean(),
   "plano": zod.enum(['mensal', 'anual']).nullish(),
   "areas": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
@@ -411,6 +418,7 @@ export const UpsertCadastroLeadResponse = zod.object({
   "uf": zod.string().min(upsertCadastroLeadResponseCidadesItemUfMin).max(upsertCadastroLeadResponseCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()).optional(),
   "step": zod.number(),
   "completed": zod.boolean()
 })
@@ -435,12 +443,12 @@ export const GetCadastroLeadResponse = zod.object({
   "email": zod.string(),
   "telefone": zod.string(),
   "cpf": zod.string(),
-  "oab": zod.string(),
-  "seccional": zod.string(),
-  "oabVerificada": zod.boolean(),
-  "oabSituacao": zod.string().nullish(),
-  "oabNomeConfirmado": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean(),
+  "crp": zod.string(),
+  "regiao": zod.string(),
+  "crpVerificada": zod.boolean(),
+  "crpSituacao": zod.string().nullish(),
+  "crpNomeConfirmado": zod.string().nullish(),
+  "crpVerificacaoPendente": zod.boolean(),
   "plano": zod.enum(['mensal', 'anual']).nullish(),
   "areas": zod.array(zod.string()),
   "cidades": zod.array(zod.object({
@@ -448,6 +456,7 @@ export const GetCadastroLeadResponse = zod.object({
   "uf": zod.string().min(getCadastroLeadResponseCidadesItemUfMin).max(getCadastroLeadResponseCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()).optional(),
   "step": zod.number(),
   "completed": zod.boolean()
 })
@@ -476,7 +485,7 @@ export const VerificarOabResponse = zod.object({
 
 
 /**
- * @summary Get the authenticated lawyer's profile
+ * @summary Get the authenticated psychologist's profile
  */
 
 export const getPerfilResponseCidadesItemUfMin = 2;
@@ -486,7 +495,7 @@ export const getPerfilResponseCidadesItemUfMax = 2;
 
 export const GetPerfilResponse = zod.object({
   "nome": zod.string(),
-  "oab": zod.string(),
+  "crp": zod.string(),
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
@@ -496,6 +505,8 @@ export const GetPerfilResponse = zod.object({
   "uf": zod.string().min(getPerfilResponseCidadesItemUfMin).max(getPerfilResponseCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()),
+  "precoSessao": zod.string(),
   "whatsapp": zod.string(),
   "instagram": zod.string(),
   "linkedin": zod.string(),
@@ -504,17 +515,17 @@ export const GetPerfilResponse = zod.object({
   "complete": zod.boolean(),
   "subscriptionStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
   "visivel": zod.boolean(),
-  "oabVerificada": zod.boolean(),
-  "oabSituacao": zod.string().nullish(),
-  "oabNomeConfirmado": zod.string().nullish(),
-  "oabVerificadaEm": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean(),
+  "crpVerificada": zod.boolean(),
+  "crpSituacao": zod.string().nullish(),
+  "crpNomeConfirmado": zod.string().nullish(),
+  "crpVerificadaEm": zod.string().nullish(),
+  "crpVerificacaoPendente": zod.boolean(),
   "createdAt": zod.string().nullish()
 })
 
 
 /**
- * @summary Create or update the authenticated lawyer's profile
+ * @summary Create or update the authenticated psychologist's profile
  */
 
 export const updatePerfilBodyCidadesItemUfMin = 2;
@@ -524,7 +535,7 @@ export const updatePerfilBodyCidadesItemUfMax = 2;
 
 export const UpdatePerfilBody = zod.object({
   "nome": zod.string(),
-  "oab": zod.string(),
+  "crp": zod.string(),
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
@@ -534,13 +545,15 @@ export const UpdatePerfilBody = zod.object({
   "uf": zod.string().min(updatePerfilBodyCidadesItemUfMin).max(updatePerfilBodyCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()),
+  "precoSessao": zod.string(),
   "whatsapp": zod.string(),
   "instagram": zod.string(),
   "linkedin": zod.string(),
   "website": zod.string(),
   "outro": zod.string(),
   "oabToken": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean().optional()
+  "crpVerificacaoPendente": zod.boolean().optional()
 })
 
 
@@ -551,7 +564,7 @@ export const updatePerfilResponseCidadesItemUfMax = 2;
 
 export const UpdatePerfilResponse = zod.object({
   "nome": zod.string(),
-  "oab": zod.string(),
+  "crp": zod.string(),
   "photo": zod.string().nullish(),
   "about": zod.string(),
   "areas": zod.array(zod.string()),
@@ -561,6 +574,8 @@ export const UpdatePerfilResponse = zod.object({
   "uf": zod.string().min(updatePerfilResponseCidadesItemUfMin).max(updatePerfilResponseCidadesItemUfMax)
 })),
   "atendeOnline": zod.boolean(),
+  "publicoAtendido": zod.array(zod.string()),
+  "precoSessao": zod.string(),
   "whatsapp": zod.string(),
   "instagram": zod.string(),
   "linkedin": zod.string(),
@@ -569,17 +584,17 @@ export const UpdatePerfilResponse = zod.object({
   "complete": zod.boolean(),
   "subscriptionStatus": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
   "visivel": zod.boolean(),
-  "oabVerificada": zod.boolean(),
-  "oabSituacao": zod.string().nullish(),
-  "oabNomeConfirmado": zod.string().nullish(),
-  "oabVerificadaEm": zod.string().nullish(),
-  "oabVerificacaoPendente": zod.boolean(),
+  "crpVerificada": zod.boolean(),
+  "crpSituacao": zod.string().nullish(),
+  "crpNomeConfirmado": zod.string().nullish(),
+  "crpVerificadaEm": zod.string().nullish(),
+  "crpVerificacaoPendente": zod.boolean(),
   "createdAt": zod.string().nullish()
 })
 
 
 /**
- * @summary Get the current subscription state for the lawyer
+ * @summary Get the current subscription state for the psychologist
  */
 export const GetAssinaturaResponse = zod.object({
   "hasSubscription": zod.boolean(),
@@ -605,7 +620,7 @@ export const GetAssinaturaResponse = zod.object({
 
 
 /**
- * @summary Create a subscription for the lawyer via Asaas
+ * @summary Create a subscription for the psychologist via Asaas
  */
 
 
@@ -642,7 +657,7 @@ export const CreateAssinaturaResponse = zod.object({
 
 
 /**
- * @summary Cancel the lawyer's subscription
+ * @summary Cancel the psychologist's subscription
  */
 export const cancelAssinaturaBodyMotivoMax = 300;
 
@@ -676,7 +691,7 @@ export const CancelAssinaturaResponse = zod.object({
 
 
 /**
- * @summary Request a 7-day withdrawal refund and delete the lawyer profile
+ * @summary Request a 7-day withdrawal refund and delete the psychologist profile
  */
 export const solicitarReembolsoBodyMotivoMax = 300;
 
@@ -710,7 +725,7 @@ export const SolicitarReembolsoResponse = zod.object({
 
 
 /**
- * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the lawyer pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
+ * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the psychologist pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
  * @summary Start an anonymous checkout (no account required)
  */
 

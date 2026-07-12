@@ -22,9 +22,9 @@ export function isAdminEmail(email: string | null | undefined): boolean {
 // Guarda do admin: exige um usuário autenticado via Replit Auth (login seguro
 // do Replit, cookie de sessão "sid" carregado pelo authMiddleware) cujo e-mail
 // esteja na lista de administradores. É totalmente independente da base de
-// advogados (Clerk): o painel é do dono da empresa. 401 se não autenticado;
+// psicólogos (Clerk): o painel é do dono da empresa. 401 se não autenticado;
 // 403 se autenticado sem permissão. Usada pela geração de blog e pela aba de
-// verificação de advogados.
+// verificação de psicólogos.
 export function requireAdmin(
   req: Request,
   res: Response,

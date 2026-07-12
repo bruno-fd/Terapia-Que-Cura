@@ -41,7 +41,7 @@ export function mapApiPost(post: ApiBlogPost): BlogPost {
     bodyHtml: post.bodyHtml || undefined,
     subtitle: post.subtitle,
     keywords: post.keywords,
-    oabClosing: post.oabClosing,
+    crpClosing: post.crpClosing,
   };
 }
 

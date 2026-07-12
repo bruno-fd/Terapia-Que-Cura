@@ -15,20 +15,20 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full bg-white border-b border-border/40 shadow-sm transition-all duration-200">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-[1200px]">
         <Link href="/" className="flex items-center hover:opacity-90 transition-opacity" onClick={closeMenu} data-testid="link-logo">
-          <img src={logoUrl} alt="Minha Causa Justa" className="h-11 w-auto" />
+          <img src={logoUrl} alt="Terapia Que Cura" className="h-11 w-auto" />
         </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href="/advogados" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location === '/advogados' ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-encontrar-advogado">
-            Encontrar Advogado
+          <Link href="/psicologos" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location === '/psicologos' ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-encontrar-psicologo">
+            Encontrar Psicólogo
           </Link>
           <Link href="/blog" className={`text-sm font-medium transition-colors hover:text-primary-600 ${location.startsWith('/blog') ? 'text-primary-600' : 'text-neutral-700'}`} data-testid="link-blog">
             Blog
           </Link>
           <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary-50">
-            <Link href="/cadastro" data-testid="button-sou-advogado">
-              Sou Advogado
+            <Link href="/cadastro" data-testid="button-sou-psicologo">
+              Sou Psicólogo
             </Link>
           </Button>
           <Button asChild className="bg-primary text-white hover:bg-primary-700">
@@ -53,15 +53,15 @@ export function Navbar() {
       {isOpen && (
         <div className="md:hidden bg-white border-b border-border/40 absolute top-16 left-0 w-full shadow-lg">
           <div className="flex flex-col px-6 py-4 space-y-4">
-            <Link href="/advogados" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-encontrar-advogado">
-              Encontrar Advogado
+            <Link href="/psicologos" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-encontrar-psicologo">
+              Encontrar Psicólogo
             </Link>
             <Link href="/blog" className="text-base font-medium text-neutral-700 py-2 border-b border-neutral-100" onClick={closeMenu} data-testid="mobile-link-blog">
               Blog
             </Link>
             <Button asChild variant="outline" className="w-full mt-4 border-primary text-primary hover:bg-primary-50 justify-center">
-              <Link href="/cadastro" onClick={closeMenu} data-testid="mobile-button-sou-advogado">
-                Sou Advogado
+              <Link href="/cadastro" onClick={closeMenu} data-testid="mobile-button-sou-psicologo">
+                Sou Psicólogo
               </Link>
             </Button>
             <Button asChild className="w-full bg-primary text-white hover:bg-primary-700 justify-center">

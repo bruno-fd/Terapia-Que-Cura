@@ -35,7 +35,7 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
   const displayName =
     user?.fullName ||
     user?.primaryEmailAddress?.emailAddress ||
-    "Advogado";
+    "Psicólogo";
 
   const handleLogout = () => {
     void signOut({ redirectUrl: basePath || "/" });
@@ -64,7 +64,7 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
       })}
 
       <a
-        href="/advogados"
+        href="/psicologos"
         target="_blank"
         rel="noopener noreferrer"
         onClick={onNavigate}
@@ -106,11 +106,11 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <Link href="/" className="flex items-center hover:opacity-90 transition-opacity" data-testid="link-painel-logo">
-              <img src={logoUrl} alt="Minha Causa Justa" className="h-11 w-auto" />
+              <img src={logoUrl} alt="Terapia Que Cura" className="h-11 w-auto" />
             </Link>
           </div>
 
-          <span className="hidden md:block text-sm text-neutral-500">Área do Advogado</span>
+          <span className="hidden md:block text-sm text-neutral-500">Área do Psicólogo</span>
 
           <div className="flex items-center gap-4">
             <span className="hidden sm:block text-sm text-neutral-700 truncate max-w-[200px]">{displayName}</span>
@@ -144,7 +144,7 @@ export function DashboardLayout({ active, children }: DashboardLayoutProps) {
             <aside className="absolute top-0 left-0 h-full w-[260px] bg-white shadow-xl flex flex-col">
               <div className="h-16 px-5 flex items-center justify-between border-b border-neutral-200 bg-white">
                 <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center hover:opacity-90 transition-opacity" data-testid="link-painel-drawer-logo">
-                  <img src={logoUrl} alt="Minha Causa Justa" className="h-10 w-auto" />
+                  <img src={logoUrl} alt="Terapia Que Cura" className="h-10 w-auto" />
                 </Link>
                 <button
                   onClick={() => setMenuOpen(false)}

@@ -371,7 +371,7 @@ export default function PainelAssinatura() {
               <span>
                 O gerenciamento de pagamentos é processado de forma segura pelo
                 Asaas, instituição de pagamento autorizada pelo Banco Central. A
-                Minha Causa Justa não armazena dados do seu cartão de crédito.
+                Terapia Que Cura não armazena dados do seu cartão de crédito.
               </span>
             </p>
           </div>
@@ -782,7 +782,7 @@ function AssinarDialog({
             {enviando ? "Gerando cobrança..." : "Gerar cobrança"}
           </Button>
           <p className="text-xs text-neutral-500">
-            Pagamento processado pelo Asaas. A Minha Causa Justa não armazena
+            Pagamento processado pelo Asaas. A Terapia Que Cura não armazena
             dados do seu cartão.
           </p>
         </div>

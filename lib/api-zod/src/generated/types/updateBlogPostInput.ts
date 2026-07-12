@@ -15,6 +15,6 @@ export interface UpdateBlogPostInput {
   subtitle?: string;
   excerpt?: string;
   bodyHtml?: string;
-  oabClosing?: string;
+  crpClosing?: string;
   published?: boolean;
 }

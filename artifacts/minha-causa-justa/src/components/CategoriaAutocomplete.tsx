@@ -14,8 +14,8 @@ interface CategoriaAutocompleteProps {
 }
 
 // Busca livre de categorias: pesquisa ao mesmo tempo nas macrocategorias
-// (ex.: "Trabalho e Emprego") e nas subcategorias (ex.: "Rescisão Indireta").
-// Campo vazio mostra as 12 macrocategorias como ponto de partida.
+// (ex.: "Ansiedade e Estresse") e nas subcategorias (ex.: "Síndrome do Pânico").
+// Campo vazio mostra as macrocategorias como ponto de partida.
 export function CategoriaAutocomplete({
   value,
   onSelect,
@@ -118,10 +118,7 @@ export function CategoriaAutocomplete({
       data-testid={`${testId}-option-${index}`}
     >
       {r.tipo === "macro" ? (
-        <span className="flex items-center gap-2 font-medium text-neutral-900">
-          <span aria-hidden="true">{r.emoji}</span>
-          {r.nome}
-        </span>
+        <span className="font-medium text-neutral-900">{r.nome}</span>
       ) : (
         <span className="flex flex-col">
           <span className="text-neutral-900">{r.nome}</span>

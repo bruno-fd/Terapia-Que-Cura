@@ -16,10 +16,10 @@ export interface LeadCidade {
   uf: string;
 }
 
-// Captura progressiva do funil de cadastro do advogado. Cada etapa do funil
+// Captura progressiva do funil de cadastro do psicólogo. Cada etapa do funil
 // faz um upsert por leadId (identificador anônimo gerado no navegador antes do
 // login), permitindo retomar o cadastro e disparar remarketing para quem não
-// concluiu. Não substitui a tabela "advogados": ao finalizar, os dados migram
+// concluiu. Não substitui a tabela "psicologos": ao finalizar, os dados migram
 // para o perfil autenticado e o lead é marcado como concluído.
 export const cadastroLeadsTable = pgTable("cadastro_leads", {
   id: serial("id").primaryKey(),
@@ -30,18 +30,18 @@ export const cadastroLeadsTable = pgTable("cadastro_leads", {
   telefone: text("telefone").notNull().default(""),
   // Dados de identificação informados na Etapa 1 (não-oficiais até o pagamento).
   cpf: text("cpf").notNull().default(""),
-  oab: text("oab").notNull().default(""),
-  seccional: text("seccional").notNull().default(""),
-  // Resultado da verificação real da OAB feita na Etapa 1. Persistido no lead
+  crp: text("crp").notNull().default(""),
+  regiao: text("regiao").notNull().default(""),
+  // Resultado da verificação real do CRP feita na Etapa 1. Persistido no lead
   // porque o pagamento e a criação da conta acontecem bem depois, então o
   // resultado precisa sobreviver ao token de curta duração para ser transferido
   // ao perfil quando a conta nascer.
-  oabVerificada: boolean("oab_verificada").notNull().default(false),
-  oabSituacao: text("oab_situacao"),
-  oabNomeConfirmado: text("oab_nome_confirmado"),
+  crpVerificada: boolean("crp_verificada").notNull().default(false),
+  crpSituacao: text("crp_situacao"),
+  crpNomeConfirmado: text("crp_nome_confirmado"),
   // true quando a verificação não pôde ser concluída (serviço indisponível) e
   // o perfil precisará de revisão manual.
-  oabVerificacaoPendente: boolean("oab_verificacao_pendente")
+  crpVerificacaoPendente: boolean("crp_verificacao_pendente")
     .notNull()
     .default(false),
   // Plano escolhido: "mensal" | "anual" | null (ainda não escolhido).
@@ -50,6 +50,11 @@ export const cadastroLeadsTable = pgTable("cadastro_leads", {
   areas: jsonb("areas").$type<string[]>().notNull().default([]),
   cidades: jsonb("cidades").$type<LeadCidade[]>().notNull().default([]),
   atendeOnline: boolean("atende_online").notNull().default(false),
+  // Público atendido (ex.: Adultos, Crianças, Casais, LGBTQIA+).
+  publicoAtendido: jsonb("publico_atendido")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   // Última etapa alcançada no funil (1 a 5).
   step: integer("step").notNull().default(1),
   completed: boolean("completed").notNull().default(false),

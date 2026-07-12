@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Check, CreditCard, UserCheck, Globe, ArrowRight, AlertTriangle } from "lucide-react";
 import { useGetPerfil } from "@workspace/api-client-react";
 
-// Banner guia que mostra ao advogado em qual etapa do fluxo ele está:
+// Banner guia que mostra ao psicólogo em qual etapa do fluxo ele está:
 // conta criada, assinatura ativa, perfil completo e, por fim, publicado.
 export function PainelStatusBanner() {
   const { data: perfil } = useGetPerfil();
@@ -37,7 +37,7 @@ export function PainelStatusBanner() {
           </div>
         </div>
         <a
-          href="/advogados"
+          href="/psicologos"
           target="_blank"
           rel="noopener noreferrer"
           className="shrink-0 inline-flex items-center gap-1.5 text-sm font-medium text-[#1E7D4F] hover:underline"
@@ -62,7 +62,7 @@ export function PainelStatusBanner() {
     message = "Ative sua assinatura para publicar seu perfil no diretório.";
     cta = { label: "Ver planos", href: "/painel/assinatura" };
   } else {
-    message = "Complete seu perfil para aparecer no diretório de advogados.";
+    message = "Complete seu perfil para aparecer no diretório de psicólogos.";
     cta = { label: "Completar perfil", href: "/painel/perfil" };
   }
 

@@ -29,16 +29,17 @@ function toLead(row: CadastroLeadRow) {
     email: row.email,
     telefone: row.telefone,
     cpf: row.cpf,
-    oab: row.oab,
-    seccional: row.seccional,
-    oabVerificada: row.oabVerificada,
-    oabSituacao: row.oabSituacao ?? null,
-    oabNomeConfirmado: row.oabNomeConfirmado ?? null,
-    oabVerificacaoPendente: row.oabVerificacaoPendente,
+    crp: row.crp,
+    regiao: row.regiao,
+    crpVerificada: row.crpVerificada,
+    crpSituacao: row.crpSituacao ?? null,
+    crpNomeConfirmado: row.crpNomeConfirmado ?? null,
+    crpVerificacaoPendente: row.crpVerificacaoPendente,
     plano: (row.plano as "mensal" | "anual" | null) ?? null,
     areas: row.areas ?? [],
     cidades: row.cidades ?? [],
     atendeOnline: row.atendeOnline,
+    publicoAtendido: row.publicoAtendido ?? [],
     step: row.step,
     completed: row.completed,
   };
@@ -117,16 +118,17 @@ router.post("/cadastro/lead", async (req, res): Promise<void> => {
     email: data.email ?? "",
     telefone: data.telefone ?? "",
     cpf: data.cpf ?? "",
-    oab: data.oab ?? "",
-    seccional: data.seccional ?? "",
-    oabVerificada: data.oabVerificada ?? false,
-    oabSituacao: data.oabSituacao ?? null,
-    oabNomeConfirmado: data.oabNomeConfirmado ?? null,
-    oabVerificacaoPendente: data.oabVerificacaoPendente ?? false,
+    crp: data.crp ?? "",
+    regiao: data.regiao ?? "",
+    crpVerificada: data.crpVerificada ?? false,
+    crpSituacao: data.crpSituacao ?? null,
+    crpNomeConfirmado: data.crpNomeConfirmado ?? null,
+    crpVerificacaoPendente: data.crpVerificacaoPendente ?? false,
     plano: data.plano ?? null,
     areas: data.areas ?? [],
     cidades: (data.cidades ?? []) as LeadCidade[],
     atendeOnline: data.atendeOnline ?? false,
+    publicoAtendido: data.publicoAtendido ?? [],
     step: data.step ?? 1,
     completed: data.completed ?? false,
     updatedAt: now,
@@ -137,22 +139,24 @@ router.post("/cadastro/lead", async (req, res): Promise<void> => {
   if (data.email !== undefined) updateSet["email"] = data.email;
   if (data.telefone !== undefined) updateSet["telefone"] = data.telefone;
   if (data.cpf !== undefined) updateSet["cpf"] = data.cpf;
-  if (data.oab !== undefined) updateSet["oab"] = data.oab;
-  if (data.seccional !== undefined) updateSet["seccional"] = data.seccional;
-  if (data.oabVerificada !== undefined)
-    updateSet["oabVerificada"] = data.oabVerificada;
-  if (data.oabSituacao !== undefined)
-    updateSet["oabSituacao"] = data.oabSituacao;
-  if (data.oabNomeConfirmado !== undefined)
-    updateSet["oabNomeConfirmado"] = data.oabNomeConfirmado;
-  if (data.oabVerificacaoPendente !== undefined)
-    updateSet["oabVerificacaoPendente"] = data.oabVerificacaoPendente;
+  if (data.crp !== undefined) updateSet["crp"] = data.crp;
+  if (data.regiao !== undefined) updateSet["regiao"] = data.regiao;
+  if (data.crpVerificada !== undefined)
+    updateSet["crpVerificada"] = data.crpVerificada;
+  if (data.crpSituacao !== undefined)
+    updateSet["crpSituacao"] = data.crpSituacao;
+  if (data.crpNomeConfirmado !== undefined)
+    updateSet["crpNomeConfirmado"] = data.crpNomeConfirmado;
+  if (data.crpVerificacaoPendente !== undefined)
+    updateSet["crpVerificacaoPendente"] = data.crpVerificacaoPendente;
   if (data.plano !== undefined) updateSet["plano"] = data.plano;
   if (data.areas !== undefined) updateSet["areas"] = data.areas;
   if (data.cidades !== undefined)
     updateSet["cidades"] = data.cidades as LeadCidade[];
   if (data.atendeOnline !== undefined)
     updateSet["atendeOnline"] = data.atendeOnline;
+  if (data.publicoAtendido !== undefined)
+    updateSet["publicoAtendido"] = data.publicoAtendido;
   // Monotônico: nunca regredir a etapa nem reverter a conclusão. Requisições de
   // sincronização do funil chegam fora de ordem (a etapa anterior pode chegar
   // depois da conclusão), então preservamos sempre o maior progresso.

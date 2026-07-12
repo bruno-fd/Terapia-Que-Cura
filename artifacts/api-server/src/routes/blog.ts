@@ -166,7 +166,7 @@ router.patch("/admin/blog/posts/:id", async (req, res): Promise<void> => {
   if (input.title !== undefined) updates.title = input.title;
   if (input.subtitle !== undefined) updates.subtitle = input.subtitle;
   if (input.excerpt !== undefined) updates.excerpt = input.excerpt;
-  if (input.oabClosing !== undefined) updates.oabClosing = input.oabClosing;
+  if (input.crpClosing !== undefined) updates.crpClosing = input.crpClosing;
   if (input.published !== undefined) {
     updates.published = input.published;
     // Registra a data da primeira publicação (filtro por data de publicação).
@@ -178,9 +178,9 @@ router.patch("/admin/blog/posts/:id", async (req, res): Promise<void> => {
   if (input.bodyHtml !== undefined) {
     const cleanHtml = sanitizeHtml(input.bodyHtml);
     updates.bodyHtml = cleanHtml;
-    const oab =
-      input.oabClosing !== undefined ? input.oabClosing : existing.oabClosing;
-    const text = `${htmlToPlainText(cleanHtml)} ${oab}`;
+    const crp =
+      input.crpClosing !== undefined ? input.crpClosing : existing.crpClosing;
+    const text = `${htmlToPlainText(cleanHtml)} ${crp}`;
     updates.readingMinutes = computeReadingMinutesFromText(text);
   }
 

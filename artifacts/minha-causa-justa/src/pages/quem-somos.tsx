@@ -27,87 +27,90 @@ export default function QuemSomos() {
             <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-start">
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-primary-900 mb-5">
-                  Por que a Minha Causa Justa existe
+                  Por que a Terapia Que Cura existe
                 </h2>
                 <p className="text-neutral-700 leading-relaxed mb-6">
                   O Brasil é um país onde milhões de pessoas enfrentam, todos os dias,
-                  situações que poderiam ser resolvidas com apoio jurídico adequado.
-                  Benefícios do INSS negados, planos de saúde que recusam coberturas,
-                  pensões que não chegam, heranças que ficam anos sem resolução. Problemas
-                  reais, que afetam a vida de pessoas reais, e que muitas vezes ficam sem
-                  solução simplesmente porque as pessoas não sabem por onde começar.
+                  situações que poderiam ser aliviadas com apoio psicológico adequado.
+                  Ansiedade, depressão, luto, conflitos em relacionamentos, esgotamento no
+                  trabalho. Sofrimentos reais, que afetam a vida de pessoas reais, e que
+                  muitas vezes ficam sem cuidado simplesmente porque as pessoas não sabem
+                  por onde começar.
                 </p>
                 <p className="text-neutral-700 leading-relaxed mb-6">
-                  Ao mesmo tempo, o Brasil tem mais de um milhão de advogados inscritos na
-                  OAB. Profissionais qualificados, em todos os estados, especializados nas
-                  mais diversas áreas do direito. Muitos deles trabalham exatamente com as
-                  causas que mais afetam o cidadão comum, e que mais carecem de atenção.
+                  Ao mesmo tempo, o Brasil tem milhares de psicólogos registrados no
+                  Conselho Federal de Psicologia (CFP). Profissionais qualificados, em
+                  todos os estados, especializados nas mais diversas abordagens e temas.
+                  Muitos deles trabalham exatamente com as questões que mais afetam o
+                  brasileiro comum, e que mais carecem de atenção.
                 </p>
                 <p className="text-neutral-700 leading-relaxed mb-10">
-                  A Minha Causa Justa nasce para conectar esses dois lados. Não como
-                  intermediária, não como consultora, não como prestadora de serviços
-                  jurídicos, mas como um espaço de informação e visibilidade, onde quem
-                  precisa de ajuda consegue encontrar quem pode ajudar.
+                  A Terapia Que Cura nasce para conectar esses dois lados. Não como
+                  clínica, não como intermediária de atendimento, mas como um espaço de
+                  informação e visibilidade, onde quem precisa de apoio consegue encontrar
+                  quem pode ajudar.
                 </p>
 
                 <h2 className="text-2xl font-bold text-primary-900 mb-5 mt-12">
-                  Para a população
+                  Para quem busca apoio
                 </h2>
                 <p className="text-neutral-700 leading-relaxed mb-6">
-                  Entender os próprios direitos não deveria ser um privilégio de quem tem
-                  acesso à informação qualificada. Boa parte das pessoas que deixa de buscar
-                  seus direitos não o faz por falta de interesse, mas por falta de clareza
-                  sobre o que fazer, a quem recorrer e se o problema que está vivendo é
-                  "suficientemente sério" para ser levado adiante.
+                  Reconhecer quando vale a pena buscar apoio psicológico não deveria ser
+                  um privilégio de quem tem acesso à informação qualificada. Boa parte das
+                  pessoas que deixa de buscar ajuda não o faz por falta de interesse, mas
+                  por falta de clareza sobre o que fazer, a quem recorrer e se o que está
+                  sentindo é "sério o suficiente" para justificar terapia.
                 </p>
                 <p className="text-neutral-700 leading-relaxed mb-6">
-                  A Minha Causa Justa quer mudar isso. Por meio de conteúdo informativo e
+                  A Terapia Que Cura quer mudar isso. Por meio de conteúdo informativo e
                   acessível, buscamos esclarecer situações comuns do cotidiano brasileiro
-                  sem juridiquês, sem complicação, sem promessas que não podemos cumprir.
-                  Nosso papel é informar, não aconselhar. Esclarecer, não decidir por você.
+                  sem jargão técnico, sem complicação, sem promessas que não podemos
+                  cumprir. Nosso papel é informar, não diagnosticar. Esclarecer, não
+                  substituir o acompanhamento profissional.
                 </p>
                 <p className="text-neutral-700 leading-relaxed mb-10">
-                  O que encontrar aqui são informações gerais sobre direitos e situações
-                  frequentes, e um diretório de advogados que trabalham com essas áreas.
-                  O que fazer com essa informação é sempre sua decisão.
+                  O que encontrar aqui são informações gerais sobre saúde mental e
+                  situações frequentes, e um diretório de psicólogos que trabalham com
+                  essas áreas. O que fazer com essa informação é sempre sua decisão.
                 </p>
 
                 <h2 className="text-2xl font-bold text-primary-900 mb-5 mt-12">
-                  Para advogados
+                  Para psicólogos
                 </h2>
                 <p className="text-neutral-700 leading-relaxed mb-6">
-                  A Minha Causa Justa oferece um espaço de divulgação para advogados que
-                  atuam com causas populares e que desejam ampliar sua presença digital de
-                  forma simples e acessível.
+                  A Terapia Que Cura oferece um espaço de divulgação para psicólogos que
+                  atuam com temas populares de saúde mental e que desejam ampliar sua
+                  presença digital de forma simples e acessível.
                 </p>
                 <p className="text-neutral-700 leading-relaxed mb-6">
-                  Funcionamos como um diretório, um espaço onde o profissional pode manter um
-                  perfil com suas informações, áreas de atuação e forma de contato, visível
-                  para pessoas que navegam pela plataforma por conta própria e por
+                  Funcionamos como um diretório, um espaço onde o profissional pode manter
+                  um perfil com suas informações, áreas de atuação e forma de contato,
+                  visível para pessoas que navegam pela plataforma por conta própria e por
                   iniciativa própria.
                 </p>
                 <p className="text-neutral-700 leading-relaxed mb-10">
-                  Não fazemos intermediação. Não direcionamos usuários a advogados
-                  específicos. Não participamos de nenhuma negociação. O contato entre o
-                  cidadão e o advogado acontece diretamente, sempre por iniciativa do
-                  usuário, que navega livremente pelo diretório e decide, sem qualquer
-                  influência da plataforma, com quem deseja falar.
+                  Não fazemos intermediação clínica. Não direcionamos usuários a
+                  psicólogos específicos. Não participamos de nenhuma negociação. O
+                  contato entre o cliente e o psicólogo acontece diretamente, sempre por
+                  iniciativa do usuário, que navega livremente pelo diretório e decide,
+                  sem qualquer influência da plataforma, com quem deseja falar.
                 </p>
 
                 <h2 className="text-2xl font-bold text-primary-900 mb-5 mt-12">
-                  O que a Minha Causa Justa não é
+                  O que a Terapia Que Cura não é
                 </h2>
                 <p className="text-neutral-700 leading-relaxed mb-6">
-                  Não somos um escritório de advocacia. Não prestamos nenhum tipo de serviço
-                  jurídico ou consultoria legal. Não recomendamos, endossamos nem avalizamos
-                  nenhum profissional listado em nosso diretório. Não participamos de
-                  nenhuma relação contratual entre advogados e seus clientes.
+                  Não somos uma clínica de psicologia. Não prestamos nenhum tipo de
+                  atendimento psicológico, psicoterapia ou consultoria clínica. Não
+                  recomendamos, endossamos nem avaliamos clinicamente nenhum profissional
+                  listado em nosso diretório. Não participamos de nenhuma relação
+                  contratual entre psicólogos e seus clientes.
                 </p>
                 <p className="text-neutral-700 leading-relaxed mb-6">
                   Todo o conteúdo publicado na plataforma tem caráter exclusivamente
-                  informativo e educativo. Para qualquer situação específica, a
-                  orientação adequada vem sempre de um advogado, e é exatamente por isso que
-                  ele está aqui.
+                  informativo e educativo. Para qualquer situação específica, a orientação
+                  adequada vem sempre de um psicólogo, e é exatamente por isso que ele
+                  está aqui.
                 </p>
               </div>
 
@@ -116,12 +119,12 @@ export default function QuemSomos() {
                   <div className="rounded-[24px] overflow-hidden shadow-lg border-4 border-white bg-white">
                     <img
                       src={quemSomosFoto}
-                      alt="Equipe Minha Causa Justa"
+                      alt="Equipe Terapia Que Cura"
                       className="w-full h-auto object-cover"
                     />
                   </div>
                   <p className="text-sm text-neutral-500 text-center mt-4 italic">
-                    Minha Causa Justa
+                    Terapia Que Cura
                   </p>
                 </div>
               </div>
@@ -130,7 +133,7 @@ export default function QuemSomos() {
 
           <div className="mt-20 pt-8 border-t border-neutral-200 text-center">
             <p className="text-sm text-neutral-500 italic">
-              Minha Causa Justa – minhacausajusta.com.br
+              Terapia Que Cura – terapiaquecura.com.br
             </p>
           </div>
         </div>

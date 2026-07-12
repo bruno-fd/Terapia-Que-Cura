@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ContarAdvogadosParams = {
+export type ContarPsicologosParams = {
 area?: string;
 cidade?: string;
 uf?: string;

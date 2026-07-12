@@ -2,9 +2,9 @@ import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import blogRouter from "./blog";
-import adminLawyersRouter from "./admin-lawyers";
+import adminPsicologosRouter from "./admin-psicologos";
 import subscriptionRouter from "./subscription";
-import lawyerRouter from "./lawyer";
+import psychologistRouter from "./psychologist";
 import cadastroRouter from "./cadastro";
 import oabRouter from "./oab";
 
@@ -13,9 +13,9 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 router.use(blogRouter);
-router.use(adminLawyersRouter);
+router.use(adminPsicologosRouter);
 router.use(subscriptionRouter);
-router.use(lawyerRouter);
+router.use(psychologistRouter);
 router.use(cadastroRouter);
 router.use(oabRouter);
 

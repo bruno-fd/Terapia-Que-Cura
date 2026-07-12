@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
-import { AREAS, getInitial, maskPhone } from "@/lib/dashboard";
+import { AREAS, PUBLICO_ATENDIDO, getInitial, maskPhone } from "@/lib/dashboard";
 import { subcategoriasDaCategoria } from "@/data/categories";
 
 const ABOUT_LIMIT = 500;
@@ -24,13 +24,15 @@ type Profile = UpdateProfileInput;
 
 const EMPTY_PROFILE: Profile = {
   nome: "",
-  oab: "",
+  crp: "",
   photo: null,
   about: "",
   areas: [],
   subcategorias: [],
   cidades: [],
   atendeOnline: false,
+  publicoAtendido: [],
+  precoSessao: "",
   whatsapp: "",
   instagram: "",
   linkedin: "",
@@ -63,7 +65,7 @@ export default function PainelPerfil() {
   const [photoError, setPhotoError] = useState("");
   const [areaError, setAreaError] = useState("");
   const [nomeError, setNomeError] = useState("");
-  const [oabError, setOabError] = useState("");
+  const [crpError, setCrpError] = useState("");
   const [selectedUf, setSelectedUf] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -77,13 +79,15 @@ export default function PainelPerfil() {
     if (loaded && hydratedFrom.current !== loaded) {
       setProfile({
         nome: loaded.nome,
-        oab: loaded.oab,
+        crp: loaded.crp,
         photo: loaded.photo ?? null,
         about: loaded.about,
         areas: loaded.areas,
         subcategorias: loaded.subcategorias,
         cidades: loaded.cidades,
         atendeOnline: loaded.atendeOnline,
+        publicoAtendido: loaded.publicoAtendido,
+        precoSessao: loaded.precoSessao,
         whatsapp: loaded.whatsapp,
         instagram: loaded.instagram,
         linkedin: loaded.linkedin,
@@ -169,6 +173,14 @@ export default function PainelPerfil() {
     });
   };
 
+  const togglePublico = (publico: string) => {
+    update({
+      publicoAtendido: profile.publicoAtendido.includes(publico)
+        ? profile.publicoAtendido.filter((p) => p !== publico)
+        : [...profile.publicoAtendido, publico],
+    });
+  };
+
   const addCidade = (nome: string) => {
     if (!selectedUf) return;
     const exists = profile.cidades.some(
@@ -209,12 +221,12 @@ export default function PainelPerfil() {
       return;
     }
     setNomeError("");
-    if (!profile.oab.trim()) {
-      setOabError("Informe seu número de OAB.");
-      focusField("oab");
+    if (!profile.crp.trim()) {
+      setCrpError("Informe seu número de CRP.");
+      focusField("crp");
       return;
     }
-    setOabError("");
+    setCrpError("");
     if (!profile.whatsapp.trim()) {
       setWhatsappError("Informe um WhatsApp para contato.");
       focusField("whatsapp");
@@ -293,12 +305,12 @@ export default function PainelPerfil() {
               <h2 className="text-xl font-bold text-primary-900">
                 {primeiroNome
                   ? `Bem-vindo(a), ${primeiroNome}!`
-                  : "Bem-vindo(a) à Minha Causa Justa!"}
+                  : "Bem-vindo(a) à Terapia Que Cura!"}
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-neutral-700">
                 Seu pagamento foi confirmado e sua conta já está ativa. Falta
                 pouco: complete seu perfil abaixo para começar a aparecer para
-                quem procura um advogado. Quanto mais completo, mais clientes
+                quem procura um psicólogo. Quanto mais completo, mais clientes
                 você atrai.
               </p>
               <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary-700">
@@ -334,7 +346,7 @@ export default function PainelPerfil() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-primary-800">Meu Perfil</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          As informações abaixo aparecem para quem busca advogados na plataforma.
+          As informações abaixo aparecem para quem busca psicólogos na plataforma.
         </p>
       </div>
 
@@ -394,7 +406,7 @@ export default function PainelPerfil() {
         <Card>
           <SectionTitle>Dados cadastrais</SectionTitle>
           <p className="mt-1 text-sm text-neutral-500">
-            Seu nome e OAB aparecem no seu perfil público.
+            Seu nome e CRP aparecem no seu perfil público.
           </p>
           <div className="mt-4 space-y-4">
             <div>
@@ -420,40 +432,40 @@ export default function PainelPerfil() {
               )}
             </div>
             <div>
-              <label htmlFor="oab" className="block text-sm font-bold text-neutral-700 mb-1.5">
-                OAB<span className="text-[#C0392B]"> *</span>
+              <label htmlFor="crp" className="block text-sm font-bold text-neutral-700 mb-1.5">
+                CRP<span className="text-[#C0392B]"> *</span>
               </label>
               <input
-                id="oab"
+                id="crp"
                 type="text"
-                value={profile.oab}
+                value={profile.crp}
                 onChange={(e) => {
-                  update({ oab: e.target.value });
-                  if (oabError) setOabError("");
+                  update({ crp: e.target.value });
+                  if (crpError) setCrpError("");
                 }}
-                placeholder="Ex: OAB/SP 145.782"
+                placeholder="Ex: CRP SP/145.782"
                 className={`w-full h-11 px-4 rounded-lg border text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                  oabError ? "border-[#C0392B]" : "border-neutral-300"
+                  crpError ? "border-[#C0392B]" : "border-neutral-300"
                 }`}
-                data-testid="input-oab"
+                data-testid="input-crp"
               />
-              {oabError && (
-                <p className="mt-1.5 text-sm text-[#C0392B]" data-testid="error-oab">{oabError}</p>
+              {crpError && (
+                <p className="mt-1.5 text-sm text-[#C0392B]" data-testid="error-crp">{crpError}</p>
               )}
-              {loaded?.oabVerificada ? (
+              {loaded?.crpVerificada ? (
                 <p
                   className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-[#1E7D4F]"
-                  data-testid="oab-verificada"
+                  data-testid="crp-verificado"
                 >
-                  <Check className="h-4 w-4" /> Inscrição verificada na OAB
-                  {loaded.oabSituacao ? ` (${loaded.oabSituacao})` : ""}
+                  <Check className="h-4 w-4" /> Inscrição verificada no CRP
+                  {loaded.crpSituacao ? ` (${loaded.crpSituacao})` : ""}
                 </p>
-              ) : loaded?.oabVerificacaoPendente ? (
+              ) : loaded?.crpVerificacaoPendente ? (
                 <p
                   className="mt-1.5 text-sm font-medium text-[#B97D00]"
-                  data-testid="oab-pendente"
+                  data-testid="crp-pendente"
                 >
-                  Verificação da OAB pendente de análise manual.
+                  Verificação do CRP pendente de análise manual.
                 </p>
               ) : null}
             </div>
@@ -471,7 +483,7 @@ export default function PainelPerfil() {
               rows={6}
               value={profile.about}
               onChange={(e) => update({ about: e.target.value })}
-              placeholder="Ex: Atuo há 8 anos com causas previdenciárias e trabalhistas em São Paulo. Meu foco é ajudar trabalhadores que tiveram benefícios negados pelo INSS ou que foram demitidos sem receber o que era devido."
+              placeholder="Ex: Atuo há 8 anos com terapia cognitivo-comportamental em São Paulo. Meu foco é ajudar adultos que lidam com ansiedade e burnout no dia a dia do trabalho."
               className={`w-full px-4 py-3 rounded-lg border text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none ${
                 aboutOver ? "border-[#C0392B] focus:ring-[#C0392B]" : "border-neutral-300"
               }`}
@@ -619,6 +631,42 @@ export default function PainelPerfil() {
           </label>
         </Card>
 
+        {/* Seção 5b — Público atendido e valor da sessão */}
+        <Card>
+          <SectionTitle>Público atendido e valor da sessão</SectionTitle>
+          <p className="mt-1 text-sm text-neutral-500">
+            Opcional. Ajuda quem busca um psicólogo para um perfil específico a
+            encontrar você.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {PUBLICO_ATENDIDO.map((publico) => (
+              <button
+                key={publico}
+                type="button"
+                onClick={() => togglePublico(publico)}
+                className={badgeClass(profile.publicoAtendido.includes(publico))}
+                data-testid={`badge-publico-${publico}`}
+              >
+                {publico}
+              </button>
+            ))}
+          </div>
+          <div className="mt-6">
+            <label htmlFor="preco-sessao" className="block text-sm font-bold text-neutral-700 mb-1.5">
+              Valor da sessão
+            </label>
+            <input
+              id="preco-sessao"
+              type="text"
+              value={profile.precoSessao}
+              onChange={(e) => update({ precoSessao: e.target.value })}
+              placeholder="Ex: R$150 - R$250"
+              className="w-full h-11 px-4 rounded-lg border border-neutral-300 text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              data-testid="input-preco-sessao"
+            />
+          </div>
+        </Card>
+
         {/* Seção 6 — Links e contato */}
         <Card>
           <SectionTitle>Links e contato</SectionTitle>
@@ -730,7 +778,7 @@ export default function PainelPerfil() {
           <DialogHeader>
             <DialogTitle className="text-primary-800">Prévia do seu perfil</DialogTitle>
             <DialogDescription className="text-neutral-500">
-              É assim que seu perfil aparece na listagem de advogados.
+              É assim que seu perfil aparece na listagem de psicólogos.
             </DialogDescription>
           </DialogHeader>
 
@@ -746,7 +794,7 @@ export default function PainelPerfil() {
               <div className="min-w-0">
                 <h3 className="font-bold text-primary-900 leading-tight">{profile.nome || "Seu nome"}</h3>
                 <span className="inline-flex items-center gap-1 mt-1 text-[#1E7D4F] text-xs font-medium bg-[#1E7D4F]/10 border border-[#1E7D4F]/20 rounded-full px-2 py-0.5">
-                  <Check className="h-3 w-3" /> {profile.oab || "OAB"}
+                  <Check className="h-3 w-3" /> {profile.crp || "CRP"}
                 </span>
                 {(profile.cidades.length > 0 || profile.atendeOnline) && (
                   <p className="mt-1.5 flex items-center gap-1 text-xs text-neutral-500" data-testid="text-previa-locais">

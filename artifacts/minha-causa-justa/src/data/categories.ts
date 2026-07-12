@@ -9,225 +9,205 @@
 export interface Categoria {
   nome: string;
   slug: string;
-  emoji: string;
   descricao: string;
   // Temas específicos dentro da macrocategoria. Usados na busca livre do
-  // cidadão e na marcação opcional do advogado no painel.
+  // cliente e na marcação opcional do psicólogo no painel.
   subcategorias: string[];
 }
 
 export const CATEGORIAS: Categoria[] = [
   {
-    nome: "INSS e Previdência",
-    slug: "inss-e-previdencia",
-    emoji: "🏥",
+    nome: "Ansiedade e Estresse",
+    slug: "ansiedade-e-estresse",
     descricao:
-      "Benefício negado, aposentadoria, auxílio doença, pensão por morte e BPC/LOAS.",
+      "Ansiedade generalizada, síndrome do pânico, fobias, estresse e burnout.",
     subcategorias: [
-      "Auxílio Doença",
-      "Aposentadoria por Tempo de Contribuição",
-      "Aposentadoria por Invalidez",
-      "Aposentadoria Especial",
-      "Salário Maternidade",
-      "Auxílio Acidente",
-      "BPC/LOAS",
-      "Pensão por Morte",
-      "Revisão de Benefício",
-      "Benefício Negado ou Cortado",
+      "Ansiedade",
+      "Ansiedade Generalizada",
+      "Síndrome do Pânico",
+      "Fobias em Geral",
+      "Estresse",
+      "Estresse Pós-Traumático",
+      "Angústia",
+      "Medos e Inseguranças",
+      "Ansiedade Social",
+      "Burnout",
     ],
   },
   {
-    nome: "Trabalho e Emprego",
-    slug: "trabalho-e-emprego",
-    emoji: "💼",
+    nome: "Depressão e Transtornos de Humor",
+    slug: "depressao-e-transtornos-de-humor",
     descricao:
-      "Demissão, rescisão, horas extras, FGTS, acidente de trabalho e carteira não assinada.",
+      "Depressão, depressão pós-parto, transtorno bipolar e alterações de humor.",
     subcategorias: [
-      "Demissão Sem Justa Causa",
-      "Rescisão Indireta",
-      "Verbas Rescisórias",
-      "FGTS",
-      "Horas Extras",
-      "Acúmulo de Função",
-      "Insalubridade e Periculosidade",
-      "Assédio Moral",
-      "Acidente de Trabalho",
-      "Doença Ocupacional",
-      "Dano Moral Trabalhista",
-      "Carteira Não Assinada",
-      "Estabilidade no Emprego",
+      "Depressão",
+      "Depressão Pós-Parto",
+      "Transtorno Bipolar",
+      "Alterações de Humor",
+      "Distimia",
+      "Automutilação",
+      "Pensamentos Suicidas",
     ],
   },
   {
-    nome: "Família",
-    slug: "familia",
-    emoji: "👨‍👩‍👧",
+    nome: "Relacionamentos e Casais",
+    slug: "relacionamentos-e-casais",
     descricao:
-      "Pensão alimentícia, divórcio, guarda de filhos e reconhecimento de paternidade.",
+      "Terapia de casal, conflitos amorosos, ciúmes, divórcio e infidelidade.",
     subcategorias: [
-      "Pensão Alimentícia",
+      "Casais",
+      "Conflitos Amorosos",
+      "Ciúmes",
       "Divórcio",
-      "Guarda de Filhos",
-      "Reconhecimento de Paternidade",
-      "Alienação Parental",
-      "União Estável",
+      "Infidelidade",
+      "Relacionamento Abusivo",
+      "Não Monogamia e Poliamor",
+    ],
+  },
+  {
+    nome: "Família e Parentalidade",
+    slug: "familia-e-parentalidade",
+    descricao:
+      "Conflitos familiares, orientação de pais, adoção e rivalidade entre irmãos.",
+    subcategorias: [
+      "Conflitos Familiares",
+      "Orientação de Pais",
       "Adoção",
+      "Impacto do Divórcio na Família",
+      "Rivalidade entre Irmãos",
+    ],
+  },
+  {
+    nome: "Infância e Adolescência",
+    slug: "infancia-e-adolescencia",
+    descricao:
+      "Aprendizagem, autismo, bullying, TDAH e orientação vocacional.",
+    subcategorias: [
+      "Adolescência",
+      "Aprendizagem",
+      "Autismo",
+      "Bullying",
+      "Agressividade",
+      "TDAH",
+      "Orientação Vocacional",
+      "Habilidades Sociais",
+    ],
+  },
+  {
+    nome: "Luto, Envelhecimento e Cuidados Paliativos",
+    slug: "luto-envelhecimento-e-cuidados-paliativos",
+    descricao:
+      "Luto e morte, cuidados paliativos, envelhecimento e adoecimento físico.",
+    subcategorias: [
+      "Luto e Morte",
+      "Cuidados Paliativos",
+      "Envelhecimento",
+      "Adoecimento Físico",
+      "Gravidez e Puerpério",
+    ],
+  },
+  {
+    nome: "Autoconhecimento e Desenvolvimento Pessoal",
+    slug: "autoconhecimento-e-desenvolvimento-pessoal",
+    descricao:
+      "Autoestima, autoconhecimento, autoconfiança, autonomia e assertividade.",
+    subcategorias: [
+      "Autoestima",
+      "Autoaceitação",
+      "Autoconhecimento",
+      "Autoconfiança",
+      "Autocobrança",
+      "Autonomia",
+      "Assertividade",
+      "Desenvolvimento Pessoal",
+    ],
+  },
+  {
+    nome: "Traumas e Violência",
+    slug: "traumas-e-violencia",
+    descricao:
+      "Traumas, abuso sexual, violência doméstica e assédio moral ou sexual.",
+    subcategorias: [
+      "Traumas",
+      "Abuso Sexual",
       "Violência Doméstica",
+      "Assédio Moral ou Sexual",
+      "Estresse Pós-Traumático",
     ],
   },
   {
-    nome: "Herança e Inventário",
-    slug: "heranca-e-inventario",
-    emoji: "📋",
+    nome: "Dependências e Compulsões",
+    slug: "dependencias-e-compulsoes",
     descricao:
-      "Divisão de bens após falecimento, testamento e inventário judicial ou extrajudicial.",
+      "Dependências em geral, compulsões, alcoolismo e jogo compulsivo.",
     subcategorias: [
-      "Inventário Judicial",
-      "Inventário Extrajudicial",
-      "Divisão de Bens",
-      "Testamento",
-      "Exclusão de Herdeiro",
-      "Doação em Vida",
-      "Bens de Pessoa Falecida no Exterior",
+      "Dependências em Geral",
+      "Compulsões em Geral",
+      "Alcoolismo",
+      "Jogo Compulsivo",
+      "Compras Compulsivas",
+      "Codependência",
     ],
   },
   {
-    nome: "Plano de Saúde",
-    slug: "plano-de-saude",
-    emoji: "💊",
+    nome: "Transtornos Alimentares",
+    slug: "transtornos-alimentares",
     descricao:
-      "Negativa de cobertura, reajuste abusivo, cancelamento indevido e reembolso negado.",
+      "Compulsão alimentar, anorexia, bulimia e relação com o corpo e a comida.",
     subcategorias: [
-      "Negativa de Cobertura",
-      "Reajuste Abusivo",
-      "Cancelamento Indevido",
-      "Reembolso Negado",
-      "Plano Coletivo Cancelado pela Empresa",
-      "Negativa de Internação",
-      "Negativa de Medicamento",
+      "Compulsão Alimentar",
+      "Anorexia",
+      "Bulimia",
+      "Relação com o Corpo e a Comida",
     ],
   },
   {
-    nome: "Dívidas e Nome Negativado",
-    slug: "dividas-e-nome-negativado",
-    emoji: "💳",
+    nome: "Sexualidade e Identidade de Gênero",
+    slug: "sexualidade-e-identidade-de-genero",
     descricao:
-      "Cobrança indevida, negativação no Serasa ou SPC e renegociação de dívidas.",
+      "LGBTQIA+, orientação sexual, identidade de gênero e disfunções sexuais.",
     subcategorias: [
-      "Negativação Indevida no Serasa ou SPC",
-      "Cobrança de Dívida Prescrita",
-      "Superendividamento",
-      "Renegociação de Dívidas",
-      "Penhora de Bens",
-      "Nome Limpo Após Pagamento",
-      "Dívida com Banco ou Financeira",
+      "LGBTQIA+",
+      "Orientação Sexual",
+      "Identidade de Gênero",
+      "Disfunções Sexuais",
     ],
   },
   {
-    nome: "Imóveis e Moradia",
-    slug: "imoveis-e-moradia",
-    emoji: "🏠",
+    nome: "Saúde Mental e Transtornos Psiquiátricos",
+    slug: "saude-mental-e-transtornos-psiquiatricos",
     descricao:
-      "Despejo, contrato de aluguel, compra e venda, distrato com construtora e financiamento.",
+      "Esquizofrenia, transtorno bipolar, borderline e transtornos de personalidade.",
     subcategorias: [
-      "Despejo",
-      "Contrato de Aluguel",
-      "Distrato com Construtora",
-      "Imóvel com Defeito",
-      "Financiamento Imobiliário",
-      "Usucapião",
-      "Condomínio",
-      "Regularização de Imóvel",
-      "Compra e Venda",
+      "Esquizofrenia",
+      "Transtorno Bipolar",
+      "Borderline",
+      "TDAH",
+      "Transtornos de Personalidade",
     ],
   },
   {
-    nome: "Direito do Consumidor",
-    slug: "direito-do-consumidor",
-    emoji: "🛒",
+    nome: "Avaliações e Perícias Psicológicas",
+    slug: "avaliacoes-e-pericias-psicologicas",
     descricao:
-      "Produto com defeito, propaganda enganosa, voo atrasado ou cancelado e cancelamento de contrato.",
+      "Avaliação neuropsicológica, avaliação para cirurgia e laudos psicológicos.",
     subcategorias: [
-      "Voo Atrasado ou Cancelado",
-      "Produto com Defeito",
-      "Cobrança Indevida",
-      "Pacote de Viagem",
-      "Internet ou Telefone",
-      "Compra Online",
-      "Propaganda Enganosa",
-      "Cancelamento de Contrato",
-      "Seguro Negado",
+      "Avaliação Neuropsicológica",
+      "Avaliação para Cirurgia",
+      "Laudos e Pareceres Psicológicos",
     ],
   },
   {
-    nome: "Acidentes e Indenizações",
-    slug: "acidentes-e-indenizacoes",
-    emoji: "⚠️",
+    nome: "Carreira e Vida Profissional",
+    slug: "carreira-e-vida-profissional",
     descricao:
-      "Acidente de trânsito, queda em estabelecimento, erro médico e dano moral.",
+      "Transição de carreira, assédio moral no trabalho e equilíbrio vida-trabalho.",
     subcategorias: [
-      "Acidente de Trânsito",
-      "Atropelamento",
-      "Erro Médico",
-      "Queda em Estabelecimento",
-      "Dano Moral",
-      "Dano Estético",
-      "Acidente com Animal",
-      "Produto Defeituoso que Causou Dano",
-    ],
-  },
-  {
-    nome: "Crimes e Defesa Criminal",
-    slug: "crimes-e-defesa-criminal",
-    emoji: "⚖️",
-    descricao:
-      "Ameaça, violência doméstica, furto e defesa em processo criminal.",
-    subcategorias: [
-      "Ameaça",
-      "Violência Doméstica",
-      "Furto e Roubo",
-      "Estelionato",
-      "Injúria e Difamação",
-      "Defesa em Inquérito Policial",
-      "Defesa em Processo Criminal",
-      "Prisão Preventiva",
-      "Habeas Corpus",
-      "Crimes de Trânsito",
-    ],
-  },
-  {
-    nome: "Servidor Público",
-    slug: "servidor-publico",
-    emoji: "🏛️",
-    descricao:
-      "Concurso público, reintegração, progressão de carreira e processo administrativo.",
-    subcategorias: [
-      "Concurso Público",
-      "Reintegração ao Cargo",
-      "Progressão de Carreira",
-      "Acúmulo de Cargos",
-      "Processo Administrativo Disciplinar",
-      "Aposentadoria do Servidor",
-      "Desvio de Função",
-      "Assédio Moral no Serviço Público",
-    ],
-  },
-  {
-    nome: "Empresarial",
-    slug: "empresarial",
-    emoji: "🏢",
-    descricao:
-      "Abertura e fechamento de empresa, cobrança de dívida e recuperação judicial.",
-    subcategorias: [
-      "Abertura de Empresa",
-      "Encerramento de Empresa",
-      "Contrato Entre Empresas",
-      "Cobrança de Dívida Empresarial",
-      "Conflito Entre Sócios",
-      "Recuperação Judicial",
-      "Falência",
-      "Responsabilidade do Sócio",
-      "Contrato de Prestação de Serviços",
+      "Transição de Carreira",
+      "Assédio Moral no Trabalho",
+      "Burnout",
+      "Equilíbrio Vida-Trabalho",
+      "Aposentadoria e Reinvenção",
     ],
   },
 ];
@@ -257,10 +237,8 @@ export function subcategoriasDaCategoria(nome: string): string[] {
 }
 
 // Apenas as macrocategorias, para selects e filtros simples.
-export function getMacrocategorias(): Array<
-  Pick<Categoria, "nome" | "slug" | "emoji">
-> {
-  return CATEGORIAS.map((c) => ({ nome: c.nome, slug: c.slug, emoji: c.emoji }));
+export function getMacrocategorias(): Array<Pick<Categoria, "nome" | "slug">> {
+  return CATEGORIAS.map((c) => ({ nome: c.nome, slug: c.slug }));
 }
 
 // Normaliza texto para comparação (sem acentos, minúsculo).
@@ -278,17 +256,15 @@ export type ResultadoBusca =
       tipo: "macro";
       nome: string;
       slug: string;
-      emoji: string;
     }
   | {
       tipo: "sub";
       nome: string;
       macroNome: string;
       macroSlug: string;
-      emoji: string;
     };
 
-// Resolve a busca do cidadão para os filtros efetivos. Quando o usuário
+// Resolve a busca do cliente para os filtros efetivos. Quando o usuário
 // escolheu uma sugestão (selecionado), usamos a macro exata dela (importante
 // para temas com nome repetido em macros diferentes). Sem seleção, caímos no
 // texto digitado, resolvido pela mesma ordenação das sugestões exibidas.
@@ -319,7 +295,6 @@ export function buscarCategorias(termo: string): ResultadoBusca[] {
         tipo: "macro",
         nome: cat.nome,
         slug: cat.slug,
-        emoji: cat.emoji,
       });
     }
     if (t) {
@@ -330,7 +305,6 @@ export function buscarCategorias(termo: string): ResultadoBusca[] {
             nome: sub,
             macroNome: cat.nome,
             macroSlug: cat.slug,
-            emoji: cat.emoji,
           });
         }
       }

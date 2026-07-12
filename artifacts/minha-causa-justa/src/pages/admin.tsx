@@ -33,14 +33,14 @@ import {
   listAdminPosts as apiListAdminPosts,
   updatePost as apiUpdatePost,
   deletePost as apiDeletePost,
-  listAdminAdvogados as apiListAdminAdvogados,
-  getAdminAdvogado as apiGetAdminAdvogado,
-  updateAdminAdvogado as apiUpdateAdminAdvogado,
+  listAdminPsicologos as apiListAdminPsicologos,
+  getAdminPsicologo as apiGetAdminPsicologo,
+  updateAdminPsicologo as apiUpdateAdminPsicologo,
   listBlogDailyRuns as apiListBlogDailyRuns,
 } from "@/lib/admin";
 import type {
-  AdminAdvogado,
-  AdminAdvogadoDetail,
+  AdminPsicologo,
+  AdminPsicologoDetail,
   BlogDailyRunsResponse,
 } from "@workspace/api-client-react";
 
@@ -111,7 +111,7 @@ function initialBodyHtml(post: ApiBlogPost): string {
 // Gate de acesso
 // ============================================================
 // Tela de login do admin: autenticação real e segura, totalmente separada da
-// base de advogados. Não há senha compartilhada; o acesso é liberado apenas
+// base de psicólogos. Não há senha compartilhada; o acesso é liberado apenas
 // para e-mails autorizados (validado no back-end).
 function AdminLogin({ onEntrar }: { onEntrar: () => void }) {
   return (
@@ -204,7 +204,7 @@ function RulesPanel() {
         className="w-full flex items-center justify-between p-5 text-left"
       >
         <span className="font-bold text-primary-800">
-          Regras editoriais e da OAB
+          Regras editoriais e do CFP
         </span>
         <ChevronDown
           className={`h-5 w-5 text-neutral-500 transition-transform ${
@@ -217,25 +217,25 @@ function RulesPanel() {
           <p>
             <span className="font-bold text-neutral-800">Estrutura:</span>{" "}
             título de até 70 caracteres, subtítulo, introdução, 3 a 5 seções com
-            subtítulo, encerramento padrão OAB e aviso legal. Entre 600 e 900
-            palavras.
+            subtítulo, encerramento padrão CFP. Entre 600 e 900 palavras.
           </p>
           <p>
             <span className="font-bold text-neutral-800">Linguagem:</span>{" "}
-            simples e direta. Todo termo jurídico é explicado logo após o uso.
+            simples e direta. Todo termo técnico é explicado logo após o uso.
             Nunca usar travessão.
           </p>
           <p>
-            <span className="font-bold text-neutral-800">OAB:</span> nunca
-            recomendar entrar com ação ou processar, nunca afirmar que o leitor
-            foi lesado, nunca citar um advogado específico e nunca estimular o
-            litígio.
+            <span className="font-bold text-neutral-800">CFP:</span> nunca
+            diagnosticar o leitor a distância, nunca afirmar que ele precisa de
+            tratamento, nunca citar um psicólogo específico e nunca prometer
+            resultado terapêutico.
           </p>
           <p>
             <span className="font-bold text-neutral-800">Encerramento:</span>{" "}
-            informa que, se a situação aconteceu com o leitor, pode ser que seus
-            direitos não tenham sido respeitados, e que existem profissionais
-            especializados na área.
+            informa que, se o leitor se identificou com a situação, pode ser
+            importante conversar com um psicólogo, e que existem profissionais
+            especializados no tema. Posts sobre ideação suicida, automutilação
+            ou abuso incluem a orientação de segurança do CVV (188).
           </p>
         </div>
       )}
@@ -974,7 +974,7 @@ function BlogPanel() {
               {loadingPost && (
                 <div className="text-center text-neutral-500 py-16">
                   <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin text-primary-500" />
-                  <p>Gerando o rascunho seguindo as regras editoriais e da OAB...</p>
+                  <p>Gerando o rascunho seguindo as regras editoriais e do CFP...</p>
                 </div>
               )}
 
@@ -1127,9 +1127,9 @@ function BlogPanel() {
 }
 
 // ============================================================
-// Aba "Verificação": gestão manual de advogados
+// Aba "Verificação": gestão manual de psicólogos
 // ============================================================
-type SituacaoOab = "regular" | "irregular" | "invalido";
+type SituacaoCrp = "regular" | "irregular" | "invalido";
 
 function mascararCpf(cpf: string | null | undefined): string {
   if (!cpf) return "Não informado";
@@ -1209,13 +1209,13 @@ function Toggle({
   );
 }
 
-// Modal de detalhes de um advogado.
+// Modal de detalhes de um psicólogo.
 function DetalheModal({
   detail,
   loading,
   onClose,
 }: {
-  detail: AdminAdvogadoDetail | null;
+  detail: AdminPsicologoDetail | null;
   loading: boolean;
   onClose: () => void;
 }) {
@@ -1223,7 +1223,7 @@ function DetalheModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto bg-white rounded-2xl border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div className="flex items-center justify-between p-5 border-b border-neutral-200">
-          <h3 className="font-bold text-primary-800">Detalhes do advogado</h3>
+          <h3 className="font-bold text-primary-800">Detalhes do psicólogo</h3>
           <button
             type="button"
             onClick={onClose}
@@ -1258,8 +1258,8 @@ function DetalheModal({
                 <p className="text-neutral-900">{mascararCpf(detail.cpf)}</p>
               </div>
               <div>
-                <p className="text-xs font-bold text-neutral-500">OAB</p>
-                <p className="text-neutral-900">{detail.oab || "Não informado"}</p>
+                <p className="text-xs font-bold text-neutral-500">CRP</p>
+                <p className="text-neutral-900">{detail.crp || "Não informado"}</p>
               </div>
               <div>
                 <p className="text-xs font-bold text-neutral-500">Cadastro</p>
@@ -1370,7 +1370,7 @@ function DetalheModal({
 }
 
 function VerificacaoPanel() {
-  const [advogados, setAdvogados] = useState<AdminAdvogado[]>([]);
+  const [psicologos, setPsicologos] = useState<AdminPsicologo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -1379,22 +1379,22 @@ function VerificacaoPanel() {
   const [fStatus, setFStatus] = useState<"" | "ativo" | "inativo">("");
   const [fVerif, setFVerif] = useState<"" | "verificado" | "nao">("");
   const [fSituacao, setFSituacao] = useState<
-    "" | SituacaoOab | "sem"
+    "" | SituacaoCrp | "sem"
   >("");
 
   const [detailId, setDetailId] = useState<number | null>(null);
-  const [detail, setDetail] = useState<AdminAdvogadoDetail | null>(null);
+  const [detail, setDetail] = useState<AdminPsicologoDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const list = await apiListAdminAdvogados();
-      setAdvogados(list);
+      const list = await apiListAdminPsicologos();
+      setPsicologos(list);
       setError("");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erro ao carregar advogados.",
+        err instanceof Error ? err.message : "Erro ao carregar psicólogos.",
       );
     } finally {
       setLoading(false);
@@ -1405,27 +1405,27 @@ function VerificacaoPanel() {
     void refresh();
   }, []);
 
-  // Aplica um patch no advogado e atualiza a linha com a resposta do servidor.
-  const patchAdvogado = async (
+  // Aplica um patch no psicólogo e atualiza a linha com a resposta do servidor.
+  const patchPsicologo = async (
     id: number,
     input: {
       adminAtivo?: boolean;
-      oabVerificada?: boolean;
-      situacaoOab?: SituacaoOab | null;
+      crpVerificada?: boolean;
+      situacaoCrp?: SituacaoCrp | null;
     },
   ) => {
     setSavingId(id);
     setError("");
     try {
-      const updated = await apiUpdateAdminAdvogado(id, input);
-      setAdvogados((prev) =>
+      const updated = await apiUpdateAdminPsicologo(id, input);
+      setPsicologos((prev) =>
         prev.map((a) =>
           a.id === id
             ? {
                 ...a,
                 adminAtivo: updated.adminAtivo,
-                oabVerificada: updated.oabVerificada,
-                situacaoOab: updated.situacaoOab,
+                crpVerificada: updated.crpVerificada,
+                situacaoCrp: updated.situacaoCrp,
                 paymentStatus: updated.paymentStatus,
               }
             : a,
@@ -1443,7 +1443,7 @@ function VerificacaoPanel() {
     setDetail(null);
     setLoadingDetail(true);
     try {
-      const d = await apiGetAdminAdvogado(id);
+      const d = await apiGetAdminPsicologo(id);
       setDetail(d);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar detalhe.");
@@ -1453,33 +1453,33 @@ function VerificacaoPanel() {
     }
   };
 
-  const total = advogados.length;
-  const ativos = advogados.filter((a) => a.adminAtivo).length;
-  const pendentes = advogados.filter((a) => !a.oabVerificada).length;
+  const total = psicologos.length;
+  const ativos = psicologos.filter((a) => a.adminAtivo).length;
+  const pendentes = psicologos.filter((a) => !a.crpVerificada).length;
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    return advogados.filter((a) => {
+    return psicologos.filter((a) => {
       if (termo) {
-        const alvo = `${a.nome} ${a.email} ${a.oab}`.toLowerCase();
+        const alvo = `${a.nome} ${a.email} ${a.crp}`.toLowerCase();
         if (!alvo.includes(termo)) return false;
       }
       if (fStatus === "ativo" && !a.adminAtivo) return false;
       if (fStatus === "inativo" && a.adminAtivo) return false;
-      if (fVerif === "verificado" && !a.oabVerificada) return false;
-      if (fVerif === "nao" && a.oabVerificada) return false;
-      if (fSituacao === "sem" && a.situacaoOab) return false;
+      if (fVerif === "verificado" && !a.crpVerificada) return false;
+      if (fVerif === "nao" && a.crpVerificada) return false;
+      if (fSituacao === "sem" && a.situacaoCrp) return false;
       if (
         fSituacao &&
         fSituacao !== "sem" &&
-        a.situacaoOab !== fSituacao
+        a.situacaoCrp !== fSituacao
       )
         return false;
       return true;
     });
-  }, [advogados, busca, fStatus, fVerif, fSituacao]);
+  }, [psicologos, busca, fStatus, fVerif, fSituacao]);
 
-  const situacoes: { key: SituacaoOab; label: string; color: string }[] = [
+  const situacoes: { key: SituacaoCrp; label: string; color: string }[] = [
     { key: "regular", label: "Regular", color: SUCCESS_COLOR },
     { key: "irregular", label: "Irregular", color: WARNING_COLOR },
     { key: "invalido", label: "Inválido", color: ERROR_COLOR },
@@ -1490,7 +1490,7 @@ function VerificacaoPanel() {
       {/* Cabeçalho + contadores */}
       <div>
         <h1 className="text-2xl font-bold text-primary-800">
-          Gestão de Advogados
+          Gestão de Psicólogos
         </h1>
         <div className="flex flex-wrap items-center gap-2 mt-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-sm font-medium">
@@ -1519,9 +1519,9 @@ function VerificacaoPanel() {
             <input
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome, e-mail ou OAB..."
+              placeholder="Buscar por nome, e-mail ou CRP..."
               className="w-full h-10 pl-9 pr-3 rounded-lg border border-neutral-300 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              data-testid="input-busca-advogado"
+              data-testid="input-busca-psicologo"
             />
           </div>
           <select
@@ -1551,7 +1551,7 @@ function VerificacaoPanel() {
           <select
             value={fSituacao}
             onChange={(e) =>
-              setFSituacao(e.target.value as "" | SituacaoOab | "sem")
+              setFSituacao(e.target.value as "" | SituacaoCrp | "sem")
             }
             className="h-10 px-3 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
             data-testid="select-filtro-situacao"
@@ -1576,26 +1576,26 @@ function VerificacaoPanel() {
         {loading ? (
           <div className="py-16 text-center text-neutral-500">
             <Loader2 className="h-6 w-6 mx-auto mb-3 animate-spin text-primary-500" />
-            Carregando advogados...
+            Carregando psicólogos...
           </div>
         ) : filtrados.length === 0 ? (
           <p className="py-16 text-center text-sm text-neutral-500">
-            {advogados.length === 0
-              ? "Nenhum advogado cadastrado ainda."
-              : "Nenhum advogado encontrado com os filtros atuais."}
+            {psicologos.length === 0
+              ? "Nenhum psicólogo cadastrado ainda."
+              : "Nenhum psicólogo encontrado com os filtros atuais."}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
               <thead>
                 <tr className="border-b border-neutral-200 text-left text-xs font-bold text-neutral-500">
-                  <th className="px-4 py-3">Nome e OAB</th>
+                  <th className="px-4 py-3">Nome e CRP</th>
                   <th className="px-4 py-3">E-mail</th>
                   <th className="px-4 py-3">Cadastro</th>
                   <th className="px-4 py-3">Pagamento</th>
                   <th className="px-4 py-3">Perfil ativo</th>
                   <th className="px-4 py-3">Verificado</th>
-                  <th className="px-4 py-3">Situação OAB</th>
+                  <th className="px-4 py-3">Situação CRP</th>
                   <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
               </thead>
@@ -1607,14 +1607,14 @@ function VerificacaoPanel() {
                     <tr
                       key={a.id}
                       className={linhaSalvando ? "opacity-60" : ""}
-                      data-testid={`row-advogado-${a.id}`}
+                      data-testid={`row-psicologo-${a.id}`}
                     >
                       <td className="px-4 py-3">
                         <div className="font-bold text-neutral-800">
                           {a.nome}
                         </div>
                         <div className="text-xs text-neutral-500">
-                          {a.oab || "OAB não informada"}
+                          {a.crp || "CRP não informado"}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-neutral-700">
@@ -1638,34 +1638,34 @@ function VerificacaoPanel() {
                           onColor="#3B82F6"
                           label={a.adminAtivo ? "Ativo" : "Inativo"}
                           onClick={() =>
-                            patchAdvogado(a.id, { adminAtivo: !a.adminAtivo })
+                            patchPsicologo(a.id, { adminAtivo: !a.adminAtivo })
                           }
                           testId={`toggle-ativo-${a.id}`}
                         />
                       </td>
                       <td className="px-4 py-3">
                         <Toggle
-                          checked={a.oabVerificada}
+                          checked={a.crpVerificada}
                           disabled={linhaSalvando || !a.adminAtivo}
                           onColor={SUCCESS_COLOR}
                           label={
-                            a.oabVerificada ? "Verificado" : "Não verificado"
+                            a.crpVerificada ? "Verificado" : "Não verificado"
                           }
                           onClick={() =>
-                            patchAdvogado(a.id, {
-                              oabVerificada: !a.oabVerificada,
+                            patchPsicologo(a.id, {
+                              crpVerificada: !a.crpVerificada,
                             })
                           }
                           testId={`toggle-verificado-${a.id}`}
                         />
                       </td>
                       <td className="px-4 py-3">
-                        {!a.oabVerificada ? (
+                        {!a.crpVerificada ? (
                           <span className="text-neutral-300">—</span>
                         ) : (
                           <div className="flex flex-col sm:flex-row gap-1.5">
                             {situacoes.map((s) => {
-                              const sel = a.situacaoOab === s.key;
+                              const sel = a.situacaoCrp === s.key;
                               return (
                                 <button
                                   key={s.key}
@@ -1678,14 +1678,14 @@ function VerificacaoPanel() {
                                         s.key === "invalido") &&
                                       !window.confirm(
                                         s.key === "invalido"
-                                          ? "Marcar como Inválido vai desativar o perfil e enviar um e-mail ao advogado. Confirmar?"
-                                          : "Marcar como Irregular vai enviar um e-mail ao advogado. Confirmar?",
+                                          ? "Marcar como Inválido vai desativar o perfil e enviar um e-mail ao psicólogo. Confirmar?"
+                                          : "Marcar como Irregular vai enviar um e-mail ao psicólogo. Confirmar?",
                                       )
                                     ) {
                                       return;
                                     }
-                                    void patchAdvogado(a.id, {
-                                      situacaoOab: s.key,
+                                    void patchPsicologo(a.id, {
+                                      situacaoCrp: s.key,
                                     });
                                   }}
                                   className="px-2.5 py-1 rounded-md text-xs font-medium border transition-colors disabled:cursor-default"

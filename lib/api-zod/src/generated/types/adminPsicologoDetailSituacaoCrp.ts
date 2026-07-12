@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminAdvogadoDetailSituacaoOab = typeof AdminAdvogadoDetailSituacaoOab[keyof typeof AdminAdvogadoDetailSituacaoOab] | null;
+export type AdminPsicologoDetailSituacaoCrp = typeof AdminPsicologoDetailSituacaoCrp[keyof typeof AdminPsicologoDetailSituacaoCrp] | null;
 
 
-export const AdminAdvogadoDetailSituacaoOab = {
+export const AdminPsicologoDetailSituacaoCrp = {
   regular: 'regular',
   irregular: 'irregular',
   invalido: 'invalido',

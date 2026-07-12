@@ -61,7 +61,7 @@ app.use(
 );
 
 // Replit Auth: carrega o usuário da sessão (cookie "sid") em toda requisição e
-// habilita req.isAuthenticated()/req.user. Independente do Clerk (advogados);
+// habilita req.isAuthenticated()/req.user. Independente do Clerk (psicólogos);
 // é usado apenas pelo painel administrativo (requireAdmin).
 app.use(authMiddleware);
 

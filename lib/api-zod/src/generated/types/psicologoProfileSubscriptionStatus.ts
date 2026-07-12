@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminAdvogadoDetailPaymentStatus = typeof AdminAdvogadoDetailPaymentStatus[keyof typeof AdminAdvogadoDetailPaymentStatus] | null;
+export type PsicologoProfileSubscriptionStatus = typeof PsicologoProfileSubscriptionStatus[keyof typeof PsicologoProfileSubscriptionStatus] | null;
 
 
-export const AdminAdvogadoDetailPaymentStatus = {
+export const PsicologoProfileSubscriptionStatus = {
   pendente: 'pendente',
   ativa: 'ativa',
   atrasada: 'atrasada',

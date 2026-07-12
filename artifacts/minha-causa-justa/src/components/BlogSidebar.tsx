@@ -61,12 +61,12 @@ export function BlogSidebar({
           stickyCta ? "lg:sticky lg:top-24" : ""
         }`}
       >
-        <p className="text-neutral-700 mb-4">Precisa de orientação jurídica?</p>
+        <p className="text-neutral-700 mb-4">Precisa de apoio psicológico?</p>
         <Button
           asChild
           className="w-full bg-primary-600 hover:bg-primary-700 text-white"
         >
-          <Link href="/advogados">Encontrar um advogado</Link>
+          <Link href="/psicologos">Encontrar um psicólogo</Link>
         </Button>
       </div>
     </aside>

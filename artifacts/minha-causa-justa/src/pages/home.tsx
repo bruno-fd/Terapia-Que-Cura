@@ -22,12 +22,12 @@ import confiancaPessoa from "@/assets/confianca-pessoa.webp";
 const BLOG_IMAGENS = [confiancaPessoa, familiaPessoa, celularPessoa];
 
 const IMAGEM_POR_CATEGORIA: Record<string, string> = {
-  "Família": familiaPessoa,
-  "Herança e Inventário": familiaPessoa,
-  "Plano de Saúde": celularPessoa,
-  "Direito do Consumidor": celularPessoa,
-  "Dívidas e Nome Negativado": celularPessoa,
-  "Empresarial": celularPessoa,
+  "Família e Parentalidade": familiaPessoa,
+  "Relacionamentos e Casais": familiaPessoa,
+  "Ansiedade e Estresse": celularPessoa,
+  "Depressão e Transtornos de Humor": celularPessoa,
+  "Autoconhecimento e Desenvolvimento Pessoal": confiancaPessoa,
+  "Luto, Envelhecimento e Cuidados Paliativos": confiancaPessoa,
 };
 
 function imagemDoPost(post: BlogPost): string {
@@ -90,7 +90,7 @@ export default function Home() {
   };
 
   const handleSearch = () => {
-    let url = "/advogados";
+    let url = "/psicologos";
     // Resolve a seleção (macro exata) ou, sem seleção, o texto digitado.
     const resolvido = resolverBuscaCategoria(catSelecionada, queryCategoria);
     const slug = resolvido?.slug;
@@ -129,40 +129,40 @@ export default function Home() {
                 {/* Mobile: hero curta com CTA */}
                 <div className="lg:hidden">
                   <h1 className="text-3xl sm:text-4xl font-bold text-primary-900 leading-[1.15] mb-3 tracking-tight">
-                    Você tem direitos.<br />
-                    <span className="text-primary-500">A gente te ajuda a garanti-los.</span>
+                    Cuidar da sua mente importa.<br />
+                    <span className="text-primary-500">A gente te ajuda a encontrar quem pode cuidar dela.</span>
                   </h1>
                   <p className="text-base text-neutral-600 leading-relaxed mb-5">
-                    Tem horas que a vida bate de frente com a gente. O INSS nega um benefício que você precisa, o plano de saúde recusa um tratamento, o patrão não paga o que deve, a pensão não chega. Para isso estamos aqui. <strong className="font-semibold text-primary-800">Conectamos você a advogados prontos para resolver o seu caso.</strong>
+                    Tem horas que a vida bate de frente com a gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. Para isso estamos aqui. <strong className="font-semibold text-primary-800">Conectamos você a psicólogos prontos para te ouvir.</strong>
                   </p>
                   <Button
-                    onClick={() => setLocation("/advogados")}
+                    onClick={() => setLocation("/psicologos")}
                     className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all w-full"
                     data-testid="button-cta-hero-mobile"
                   >
-                    Falar com um advogado
+                    Falar com um psicólogo
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </div>
 
                 {/* Desktop: hero completa */}
                 <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-[56px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
-                  Você tem direitos.<br />
-                  <span className="text-primary-500">A gente te ajuda a encontrar quem pode garanti-los.</span>
+                  Cuidar da sua mente importa.<br />
+                  <span className="text-primary-500">A gente te ajuda a encontrar quem pode cuidar dela.</span>
                 </h1>
-                
+
                 <div className="hidden lg:block space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
                   <p>
-                    Tem horas que a vida bate de frente com a gente. O INSS nega um benefício que você precisa, o plano de saúde recusa um tratamento, o patrão não paga o que deve, a pensão não chega. E aí vem aquela sensação de que o sistema foi feito para te cansar, para você desistir antes de lutar.
+                    Tem horas que a vida bate de frente com a gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. E aí vem aquela sensação de que ninguém entenderia, de que é mais fácil seguir em frente sozinho.
                   </p>
                   <p>
-                    Mas a verdade é que você provavelmente tem direito a muito mais do que imagina. O que falta, na maioria das vezes, não é sorte. É saber por onde começar e ter ao seu lado alguém que entende do assunto.
+                    Mas a verdade é que buscar apoio psicológico pode fazer mais diferença do que você imagina. O que falta, na maioria das vezes, não é força de vontade. É saber por onde começar e ter ao seu lado alguém que entende do assunto.
                   </p>
                   <p>
-                    A Minha Causa Justa existe para isso: mostrar que existe um caminho, e conectar você com advogados que trabalham com situações como a sua todo dia.
+                    A Terapia Que Cura existe para isso: mostrar que existe um caminho, e conectar você com psicólogos que trabalham com situações como a sua todo dia.
                   </p>
                   <p className="font-semibold text-primary-800 text-xl pt-2">
-                    Você não precisa entender de lei. Precisa dar o primeiro passo.
+                    Você não precisa ter todas as respostas. Precisa dar o primeiro passo.
                   </p>
                 </div>
               </div>
@@ -214,12 +214,12 @@ export default function Home() {
                     testId="select-cidade"
                   />
                 </div>
-                <Button 
-                  onClick={handleSearch} 
+                <Button
+                  onClick={handleSearch}
                   className="bg-accent-500 hover:bg-accent-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full lg:w-auto lg:shrink-0"
-                  data-testid="button-buscar-advogado"
+                  data-testid="button-buscar-psicologo"
                 >
-                  Encontrar advogado
+                  Encontrar psicólogo
                 </Button>
               </div>
             </div>
@@ -237,12 +237,12 @@ export default function Home() {
               {CATEGORIAS.map((cat, idx) => (
                 <Link
                   key={cat.slug}
-                  href={`/advogados?categoria=${cat.slug}`}
+                  href={`/psicologos?categoria=${cat.slug}`}
                   className="bg-white p-8 rounded-[32px] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:border-primary-100 hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full"
                   data-testid={`card-situacao-${idx}`}
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform duration-300">
-                    <span aria-hidden="true">{cat.emoji}</span>
+                  <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mb-6 text-2xl font-bold text-primary-600 group-hover:scale-110 transition-transform duration-300">
+                    <span aria-hidden="true">{cat.nome.charAt(0)}</span>
                   </div>
                   <h3 className="font-bold text-xl text-primary-900 mb-3 leading-tight">{cat.nome}</h3>
                   <p className="text-neutral-600 text-sm leading-relaxed flex-grow">{cat.descricao}</p>
@@ -252,7 +252,7 @@ export default function Home() {
 
             <div className="mt-16 text-center">
               <Button asChild variant="outline" className="rounded-full h-12 px-8 text-base border-primary-200 text-primary-700 hover:bg-primary-50">
-                <Link href="/advogados">
+                <Link href="/psicologos">
                   Ver todas as áreas de atuação <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -278,14 +278,14 @@ export default function Home() {
               <div className="w-full lg:w-1/2 order-1 lg:order-2">
                 <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Como funciona</h2>
                 <p className="text-lg text-neutral-600 leading-relaxed mb-12">
-                  Nunca contratou um advogado? Não tem problema. Aqui não tem formulário complicado, não tem compromisso e ninguém vai te ligar tentando vender nada. É você no seu ritmo, entendendo as opções e decidindo com calma.
+                  Nunca fez terapia? Não tem problema. Aqui não tem formulário complicado, não tem compromisso e ninguém vai te ligar tentando vender nada. É você no seu ritmo, entendendo as opções e decidindo com calma.
                 </p>
 
                 <div className="space-y-8">
                   {[
-                    { step: "1", title: "Conta para a gente o que está acontecendo", desc: "Escolha o problema que mais se parece com a sua situação." },
-                    { step: "2", title: "Veja advogados disponíveis", desc: "Perfis com especialidade, localização e informações de contato." },
-                    { step: "3", title: "Entre em contato diretamente", desc: "Você fala com o advogado pelo canal que preferir. Sem intermediários." }
+                    { step: "1", title: "Conta para a gente o que está acontecendo", desc: "Escolha o tema que mais se parece com o que você está sentindo." },
+                    { step: "2", title: "Veja psicólogos disponíveis", desc: "Perfis com especialidade, localização e informações de contato." },
+                    { step: "3", title: "Entre em contato diretamente", desc: "Você fala com o psicólogo pelo canal que preferir. Sem intermediários." }
                   ].map((item, idx) => (
                     <div key={idx} className="flex gap-6 items-start">
                       <div className="w-12 h-12 rounded-full bg-accent-100 flex items-center justify-center text-accent-600 font-bold shrink-0 mt-1 shadow-sm">
@@ -308,9 +308,9 @@ export default function Home() {
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
               <div className="w-full lg:w-1/2 z-10">
-                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Feito para quem precisa de resposta, não de complicação</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Feito para quem precisa de acolhimento, não de complicação</h2>
                 <p className="text-lg text-neutral-600 leading-relaxed mb-10">
-                  A maioria das pessoas que precisam de um advogado nunca teve um. Não sabe por onde começar, não sabe a quem recorrer, não sabe se existe alguém que resolva exatamente o que ela está passando. A Minha Causa Justa foi pensada para esse momento, quando você precisa encontrar a pessoa certa, sem perder tempo nem cair em mãos erradas.
+                  A maioria das pessoas que precisam de apoio psicológico nunca fez terapia. Não sabe por onde começar, não sabe a quem recorrer, não sabe se existe alguém que entenda exatamente o que ela está sentindo. A Terapia Que Cura foi pensada para esse momento, quando você precisa encontrar a pessoa certa, sem perder tempo nem cair em mãos erradas.
                 </p>
                 
                 <div className="space-y-8">
@@ -329,8 +329,8 @@ export default function Home() {
                       <Shield className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg text-primary-900 mb-2">Advogados de verdade, para situações reais</h3>
-                      <p className="text-neutral-600 leading-relaxed">Profissionais inscritos na OAB que trabalham com as causas do dia a dia, não com grandes empresas.</p>
+                      <h3 className="font-bold text-lg text-primary-900 mb-2">Psicólogos de verdade, para situações reais</h3>
+                      <p className="text-neutral-600 leading-relaxed">Profissionais inscritos no CRP que trabalham com os temas que mais afetam o dia a dia das pessoas.</p>
                     </div>
                   </div>
                   
@@ -367,9 +367,9 @@ export default function Home() {
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
               <div className="max-w-2xl">
-                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Entenda seus direitos antes de qualquer coisa</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Entenda sua mente antes de qualquer coisa</h2>
                 <p className="text-lg text-neutral-600 leading-relaxed">
-                  Escrevemos sobre direitos do jeito que a gente gostaria de ter aprendido: sem complicação, sem letra miúda, sem precisar ter feito faculdade de direito para entender.
+                  Escrevemos sobre saúde mental do jeito que a gente gostaria de ter aprendido: sem complicação, sem jargão técnico, sem precisar ter feito faculdade de psicologia para entender.
                 </p>
               </div>
               <Button asChild variant="outline" className="rounded-full shrink-0 hidden md:inline-flex h-12 px-8 text-base border-primary-200 text-primary-700 hover:bg-primary-50">
@@ -412,11 +412,11 @@ export default function Home() {
               <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/3 w-[600px] h-[600px] bg-accent-500/20 rounded-full blur-[80px]"></div>
               
               <div className="relative z-10 max-w-[800px] mx-auto flex flex-col items-center">
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">Não deixa o seu direito passar em branco.</h2>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">Cuidar de você não pode esperar.</h2>
                 <p className="text-xl md:text-2xl text-primary-100 mb-12 font-light">Muita gente desiste porque não sabe por onde começar. A gente mostra o caminho.</p>
                 <Button asChild size="lg" className="bg-accent-500 hover:bg-accent-600 text-white h-16 px-10 text-lg rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-                  <Link href="/advogados" data-testid="button-cta-encontrar">
-                    Encontrar um advogado agora
+                  <Link href="/psicologos" data-testid="button-cta-encontrar">
+                    Encontrar um psicólogo agora
                   </Link>
                 </Button>
               </div>
@@ -424,11 +424,11 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Section 7 — CTA advogados */}
+        {/* Section 7 — CTA psicólogos */}
         <section className="bg-white py-20 text-center border-t border-neutral-100">
           <div className="container mx-auto px-6 max-w-[800px]">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Você é advogado?</h2>
-            <p className="text-xl text-neutral-600 mb-10 leading-relaxed">Cadastre seu perfil e apareça para pessoas que estão exatamente com o problema que você resolve.</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Você é psicólogo?</h2>
+            <p className="text-xl text-neutral-600 mb-10 leading-relaxed">Cadastre seu perfil e apareça para pessoas que precisam exatamente do que você oferece.</p>
             <Button asChild size="lg" className="bg-accent-500 hover:bg-accent-600 text-white h-16 px-10 text-lg rounded-full transition-all">
               <Link href="/cadastro" data-testid="button-cta-cadastro">
                 Quero cadastrar meu perfil

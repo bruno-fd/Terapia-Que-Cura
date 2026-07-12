@@ -144,11 +144,11 @@ export default function Post() {
                 </div>
               )}
 
-              {/* Encerramento padrão OAB (posts gerados) */}
-              {post.oabClosing && (
+              {/* Encerramento padrão CFP (posts gerados) */}
+              {post.crpClosing && (
                 <div className="mt-10 rounded-2xl bg-primary-50 border border-primary-100 p-6">
                   <p className="text-neutral-700 leading-loose">
-                    {post.oabClosing}
+                    {post.crpClosing}
                   </p>
                 </div>
               )}
@@ -159,9 +159,9 @@ export default function Post() {
               {/* Nota de rodapé do post */}
               <p className="text-sm text-neutral-500 italic">
                 Este conteúdo tem caráter exclusivamente informativo e
-                educativo. Não constitui aconselhamento jurídico. Para orientação
-                sobre sua situação específica, consulte um profissional do
-                direito.
+                educativo. Não constitui diagnóstico, tratamento ou
+                aconselhamento psicológico. Para orientação sobre sua situação
+                específica, consulte um profissional de psicologia.
               </p>
             </article>
 
