@@ -4,3 +4,6 @@
 - [Long-running one-shot scripts](long-running-oneshot-scripts.md) — ad-hoc/setsid bg processes get reaped; run multi-minute one-shots as a temp console workflow, poll the DB, then removeWorkflow.
 - [Daily auto-blog veracity gate](daily-blog-veracity-gate.md) — auto-published AI legal posts need 2 deterministic reject layers over the model verdict; daily job day-boundary must be UTC in both label and idempotency.
 - [Manual table rename stale objects](manual-table-rename-stale-objects.md) — ALTER TABLE RENAME leaves PK/unique/index/sequence names on the old table name; rename them (dev only) or Drizzle publish diff stays noisy.
+- [OpenAPI codegen workflow](openapi-codegen-workflow.md) — API types are generated from `lib/api-spec/openapi.yaml`; regen with `pnpm --filter @workspace/api-spec run codegen`; DB→openapi→codegen→frontend, or zod parse strips the field.
+- [drizzle-kit push non-interactive](drizzle-push-non-interactive.md) — `push` applies ALL drift and needs a TTY (fails in agent shell, `--force` doesn't help); for one additive column, run `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` on the dev DB directly.
+- [Blog themed covers via Pexels](blog-themed-images-pexels.md) — runtime Pexels stock (daily job has no agent tools); fetched in shared `persistGeneratedPost`; keep the deterministic query blocklist + https-pexels URL validation.

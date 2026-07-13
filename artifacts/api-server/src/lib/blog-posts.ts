@@ -7,7 +7,7 @@ import {
   sectionsToHtml,
 } from "./blog-generator";
 import { subcategoriasDe } from "./categorias";
-import { fetchThemedImage, queryDeReserva } from "./pexels";
+import { fetchThemedImage, resolverQueryDeImagem } from "./pexels";
 
 // Garante um slug único na tabela de posts, adicionando um sufixo numérico
 // (ou o timestamp como último recurso) quando já existe.
@@ -57,9 +57,7 @@ export async function persistGeneratedPost(
   // busca sugerida pela IA; se vier vazia, cai numa consulta de reserva por
   // categoria. Falha silenciosa: o post é criado mesmo sem imagem.
   const imagem = await fetchThemedImage(
-    generated.imageQuery && generated.imageQuery.trim()
-      ? generated.imageQuery
-      : queryDeReserva(category),
+    resolverQueryDeImagem(generated.imageQuery, category),
   );
 
   const [created] = await db

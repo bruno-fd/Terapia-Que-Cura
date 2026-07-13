@@ -50,6 +50,80 @@ export function queryDeReserva(category: string): string {
   return QUERY_POR_CATEGORIA[category] ?? "mental health wellbeing calm";
 }
 
+// Guarda determinística: mesmo com a instrução no prompt, o modelo pode gerar
+// uma frase de busca literal/gráfica em temas sensíveis. Se a frase contiver
+// qualquer termo de risco, ela é descartada em favor da consulta de reserva
+// (curada e segura) da categoria. Termos em inglês porque a imageQuery é em
+// inglês; incluímos raízes para pegar variações (ex.: "suicid" pega
+// "suicide"/"suicidal").
+const TERMOS_BLOQUEADOS = [
+  "suicid",
+  "self-harm",
+  "self harm",
+  "selfharm",
+  "self injury",
+  "cutting wrist",
+  "blood",
+  "gore",
+  "corpse",
+  "dead body",
+  "death",
+  "hanging",
+  "noose",
+  "weapon",
+  "gun",
+  "knife",
+  "violence",
+  "violent",
+  "abuse",
+  "assault",
+  "rape",
+  "nude",
+  "naked",
+  "sexual",
+  "porn",
+  "drug",
+  "cocaine",
+  "heroin",
+  "overdose",
+  "wound",
+  "starving",
+];
+
+export function imageQuerySegura(query: string): boolean {
+  const q = query.toLowerCase();
+  return !TERMOS_BLOQUEADOS.some((t) => q.includes(t));
+}
+
+// Escolhe a consulta final: usa a sugestão da IA só se for segura; senão cai na
+// consulta de reserva da categoria (sempre segura).
+export function resolverQueryDeImagem(
+  sugerida: string | undefined,
+  category: string,
+): string {
+  const s = (sugerida ?? "").trim();
+  if (s && imageQuerySegura(s)) return s;
+  return queryDeReserva(category);
+}
+
+// Só confia em URLs https de domínios do Pexels (a origem dos dados). Barra
+// qualquer coisa fora disso antes de persistir/renderizar (defesa contra
+// injeção de URL em href/src).
+function urlHttpsPexels(u: string | undefined): string | null {
+  if (!u) return null;
+  try {
+    const parsed = new URL(u);
+    if (parsed.protocol !== "https:") return null;
+    const host = parsed.hostname.toLowerCase();
+    if (host === "pexels.com" || host.endsWith(".pexels.com")) {
+      return parsed.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 const PEXELS_ENDPOINT = "https://api.pexels.com/v1/search";
 
 // Busca uma foto de banco que combine com o termo. Retorna null em qualquer
@@ -94,11 +168,12 @@ export async function fetchThemedImage(
     }
     const photo = photos[hash] ?? photos[0];
 
-    const src =
+    const src = urlHttpsPexels(
       photo.src?.landscape ??
-      photo.src?.large ??
-      photo.src?.large2x ??
-      photo.src?.original;
+        photo.src?.large ??
+        photo.src?.large2x ??
+        photo.src?.original,
+    );
     if (!src) return null;
 
     return {
@@ -106,7 +181,9 @@ export async function fetchThemedImage(
       alt: (photo.alt ?? "").slice(0, 300),
       credit: photo.photographer ?? "Pexels",
       creditUrl:
-        photo.photographer_url ?? photo.url ?? "https://www.pexels.com",
+        urlHttpsPexels(photo.photographer_url) ??
+        urlHttpsPexels(photo.url) ??
+        "https://www.pexels.com",
     };
   } catch (err) {
     logger.warn({ err, termo }, "Erro ao buscar imagem no Pexels.");
