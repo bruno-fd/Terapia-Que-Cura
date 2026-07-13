@@ -91,7 +91,13 @@ const TERMOS_BLOQUEADOS = [
 ];
 
 export function imageQuerySegura(query: string): boolean {
-  const q = query.toLowerCase();
+  // Normaliza antes de comparar para não ser burlada por variações Unicode
+  // (formas compatíveis, ex.: caracteres de largura total) ou por caracteres
+  // de largura zero inseridos no meio de um termo bloqueado.
+  const q = query
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+    .toLowerCase();
   return !TERMOS_BLOQUEADOS.some((t) => q.includes(t));
 }
 
