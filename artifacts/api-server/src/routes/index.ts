@@ -7,6 +7,7 @@ import subscriptionRouter from "./subscription";
 import psychologistRouter from "./psychologist";
 import cadastroRouter from "./cadastro";
 import oabRouter from "./oab";
+import cronRouter from "./cron";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(subscriptionRouter);
 router.use(psychologistRouter);
 router.use(cadastroRouter);
 router.use(oabRouter);
+router.use(cronRouter);
 
 export default router;

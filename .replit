@@ -29,3 +29,5 @@ ASAAS_BASE_URL = "https://api.asaas.com/v3"
 
 [userenv.production]
 ASAAS_BASE_URL = "https://api.asaas.com/v3"
+
+[userenv.shared]
