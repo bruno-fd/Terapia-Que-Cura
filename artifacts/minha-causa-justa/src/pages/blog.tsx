@@ -63,8 +63,8 @@ export default function Blog() {
               Blog
             </h1>
             <p className="text-neutral-500 text-base md:text-lg">
-              Informações sobre direitos do cidadão, escritas de forma simples e
-              direta.
+              Conteúdos sobre saúde mental e bem-estar, escritos de forma simples
+              e acolhedora.
             </p>
           </header>
 
