@@ -29,6 +29,12 @@ export const blogPostsTable = pgTable("blog_posts", {
   body: jsonb("body").$type<BlogPostSection[]>().notNull(),
   bodyHtml: text("body_html").notNull().default(""),
   crpClosing: text("crp_closing").notNull(),
+  // Imagem de capa royalty-free (Pexels) escolhida pelo tema do post. Nula
+  // quando não foi possível obter uma imagem no momento da criação.
+  coverImageUrl: text("cover_image_url"),
+  coverImageAlt: text("cover_image_alt"),
+  coverImageCredit: text("cover_image_credit"),
+  coverImageCreditUrl: text("cover_image_credit_url"),
   published: boolean("published").notNull().default(true),
   // Data da primeira publicação. Nulo enquanto o post é rascunho.
   publishedAt: timestamp("published_at", { withTimezone: true }),

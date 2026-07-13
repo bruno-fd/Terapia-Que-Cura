@@ -42,6 +42,10 @@ export function mapApiPost(post: ApiBlogPost): BlogPost {
     subtitle: post.subtitle,
     keywords: post.keywords,
     crpClosing: post.crpClosing,
+    coverImageUrl: post.coverImageUrl ?? undefined,
+    coverImageAlt: post.coverImageAlt ?? undefined,
+    coverImageCredit: post.coverImageCredit ?? undefined,
+    coverImageCreditUrl: post.coverImageCreditUrl ?? undefined,
   };
 }
 

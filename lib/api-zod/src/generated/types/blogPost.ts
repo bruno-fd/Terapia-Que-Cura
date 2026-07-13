@@ -20,6 +20,10 @@ export interface BlogPost {
   body: BlogPostSection[];
   bodyHtml: string;
   crpClosing: string;
+  coverImageUrl?: string | null;
+  coverImageAlt?: string | null;
+  coverImageCredit?: string | null;
+  coverImageCreditUrl?: string | null;
   published: boolean;
   publishedAt?: Date | null;
   createdAt: Date;

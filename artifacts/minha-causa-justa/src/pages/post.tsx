@@ -113,6 +113,36 @@ export default function Post() {
                 </div>
               )}
 
+              {/* Imagem de capa (posts com foto temática do Pexels) */}
+              {post.coverImageUrl && (
+                <figure className="mt-8">
+                  <img
+                    src={post.coverImageUrl}
+                    alt={post.coverImageAlt || post.title}
+                    loading="lazy"
+                    className="w-full aspect-[16/9] object-cover rounded-2xl border border-neutral-200"
+                  />
+                  {post.coverImageCredit && (
+                    <figcaption className="mt-2 text-xs text-neutral-400">
+                      Foto de{" "}
+                      {post.coverImageCreditUrl ? (
+                        <a
+                          href={post.coverImageCreditUrl}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow"
+                          className="hover:underline"
+                        >
+                          {post.coverImageCredit}
+                        </a>
+                      ) : (
+                        post.coverImageCredit
+                      )}{" "}
+                      no Pexels
+                    </figcaption>
+                  )}
+                </figure>
+              )}
+
               {/* Divisória */}
               <hr className="my-8 border-neutral-200" />
 

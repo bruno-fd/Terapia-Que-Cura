@@ -890,6 +890,18 @@ components:
           type: string
         crpClosing:
           type: string
+        coverImageUrl:
+          type: string
+          nullable: true
+        coverImageAlt:
+          type: string
+          nullable: true
+        coverImageCredit:
+          type: string
+          nullable: true
+        coverImageCreditUrl:
+          type: string
+          nullable: true
         published:
           type: boolean
         publishedAt:

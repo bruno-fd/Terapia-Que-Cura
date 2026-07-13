@@ -37,6 +37,10 @@ export const ListPublishedPostsResponseItem = zod.object({
 })),
   "bodyHtml": zod.string(),
   "crpClosing": zod.string(),
+  "coverImageUrl": zod.string().nullish(),
+  "coverImageAlt": zod.string().nullish(),
+  "coverImageCredit": zod.string().nullish(),
+  "coverImageCreditUrl": zod.string().nullish(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -78,6 +82,10 @@ export const ListAdminPostsResponseItem = zod.object({
 })),
   "bodyHtml": zod.string(),
   "crpClosing": zod.string(),
+  "coverImageUrl": zod.string().nullish(),
+  "coverImageAlt": zod.string().nullish(),
+  "coverImageCredit": zod.string().nullish(),
+  "coverImageCreditUrl": zod.string().nullish(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -113,6 +121,10 @@ export const CreateBlogPostResponse = zod.object({
 })),
   "bodyHtml": zod.string(),
   "crpClosing": zod.string(),
+  "coverImageUrl": zod.string().nullish(),
+  "coverImageAlt": zod.string().nullish(),
+  "coverImageCredit": zod.string().nullish(),
+  "coverImageCreditUrl": zod.string().nullish(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -157,6 +169,10 @@ export const UpdateBlogPostResponse = zod.object({
 })),
   "bodyHtml": zod.string(),
   "crpClosing": zod.string(),
+  "coverImageUrl": zod.string().nullish(),
+  "coverImageAlt": zod.string().nullish(),
+  "coverImageCredit": zod.string().nullish(),
+  "coverImageCreditUrl": zod.string().nullish(),
   "published": zod.boolean(),
   "publishedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()

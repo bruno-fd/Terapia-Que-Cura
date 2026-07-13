@@ -384,7 +384,7 @@ export default function Home() {
               {postsHome.map((post, index) => (
                 <div key={post.slug} className="bg-background p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300">
                   <div className="mb-6 w-full h-48 bg-white rounded-2xl overflow-hidden relative">
-                    <img src={imagensHome[index]} alt={post.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
+                    <img src={post.coverImageUrl ?? imagensHome[index]} alt={post.coverImageAlt || post.title} loading="lazy" className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <h3 className="font-bold text-xl text-primary-900 mb-6 flex-grow leading-snug">{post.title}</h3>
                   <Link href={`/blog/${post.slug}`} className="inline-flex items-center font-medium text-accent-600 hover:text-accent-700 transition-colors mt-auto">

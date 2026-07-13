@@ -80,6 +80,9 @@ export interface GeneratedPost {
   // Tema específico sugerido pela IA (uma das subcategorias da macrocategoria),
   // ou null quando nenhuma se aplica. Validado no chamador.
   subcategoria: string | null;
+  // Frase curta de busca visual (em inglês) para achar uma foto de banco que
+  // combine com o tema. Segura e não literal em temas sensíveis. Pode ser "".
+  imageQuery: string;
 }
 
 // Resultado da verificação de veracidade/conformidade feita por uma segunda
@@ -316,6 +319,11 @@ function buildGeneratedPost(
   const subcategoria =
     subSugerida && subcategorias.includes(subSugerida) ? subSugerida : null;
 
+  const imageQuery =
+    typeof parsed.imageQuery === "string"
+      ? stripDash(parsed.imageQuery).slice(0, 120)
+      : "";
+
   return {
     title: stripDash(parsed.title).slice(0, 120),
     subtitle: stripDash(parsed.subtitle),
@@ -324,6 +332,7 @@ function buildGeneratedPost(
     body,
     crpClosing: stripDash(parsed.crpClosing),
     subcategoria,
+    imageQuery,
   };
 }
 
@@ -352,6 +361,8 @@ export async function generatePost(
 Siga rigorosamente todas as regras editoriais e do CFP. Entre 600 e 900 palavras no total. Nunca use travessão.
 ${subInstrucao}
 
+IMAGEM DE CAPA: em "imageQuery", escreva uma frase curta em INGLÊS (2 a 5 palavras) para buscar uma foto de banco de imagens que represente o clima do texto. Prefira cenas humanas de acolhimento, natureza, luz ou objetos do cotidiano. Em temas sensíveis (suicídio, automutilação, abuso, violência), use uma imagem simbólica e acolhedora (ex.: "supportive hands warm light", "calm sunrise horizon"), NUNCA literal, gráfica ou perturbadora.
+
 Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
 {
   "title": "título H1, no máximo 70 caracteres",
@@ -363,7 +374,8 @@ Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
     { "paragraphs": ["parágrafo de introdução 1", "parágrafo de introdução 2"] },
     { "heading": "Subtítulo H2", "paragraphs": ["parágrafo", "parágrafo"] }
   ],
-  "crpClosing": "parágrafo de encerramento no padrão permitido pelo CFP"
+  "crpClosing": "parágrafo de encerramento no padrão permitido pelo CFP",
+  "imageQuery": "frase curta em inglês (2 a 5 palavras) para buscar a foto de capa"
 }
 
 O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, inclua de 3 a 5 seções, cada uma com "heading" (H2) e seus parágrafos. Não inclua o disclaimer no JSON, ele é adicionado automaticamente.`,
@@ -614,6 +626,7 @@ export async function correctPost(
       keywords: post.keywords,
       body: post.body,
       crpClosing: post.crpClosing,
+      imageQuery: post.imageQuery,
     },
     null,
     2,
@@ -638,7 +651,7 @@ ${postAtual}
 PROBLEMAS APONTADOS PELO REVISOR:
 ${listaProblemas}
 
-Responda APENAS com JSON válido, sem texto extra, no mesmo formato do post atual (title, subtitle, excerpt, subcategoria, keywords, body, crpClosing). O primeiro item de "body" é a introdução e NÃO tem "heading".`,
+Responda APENAS com JSON válido, sem texto extra, no mesmo formato do post atual (title, subtitle, excerpt, subcategoria, keywords, body, crpClosing, imageQuery). O primeiro item de "body" é a introdução e NÃO tem "heading".`,
       },
     ],
   });
@@ -646,5 +659,9 @@ Responda APENAS com JSON válido, sem texto extra, no mesmo formato do post atua
   const parsed = parseJson(
     extractText(message.content),
   ) as Partial<GeneratedPost>;
-  return buildGeneratedPost(parsed, subcategorias);
+  const corrigido = buildGeneratedPost(parsed, subcategorias);
+  // Preserva a frase de busca da imagem se a correção não a devolveu: o tema
+  // não muda numa correção, então a capa original continua válida.
+  if (!corrigido.imageQuery) corrigido.imageQuery = post.imageQuery;
+  return corrigido;
 }

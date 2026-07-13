@@ -32,6 +32,11 @@ export interface BlogPost {
   subtitle?: string;
   keywords?: string[];
   crpClosing?: string;
+  // Imagem de capa royalty-free (Pexels) escolhida pelo tema do post.
+  coverImageUrl?: string;
+  coverImageAlt?: string;
+  coverImageCredit?: string;
+  coverImageCreditUrl?: string;
 }
 
 // Sem posts fixos/fictícios: o blog agora exibe apenas os posts oficiais

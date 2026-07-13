@@ -94,6 +94,19 @@ export default function Blog() {
                     key={post.slug}
                     className="bg-white rounded-2xl border border-neutral-200 p-6 md:p-8 transition-shadow hover:shadow-md"
                   >
+                    {post.coverImageUrl && (
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="block -mx-6 -mt-6 md:-mx-8 md:-mt-8 mb-6 overflow-hidden rounded-t-2xl"
+                      >
+                        <img
+                          src={post.coverImageUrl}
+                          alt={post.coverImageAlt || post.title}
+                          loading="lazy"
+                          className="w-full h-52 object-cover transition-transform duration-500 hover:scale-105"
+                        />
+                      </Link>
+                    )}
                     <Badge className="mb-4 bg-primary-50 text-primary-700 border-transparent">
                       {post.category}
                     </Badge>
