@@ -1,5 +1,5 @@
 import { and, eq, gte } from "drizzle-orm";
-import { db, blogPostsTable, blogDailyRunsTable } from "@workspace/db";
+import { db, pool, blogPostsTable, blogDailyRunsTable } from "@workspace/db";
 import { MACRO_NOMES, subcategoriasDe } from "./categorias";
 import {
   generateIdeas,
@@ -240,16 +240,46 @@ export async function categoriasPendentesHoje(): Promise<string[]> {
 // Processa UMA categoria pendente e informa quantas ainda faltam. Feito para
 // ser chamado repetidamente pelo "despertador" agendado até remaining chegar a
 // 0. Se não há pendentes, não consome IA: apenas retorna remaining=0.
+//
+// Segurança contra concorrência: antes de gerar (~40s), tenta um advisory lock
+// do Postgres por (dia, categoria) numa conexão dedicada. Se outra execução
+// simultânea já está cuidando daquela categoria, o lock falha e nós pulamos
+// para a próxima pendente — nunca duas gerações da mesma categoria no mesmo dia.
+// Isso mantém a garantia de custo: no máximo um lote por dia, mesmo sob spam.
 export async function rodarProximaCategoria(): Promise<{
   processed: string | null;
   status: RunStatus | null;
   remaining: number;
 }> {
   const pendentes = await categoriasPendentesHoje();
-  const category = pendentes[0];
-  if (!category) {
-    return { processed: null, status: null, remaining: 0 };
+
+  for (const category of pendentes) {
+    const chave = `${hojeIso()}|${category}`;
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query<{ locked: boolean }>(
+        "select pg_try_advisory_lock(hashtext($1)) as locked",
+        [chave],
+      );
+      if (!rows[0]?.locked) {
+        // Outra execução simultânea já está processando esta categoria.
+        continue;
+      }
+      try {
+        const status = await processarCategoriaSegura(category);
+        // Recalcula as pendentes reais depois de processar, para o remaining
+        // refletir o estado atual mesmo sob concorrência.
+        const restantes = await categoriasPendentesHoje();
+        return { processed: category, status, remaining: restantes.length };
+      } finally {
+        await client.query("select pg_advisory_unlock(hashtext($1))", [chave]);
+      }
+    } finally {
+      client.release();
+    }
   }
-  const status = await processarCategoriaSegura(category);
-  return { processed: category, status, remaining: pendentes.length - 1 };
+
+  // Nada disponível: ou tudo já rodou hoje, ou o que falta está sendo
+  // processado por outra execução simultânea.
+  return { processed: null, status: null, remaining: pendentes.length };
 }

@@ -8,3 +8,4 @@
 - [drizzle-kit push non-interactive](drizzle-push-non-interactive.md) — `push` applies ALL drift and needs a TTY (fails in agent shell, `--force` doesn't help); for one additive column, run `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` on the dev DB directly.
 - [Blog themed covers via Pexels](blog-themed-images-pexels.md) — runtime Pexels stock (daily job has no agent tools); fetched in shared `persistGeneratedPost`; keep the deterministic query blocklist + https-pexels URL validation.
 - [Daily generator deployment model](daily-generator-deployment.md) — one project = one deployment type, so the daily Scheduled job can't coexist with the web/autoscale deploy; use a separate project on the same prod DB or an in-app/external trigger.
+- [Daily-gen trigger endpoint concurrency](daily-generator-trigger-endpoint.md) — per-(day|category) pg advisory lock around the ~40s AI gen keeps the once-per-day/cost guarantee under concurrent or duplicate triggers.
