@@ -70,7 +70,7 @@ export function StepCheckout({ data, update, onBack, onConcluir }: Props) {
     }
     setEnviando(true);
     try {
-      const { invoiceUrl } = await iniciarCheckout({
+      const { checkoutUrl } = await iniciarCheckout({
         leadId: data.leadId,
         plano,
         nome: data.nome.trim(),
@@ -78,14 +78,14 @@ export function StepCheckout({ data, update, onBack, onConcluir }: Props) {
         cpfCnpj: data.cpf.trim(),
         telefone: data.telefone.trim() || undefined,
       });
-      if (!invoiceUrl) {
+      if (!checkoutUrl) {
         throw new Error("Não recebemos o link de pagamento. Tente novamente.");
       }
       // Só marca o lead como concluído (remarketing) e limpa o funil após o
       // checkout ter sido criado com sucesso, imediatamente antes do redirect.
       onConcluir();
-      // Redireciona para a fatura hospedada do Asaas (checkout com cartão).
-      window.location.href = invoiceUrl;
+      // Redireciona para a página de checkout hospedada do Asaas (cartão).
+      window.location.href = checkoutUrl;
     } catch (e) {
       setErro(
         e instanceof Error

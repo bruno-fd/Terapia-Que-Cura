@@ -503,7 +503,13 @@ paths:
     post:
       operationId: createAssinatura
       tags: [subscription]
-      summary: Create a subscription for the psychologist via Asaas
+      summary: Start an Asaas Checkout to (re)subscribe the psychologist
+      description: >-
+        Creates an Asaas Checkout (hosted payment page, no company banner) for
+        the authenticated psychologist and returns its URL. The recurring
+        subscription is created by Asaas only after the payment is confirmed
+        (CHECKOUT_PAID webhook); the account already exists, so nothing is
+        provisioned here.
       requestBody:
         required: true
         content:
@@ -512,11 +518,11 @@ paths:
               $ref: "#/components/schemas/CreateSubscriptionInput"
       responses:
         "201":
-          description: Subscription created
+          description: Checkout started
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SubscriptionState"
+                $ref: "#/components/schemas/CheckoutResult"
         "400":
           description: Invalid request
           content:
@@ -608,10 +614,11 @@ paths:
       summary: Start an anonymous checkout (no account required)
       description: >-
         Public (no auth): called at the end of the registration funnel. Creates
-        the Asaas customer and recurring subscription from the lead data and
-        returns the hosted invoice URL where the psychologist pays by card. NO account
-        is created here: the account is provisioned only after the payment is
-        confirmed (Asaas webhook). Calling again always starts a fresh checkout
+        an Asaas Checkout (hosted payment page, no company banner) from the lead
+        data and returns its URL, where the psychologist pays by card. NO account
+        is created here, and the recurring subscription is created by Asaas only
+        after the payment is confirmed (CHECKOUT_PAID webhook), which then
+        provisions the account. Calling again always starts a fresh checkout
         instead of reopening a previous pending one.
       requestBody:
         required: true
@@ -1099,10 +1106,10 @@ components:
     CheckoutResult:
       type: object
       properties:
-        invoiceUrl:
+        checkoutUrl:
           type: string
       required:
-        - invoiceUrl
+        - checkoutUrl
     Cidade:
       type: object
       properties:

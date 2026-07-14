@@ -17,6 +17,9 @@ const WEBHOOK_EVENTS = [
   "PAYMENT_OVERDUE",
   "PAYMENT_DELETED",
   "PAYMENT_REFUNDED",
+  // Asaas Checkout: pagamento concluído na página hospedada. É o gatilho que
+  // vincula a assinatura recém-criada à linha e provisiona a conta.
+  "CHECKOUT_PAID",
 ];
 
 const WEBHOOK_NAME = "Terapia Que Cura, assinaturas";

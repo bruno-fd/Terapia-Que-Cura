@@ -45,9 +45,10 @@ export type {
   CheckoutResult,
 };
 
-// Inicia o checkout ANÔNIMO (sem conta): cria a assinatura no Asaas atrelada ao
-// lead e devolve a URL da fatura hospedada (invoiceUrl). A conta do psicólogo só
-// é criada pelo back-end APÓS o webhook confirmar o pagamento.
+// Inicia o checkout ANÔNIMO (sem conta): cria um Asaas Checkout (página de
+// pagamento hospedada, sem o banner da empresa) atrelado ao lead e devolve a
+// sua URL (checkoutUrl). A assinatura e a conta do psicólogo só são criadas
+// pelo back-end APÓS o webhook confirmar o pagamento (CHECKOUT_PAID).
 export function iniciarCheckout(input: CheckoutInput): Promise<CheckoutResult> {
   return iniciarCheckoutApi(input);
 }
@@ -56,9 +57,12 @@ export function getAssinatura(): Promise<SubscriptionState> {
   return apiFetch("/assinatura");
 }
 
+// Reassinatura (conta já existente): cria um Asaas Checkout e devolve a sua URL
+// (checkoutUrl) para redirecionar o psicólogo ao pagamento. A assinatura na
+// Asaas nasce apenas após o pagamento confirmado.
 export function createAssinatura(
   input: CreateSubscriptionInput,
-): Promise<SubscriptionState> {
+): Promise<CheckoutResult> {
   return apiFetch("/assinatura", { method: "POST", body: input });
 }
 

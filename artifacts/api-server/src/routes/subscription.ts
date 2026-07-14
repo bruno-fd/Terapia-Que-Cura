@@ -20,8 +20,10 @@ import {
   IniciarCheckoutResponse,
 } from "@workspace/api-zod";
 import {
-  createCustomer,
-  createSubscription,
+  createCheckout,
+  buildCheckoutUrl,
+  cancelCheckout,
+  listSubscriptionsByCustomer,
   listSubscriptionPayments,
   deleteSubscription,
   refundPayment,
@@ -33,7 +35,6 @@ import { getAuth, clerkClient } from "@clerk/express";
 import { claimSubscriptionForUser } from "../lib/subscriptionClaim";
 import { sendEmail } from "../lib/email";
 import {
-  subscriptionCreatedEmail,
   accountCreatedEmail,
   paymentConfirmedEmail,
   paymentOverdueEmail,
@@ -201,7 +202,7 @@ function buildState(
     canceledAt: row.canceledAt ? row.canceledAt.toISOString() : null,
     accessUntil: row.accessUntil ?? null,
     refundEligible: isRefundEligible(payments),
-    invoiceUrl: openInvoiceUrl(payments),
+    invoiceUrl: openInvoiceUrl(payments) ?? pendingCheckoutUrl(row),
     payments: visible,
   };
 }
@@ -296,6 +297,70 @@ async function createAccountInvitation(
   }
 }
 
+// Monta as URLs de retorno do Asaas Checkout para uma página do site. O Asaas
+// redireciona o pagador para successUrl/cancelUrl/expiredUrl ao final; o
+// parâmetro ?checkout= permite à página exibir a mensagem adequada.
+function checkoutCallbacks(path: string): {
+  successUrl: string;
+  cancelUrl: string;
+  expiredUrl: string;
+} {
+  const base = appPublicUrl();
+  return {
+    successUrl: `${base}${path}?checkout=sucesso`,
+    cancelUrl: `${base}${path}?checkout=cancelado`,
+    expiredUrl: `${base}${path}?checkout=expirado`,
+  };
+}
+
+// Link de pagamento pendente: quando o checkout foi criado mas ainda não pago
+// (sem assinatura na Asaas), a própria página do checkout é o destino de
+// "Pagar agora".
+function pendingCheckoutUrl(row: SubscriptionRow): string | null {
+  return row.asaasCheckoutId && !row.asaasSubscriptionId
+    ? buildCheckoutUrl({ id: row.asaasCheckoutId })
+    : null;
+}
+
+// Provisiona a conta (convite Clerk + e-mail "Conta criada") de forma atômica e
+// idempotente. Reivindica accountProvisionedAt condicionando a isNull para não
+// enviar e-mails duplicados sob entregas concorrentes/repetidas; se o Clerk ou
+// o envio do e-mail falharem, desfaz a reivindicação para nova tentativa.
+// Retorna true somente se provisionou nesta chamada.
+async function provisionAccount(rowId: number, log: Logger): Promise<boolean> {
+  const [claimed] = await db
+    .update(subscriptionsTable)
+    .set({ accountProvisionedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(subscriptionsTable.id, rowId),
+        isNull(subscriptionsTable.accountProvisionedAt),
+      ),
+    )
+    .returning();
+  if (!claimed || !claimed.customerEmail) return false;
+  try {
+    const entrarUrl = await createAccountInvitation(claimed.customerEmail, log);
+    const tpl = accountCreatedEmail({ nome: claimed.customerName, entrarUrl });
+    await sendEmail({
+      to: claimed.customerEmail,
+      subject: tpl.subject,
+      html: tpl.html,
+    });
+    return true;
+  } catch (err) {
+    log.error(
+      { err, rowId },
+      "Falha ao provisionar conta; desfazendo reivindicação",
+    );
+    await db
+      .update(subscriptionsTable)
+      .set({ accountProvisionedAt: null })
+      .where(eq(subscriptionsTable.id, claimed.id));
+    return false;
+  }
+}
+
 // Estado atual da assinatura do psicólogo.
 router.get("/assinatura", requireAuth, async (req, res): Promise<void> => {
   const row = await resolveRowForUser(req);
@@ -306,11 +371,16 @@ router.get("/assinatura", requireAuth, async (req, res): Promise<void> => {
 
   let payments: AsaasPayment[] = [];
   let fetched = false;
-  try {
-    payments = await listSubscriptionPayments(row.asaasSubscriptionId);
-    fetched = true;
-  } catch (err) {
-    req.log.error({ err }, "Falha ao listar pagamentos da Asaas");
+  // Sem assinatura na Asaas ainda (checkout criado e não pago): não há
+  // pagamentos a listar; o estado permanece "pendente" e o link do checkout é
+  // exposto em invoiceUrl para o botão "Pagar agora".
+  if (row.asaasSubscriptionId) {
+    try {
+      payments = await listSubscriptionPayments(row.asaasSubscriptionId);
+      fetched = true;
+    } catch (err) {
+      req.log.error({ err }, "Falha ao listar pagamentos da Asaas");
+    }
   }
 
   // Assinatura cancelada é derivada por data (accessUntil), sem depender da
@@ -373,39 +443,37 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
   }
 
   try {
-    const customer = await createCustomer({
-      name: nome,
-      cpfCnpj: cpfCnpj.replace(/\D/g, ""),
-      email,
-      mobilePhone: telefone ? telefone.replace(/\D/g, "") : undefined,
-    });
-
-    const subscription = await createSubscription({
-      customer: customer.id,
+    const checkout = await createCheckout({
       value: plan.valueCents / 100,
       cycle: plan.cycle,
       nextDueDate: todayIso(),
-      description: plan.description,
+      itemName: planoLabel(plano as Plano),
+      itemDescription: plan.description,
+      ...checkoutCallbacks("/painel/assinatura"),
+      // Vínculo auxiliar; a linha é reencontrada pelo asaasCheckoutId no webhook.
+      externalReference: `user:${req.userId!}`,
+      customer: {
+        name: nome,
+        cpfCnpj: cpfCnpj.replace(/\D/g, ""),
+        email,
+        phone: telefone ? telefone.replace(/\D/g, "") : undefined,
+      },
     });
-
-    let payments: AsaasPayment[] = [];
-    try {
-      payments = await listSubscriptionPayments(subscription.id);
-    } catch (err) {
-      req.log.error({ err }, "Falha ao listar pagamentos após criar assinatura");
-    }
 
     const values = {
       psicologoRef: req.userId!,
-      asaasCustomerId: customer.id,
-      asaasSubscriptionId: subscription.id,
+      // Cliente e assinatura na Asaas só passam a existir após o pagamento
+      // (evento CHECKOUT_PAID), quando são preenchidos pelo webhook.
+      asaasCustomerId: null,
+      asaasSubscriptionId: null,
+      asaasCheckoutId: checkout.id,
       plan: plano,
       status: "pendente",
       valueCents: plan.valueCents,
       cycle: plan.cycle,
       customerName: nome,
       customerEmail: email,
-      nextDueDate: subscription.nextDueDate ?? todayIso(),
+      nextDueDate: todayIso(),
       // Reassinatura de uma conta que JÁ existe (usuário autenticado): não há
       // provisionamento a fazer, então marcamos accountProvisionedAt para o
       // webhook não tentar recriar a conta nem enviar o e-mail "Conta criada".
@@ -420,35 +488,33 @@ router.post("/assinatura", requireAuth, async (req, res): Promise<void> => {
       updatedAt: new Date(),
     };
 
-    let row: SubscriptionRow;
     if (existing) {
-      [row] = await db
+      // Reinício do checkout: cancela (best-effort) o checkout anterior ainda
+      // não pago para que um link antigo não permaneça pagável em paralelo.
+      if (existing.asaasCheckoutId && existing.asaasCheckoutId !== checkout.id) {
+        try {
+          await cancelCheckout(existing.asaasCheckoutId);
+        } catch (err) {
+          req.log.error(
+            { err, previous: existing.asaasCheckoutId },
+            "Falha ao cancelar checkout anterior na reassinatura",
+          );
+        }
+      }
+      await db
         .update(subscriptionsTable)
         .set(values)
-        .where(eq(subscriptionsTable.id, existing.id))
-        .returning();
+        .where(eq(subscriptionsTable.id, existing.id));
     } else {
-      [row] = await db.insert(subscriptionsTable).values(values).returning();
+      await db.insert(subscriptionsTable).values(values);
     }
 
-    const status = deriveStatus(row, payments);
-
-    // Envia instruções de pagamento (best-effort, não bloqueia a resposta
-    // em caso de falha no e-mail).
-    const tpl = subscriptionCreatedEmail({
-      nome: nome,
-      planoLabel: planoLabel(plano as Plano),
-      valorLabel: formatBRL(plan.valueCents),
-      invoiceUrl: openInvoiceUrl(payments),
-    });
-    await sendEmail({ to: email, subject: tpl.subject, html: tpl.html });
-
-    res
-      .status(201)
-      .json(CreateAssinaturaResponse.parse(buildState(row, payments, status)));
+    res.status(201).json(
+      CreateAssinaturaResponse.parse({ checkoutUrl: buildCheckoutUrl(checkout) }),
+    );
   } catch (err) {
     if (err instanceof AsaasError) {
-      req.log.error({ err }, "Erro Asaas ao criar assinatura");
+      req.log.error({ err }, "Erro Asaas ao criar checkout de reassinatura");
       res.status(502).json({ error: err.message });
       return;
     }
@@ -474,6 +540,32 @@ router.post(
     return;
   }
   const motivo = parsedBody.data.motivo?.trim() || null;
+
+  // Checkout pendente (criado e nunca pago): não existe assinatura recorrente
+  // na Asaas a cancelar. Cancela o checkout (best-effort) e encerra localmente.
+  if (!row.asaasSubscriptionId) {
+    if (row.asaasCheckoutId) {
+      try {
+        await cancelCheckout(row.asaasCheckoutId);
+      } catch (err) {
+        req.log.error({ err }, "Falha ao cancelar checkout pendente");
+      }
+    }
+    const agora = new Date();
+    const [updated] = await db
+      .update(subscriptionsTable)
+      .set({
+        status: "inativa",
+        canceledAt: agora,
+        accessUntil: null,
+        cancelReason: motivo,
+        updatedAt: agora,
+      })
+      .where(eq(subscriptionsTable.id, row.id))
+      .returning();
+    res.json(CancelAssinaturaResponse.parse(buildState(updated, [], "inativa")));
+    return;
+  }
 
   // Antes de cancelar, descobre até quando o período já pago é válido, para
   // manter o perfil ativo até o fim do ciclo. O cancelamento só interrompe as
@@ -555,6 +647,14 @@ router.post(
       return;
     }
     const motivo = parsedBody.data.motivo?.trim() || null;
+
+    // Sem assinatura na Asaas (checkout nunca pago): não há pagamento a estornar.
+    if (!row.asaasSubscriptionId) {
+      res.status(409).json({
+        error: "Não há pagamento a estornar.",
+      });
+      return;
+    }
 
     // Reembolso mexe com dinheiro: exigimos a listagem de pagamentos com
     // sucesso para validar o prazo e saber o que estornar. Se a Asaas falhar,
@@ -688,58 +788,41 @@ router.post("/checkout", async (req, res): Promise<void> => {
   }
 
   try {
-    const customer = await createCustomer({
-      name: nome,
-      cpfCnpj: cpfCnpj.replace(/\D/g, ""),
-      email,
-      mobilePhone: telefone ? telefone.replace(/\D/g, "") : undefined,
-    });
-
-    const subscription = await createSubscription({
-      customer: customer.id,
+    const checkout = await createCheckout({
       value: plan.valueCents / 100,
       cycle: plan.cycle,
       nextDueDate: todayIso(),
-      description: plan.description,
+      itemName: planoLabel(plano as Plano),
+      itemDescription: plan.description,
+      ...checkoutCallbacks("/cadastro/fluxo"),
+      // Vínculo com o lead; a linha é reencontrada pelo asaasCheckoutId no
+      // webhook, e o leadId ajuda a casar a assinatura recém-criada.
+      externalReference: leadId,
+      customer: {
+        name: nome,
+        cpfCnpj: cpfCnpj.replace(/\D/g, ""),
+        email,
+        phone: telefone ? telefone.replace(/\D/g, "") : undefined,
+      },
     });
-
-    let payments: AsaasPayment[] = [];
-    try {
-      payments = await listSubscriptionPayments(subscription.id);
-    } catch (err) {
-      req.log.error(
-        { err },
-        "Falha ao listar pagamentos após criar checkout",
-      );
-    }
-
-    const invoiceUrl = openInvoiceUrl(payments);
-    if (!invoiceUrl) {
-      req.log.error(
-        { subscriptionId: subscription.id },
-        "Checkout sem invoiceUrl da Asaas",
-      );
-      res.status(502).json({
-        error:
-          "Não foi possível gerar o link de pagamento. Tente novamente em instantes.",
-      });
-      return;
-    }
 
     const values = {
       // Sem conta ainda: o vínculo com o psicólogo (psicologoRef) só acontece após
       // o pagamento e o primeiro login. A assinatura nasce chaveada pelo e-mail.
       psicologoRef: null,
       leadId,
-      asaasCustomerId: customer.id,
-      asaasSubscriptionId: subscription.id,
+      // Cliente e assinatura na Asaas só passam a existir após o pagamento
+      // (evento CHECKOUT_PAID), quando são preenchidos pelo webhook.
+      asaasCustomerId: null,
+      asaasSubscriptionId: null,
+      asaasCheckoutId: checkout.id,
       plan: plano,
       status: "pendente",
       valueCents: plan.valueCents,
       cycle: plan.cycle,
       customerName: nome,
       customerEmail: email,
-      nextDueDate: subscription.nextDueDate ?? todayIso(),
+      nextDueDate: todayIso(),
       // Checkout novo: zera qualquer provisionamento/cancelamento anterior desta
       // mesma tentativa de cadastro (o psicólogo voltou ao funil).
       accountProvisionedAt: null,
@@ -755,14 +838,21 @@ router.post("/checkout", async (req, res): Promise<void> => {
       .where(eq(subscriptionsTable.leadId, leadId));
 
     if (existing) {
-      // Re-checkout do mesmo lead: cancela a assinatura Asaas anterior (ainda
-      // pendente) antes de sobrescrever o vínculo. Sem isso, um pagamento feito
-      // no link antigo dispararia webhooks para um asaasSubscriptionId que não
-      // existe mais na linha, e a conta nunca seria provisionada.
-      if (
-        existing.asaasSubscriptionId &&
-        existing.asaasSubscriptionId !== subscription.id
-      ) {
+      // Re-checkout do mesmo lead: cancela (best-effort) o checkout anterior
+      // ainda não pago para que um link antigo não permaneça pagável em
+      // paralelo. Se o checkout anterior já tinha virado assinatura (pago),
+      // cancela também a assinatura recorrente.
+      if (existing.asaasCheckoutId && existing.asaasCheckoutId !== checkout.id) {
+        try {
+          await cancelCheckout(existing.asaasCheckoutId);
+        } catch (err) {
+          req.log.error(
+            { err, previous: existing.asaasCheckoutId },
+            "Falha ao cancelar checkout anterior no re-checkout",
+          );
+        }
+      }
+      if (existing.asaasSubscriptionId) {
         try {
           await deleteSubscription(existing.asaasSubscriptionId);
         } catch (err) {
@@ -780,7 +870,9 @@ router.post("/checkout", async (req, res): Promise<void> => {
       await db.insert(subscriptionsTable).values(values);
     }
 
-    res.status(201).json(IniciarCheckoutResponse.parse({ invoiceUrl }));
+    res
+      .status(201)
+      .json(IniciarCheckoutResponse.parse({ checkoutUrl: buildCheckoutUrl(checkout) }));
   } catch (err) {
     if (err instanceof AsaasError) {
       req.log.error({ err }, "Erro Asaas ao iniciar checkout");
@@ -806,8 +898,128 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
   const body = req.body as {
     event?: string;
     payment?: { subscription?: string | null };
+    checkout?: { id?: string | null; customer?: string | null };
   };
   const event = body?.event;
+
+  // -----------------------------------------------------------------------
+  // Asaas Checkout: a assinatura recorrente é criada pela Asaas SOMENTE após o
+  // pagamento. No CHECKOUT_PAID reencontramos a linha pelo id do checkout,
+  // descobrimos a assinatura recém-criada (listando as assinaturas do cliente)
+  // e provisionamos a conta. Este evento é a fonte autoritativa do primeiro
+  // pagamento; os PAYMENT_* seguintes tratam renovações e atrasos.
+  // -----------------------------------------------------------------------
+  if (event === "CHECKOUT_PAID") {
+    const checkoutId = body?.checkout?.id;
+    if (!checkoutId) {
+      res.sendStatus(200);
+      return;
+    }
+    const [row] = await db
+      .select()
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.asaasCheckoutId, checkoutId));
+    if (!row) {
+      req.log.warn({ checkoutId }, "CHECKOUT_PAID sem linha correspondente");
+      res.sendStatus(200);
+      return;
+    }
+
+    // Linha cancelada localmente (ex.: usuário abandonou e o checkout pendente
+    // foi cancelado): não reativamos nem provisionamos. Nada a fazer.
+    if (row.canceledAt) {
+      req.log.warn({ checkoutId }, "CHECKOUT_PAID para linha cancelada; ignorado");
+      res.sendStatus(200);
+      return;
+    }
+
+    // Descobre a assinatura recorrente que a Asaas criou para este cliente, a
+    // menos que uma entrega anterior deste evento já a tenha vinculado.
+    let asaasSubscriptionId = row.asaasSubscriptionId;
+    const asaasCustomerId =
+      row.asaasCustomerId ?? body?.checkout?.customer ?? null;
+    let nextDueDate = row.nextDueDate;
+    if (!asaasSubscriptionId && asaasCustomerId) {
+      try {
+        const subs = await listSubscriptionsByCustomer(asaasCustomerId);
+        // Preferimos casar pelo externalReference (leadId); na falta, a mais
+        // recente por dateCreated (a que este checkout acabou de criar).
+        const match =
+          subs.find(
+            (s) => s.externalReference && s.externalReference === row.leadId,
+          ) ??
+          [...subs].sort((a, b) =>
+            (b.dateCreated ?? "").localeCompare(a.dateCreated ?? ""),
+          )[0];
+        if (match) {
+          asaasSubscriptionId = match.id;
+          nextDueDate = match.nextDueDate ?? nextDueDate;
+        }
+      } catch (err) {
+        req.log.error(
+          { err, checkoutId },
+          "Falha ao localizar assinatura após CHECKOUT_PAID",
+        );
+      }
+    }
+
+    // Sem a assinatura vinculada NÃO ativamos: os PAYMENT_* futuros
+    // (renovação/atraso/estorno) correlacionam pelo asaasSubscriptionId e
+    // ficariam órfãos. A assinatura é criada pela Asaas logo após o pagamento,
+    // então respondemos 503 para que a Asaas reentregue o evento e a próxima
+    // tentativa a encontre. Deixamos um aviso explícito para reconciliação.
+    if (!asaasSubscriptionId) {
+      req.log.warn(
+        { checkoutId, asaasCustomerId },
+        "CHECKOUT_PAID pago sem assinatura vinculável; solicitando reentrega",
+      );
+      res.sendStatus(503);
+      return;
+    }
+
+    // Vincula assinatura/cliente e marca ativa, sem reativar canceladas. O
+    // guard isNull(canceledAt) é reavaliado atomicamente aqui para cobrir uma
+    // corrida com um cancelamento concorrente ocorrido durante o processamento.
+    const [updated] = await db
+      .update(subscriptionsTable)
+      .set({
+        asaasSubscriptionId,
+        asaasCustomerId,
+        nextDueDate,
+        status: "ativa",
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(subscriptionsTable.id, row.id),
+          isNull(subscriptionsTable.canceledAt),
+        ),
+      )
+      .returning();
+
+    // Se a linha foi cancelada entre a leitura e o update, não provisionamos.
+    if (!updated) {
+      req.log.warn(
+        { checkoutId },
+        "CHECKOUT_PAID: linha cancelada durante o processamento; não provisionado",
+      );
+      res.sendStatus(200);
+      return;
+    }
+
+    // Provisiona a conta no primeiro pagamento (checkout anônimo do funil). Na
+    // reassinatura de conta existente, accountProvisionedAt já está preenchido,
+    // então provisionAccount não faz nada e não reenvia e-mail.
+    await provisionAccount(updated.id, req.log);
+
+    req.log.info(
+      { checkoutId, subscriptionId: asaasSubscriptionId },
+      "CHECKOUT_PAID processado",
+    );
+    res.sendStatus(200);
+    return;
+  }
+
   const subscriptionId = body?.payment?.subscription;
 
   if (!event || !subscriptionId) {
@@ -824,12 +1036,10 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
     newStatus = "inativa";
   }
 
-  // Provisionamento da conta no PRIMEIRO pagamento confirmado (checkout
-  // primeiro). Desacoplado da transição de status para poder ser reexecutado
-  // por eventos posteriores caso o Clerk falhe. A "reivindicação" de
-  // accountProvisionedAt é atômica (condicional a isNull), evitando e-mails
-  // duplicados sob entregas concorrentes/repetidas. Se o provisionamento
-  // falhar, desfazemos a reivindicação para uma nova tentativa depois.
+  // Rede de segurança: normalmente o CHECKOUT_PAID já provisionou a conta no
+  // primeiro pagamento. Ainda assim, tentamos aqui caso os eventos cheguem fora
+  // de ordem. Idempotente: provisionAccount reivindica accountProvisionedAt
+  // condicionando a isNull, evitando e-mails duplicados.
   let justProvisioned = false;
   if (newStatus === "ativa") {
     const [row] = await db
@@ -837,46 +1047,12 @@ router.post("/assinatura/webhook", async (req, res): Promise<void> => {
       .from(subscriptionsTable)
       .where(eq(subscriptionsTable.asaasSubscriptionId, subscriptionId));
     if (row && !row.accountProvisionedAt && row.customerEmail?.trim()) {
-      const [claimed] = await db
-        .update(subscriptionsTable)
-        .set({ accountProvisionedAt: new Date(), updatedAt: new Date() })
-        .where(
-          and(
-            eq(subscriptionsTable.id, row.id),
-            isNull(subscriptionsTable.accountProvisionedAt),
-          ),
-        )
-        .returning();
-      if (claimed && claimed.customerEmail) {
-        try {
-          const entrarUrl = await createAccountInvitation(
-            claimed.customerEmail,
-            req.log,
-          );
-          const tpl = accountCreatedEmail({
-            nome: claimed.customerName,
-            entrarUrl,
-          });
-          await sendEmail({
-            to: claimed.customerEmail,
-            subject: tpl.subject,
-            html: tpl.html,
-          });
-          justProvisioned = true;
-          req.log.info(
-            { subscriptionId },
-            "Conta provisionada após pagamento confirmado",
-          );
-        } catch (err) {
-          req.log.error(
-            { err, subscriptionId },
-            "Falha ao provisionar conta; desfazendo reivindicação",
-          );
-          await db
-            .update(subscriptionsTable)
-            .set({ accountProvisionedAt: null })
-            .where(eq(subscriptionsTable.id, claimed.id));
-        }
+      justProvisioned = await provisionAccount(row.id, req.log);
+      if (justProvisioned) {
+        req.log.info(
+          { subscriptionId },
+          "Conta provisionada após pagamento confirmado",
+        );
       }
     }
   }

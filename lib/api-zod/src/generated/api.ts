@@ -636,7 +636,8 @@ export const GetAssinaturaResponse = zod.object({
 
 
 /**
- * @summary Create a subscription for the psychologist via Asaas
+ * Creates an Asaas Checkout (hosted payment page, no company banner) for the authenticated psychologist and returns its URL. The recurring subscription is created by Asaas only after the payment is confirmed (CHECKOUT_PAID webhook); the account already exists, so nothing is provisioned here.
+ * @summary Start an Asaas Checkout to (re)subscribe the psychologist
  */
 
 
@@ -650,25 +651,7 @@ export const CreateAssinaturaBody = zod.object({
 })
 
 export const CreateAssinaturaResponse = zod.object({
-  "hasSubscription": zod.boolean(),
-  "status": zod.enum(['pendente', 'ativa', 'atrasada', 'inativa']).nullish(),
-  "plan": zod.enum(['mensal', 'anual']).nullish(),
-  "value": zod.number().nullish(),
-  "cycle": zod.string().nullish(),
-  "customerName": zod.string().nullish(),
-  "nextDueDate": zod.string().nullish(),
-  "canceledAt": zod.string().nullish(),
-  "accessUntil": zod.string().nullish(),
-  "refundEligible": zod.boolean().optional(),
-  "invoiceUrl": zod.string().nullish(),
-  "payments": zod.array(zod.object({
-  "id": zod.string(),
-  "date": zod.string().nullish(),
-  "description": zod.string(),
-  "value": zod.number(),
-  "status": zod.enum(['Pago', 'Pendente', 'Falhou']),
-  "invoiceUrl": zod.string().nullish()
-}))
+  "checkoutUrl": zod.string()
 })
 
 
@@ -741,7 +724,7 @@ export const SolicitarReembolsoResponse = zod.object({
 
 
 /**
- * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the psychologist pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
+ * Public (no auth): called at the end of the registration funnel. Creates an Asaas Checkout (hosted payment page, no company banner) from the lead data and returns its URL, where the psychologist pays by card. NO account is created here, and the recurring subscription is created by Asaas only after the payment is confirmed (CHECKOUT_PAID webhook), which then provisions the account. Calling again always starts a fresh checkout instead of reopening a previous pending one.
  * @summary Start an anonymous checkout (no account required)
  */
 
@@ -760,7 +743,7 @@ export const IniciarCheckoutBody = zod.object({
 })
 
 export const IniciarCheckoutResponse = zod.object({
-  "invoiceUrl": zod.string()
+  "checkoutUrl": zod.string()
 })
 
 

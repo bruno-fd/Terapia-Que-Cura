@@ -11,8 +11,18 @@ export const subscriptionsTable = pgTable("subscriptions", {
   // do pagamento e da criação da conta). É preenchido no primeiro acesso
   // autenticado, casando pela chave customerEmail.
   psicologoRef: text("psicologo_ref").unique(),
-  asaasCustomerId: text("asaas_customer_id").notNull(),
-  asaasSubscriptionId: text("asaas_subscription_id").notNull(),
+  // Id do cliente na Asaas. Nulo enquanto o checkout não foi pago (a Asaas cria
+  // o cliente apenas quando o pagador conclui o pagamento); preenchido no
+  // evento CHECKOUT_PAID.
+  asaasCustomerId: text("asaas_customer_id"),
+  // Id da assinatura recorrente na Asaas. Com o Asaas Checkout a assinatura só
+  // existe após o pagamento, então fica nulo entre a criação do checkout e o
+  // evento CHECKOUT_PAID, quando é preenchido.
+  asaasSubscriptionId: text("asaas_subscription_id"),
+  // Id do Asaas Checkout (página de pagamento hospedada). É a chave usada para
+  // reencontrar esta linha quando o pagamento é confirmado (CHECKOUT_PAID),
+  // antes de existir uma assinatura. Nulo em assinaturas antigas.
+  asaasCheckoutId: text("asaas_checkout_id"),
   // "mensal" | "anual"
   plan: text("plan").notNull(),
   // "pendente" | "ativa" | "atrasada" | "inativa"

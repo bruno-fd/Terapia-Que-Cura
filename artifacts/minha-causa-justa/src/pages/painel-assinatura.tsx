@@ -26,6 +26,7 @@ import {
   solicitarReembolso,
   type SubscriptionState,
 } from "@/lib/assinatura";
+import { useToast } from "@/hooks/use-toast";
 
 const ERROR_COLOR = "#C0392B";
 const SUCCESS_COLOR = "#1E7D4F";
@@ -88,6 +89,7 @@ export default function PainelAssinatura() {
   const [cancelMode, setCancelMode] = useState<
     null | "cancelar" | "reembolso"
   >(null);
+  const { toast } = useToast();
 
   async function load() {
     setLoading(true);
@@ -105,6 +107,44 @@ export default function PainelAssinatura() {
 
   useEffect(() => {
     void load();
+  }, []);
+
+  // Retorno do Asaas Checkout: exibe uma mensagem e recarrega o estado algumas
+  // vezes, pois o webhook (CHECKOUT_PAID) que ativa a assinatura pode chegar com
+  // alguns segundos de atraso após o redirect de volta.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+    if (!checkout) return;
+    params.delete("checkout");
+    const qs = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + (qs ? `?${qs}` : ""),
+    );
+    if (checkout === "sucesso") {
+      toast({
+        title: "Pagamento recebido!",
+        description:
+          "Estamos ativando sua assinatura. Isso leva alguns instantes.",
+      });
+      const timers = [3000, 8000, 15000].map((ms) =>
+        window.setTimeout(() => void load(), ms),
+      );
+      return () => timers.forEach((t) => window.clearTimeout(t));
+    }
+    if (checkout === "cancelado" || checkout === "expirado") {
+      toast({
+        title:
+          checkout === "expirado"
+            ? "Checkout expirado"
+            : "Pagamento não concluído",
+        description: "Você pode tentar assinar novamente quando quiser.",
+      });
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Lê o plano pré-selecionado no cadastro (vindo da página de planos).
@@ -383,10 +423,6 @@ export default function PainelAssinatura() {
         open={showAssinar}
         onOpenChange={setShowAssinar}
         plano={planoEscolhido}
-        onCriada={(novo) => {
-          setState(novo);
-          setShowAssinar(false);
-        }}
       />
 
       {/* Modal cancelar / reembolso (pesquisa de motivo + confirmação) */}
@@ -665,12 +701,10 @@ function AssinarDialog({
   open,
   onOpenChange,
   plano,
-  onCriada,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   plano: Plano;
-  onCriada: (state: SubscriptionState) => void;
 }) {
   const [nome, setNome] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
@@ -692,20 +726,23 @@ function AssinarDialog({
     }
     setEnviando(true);
     try {
-      const novo = await createAssinatura({
+      const { checkoutUrl } = await createAssinatura({
         plano,
         nome: nome.trim(),
         cpfCnpj: cpfCnpj.trim(),
         telefone: telefone.trim() || undefined,
       });
-      onCriada(novo);
+      if (!checkoutUrl) {
+        throw new Error("Não recebemos o link de pagamento. Tente novamente.");
+      }
+      // Redireciona para a página de checkout hospedada do Asaas (cartão).
+      window.location.href = checkoutUrl;
     } catch (err) {
       setErro(
         err instanceof Error
           ? err.message
           : "Não foi possível criar a assinatura.",
       );
-    } finally {
       setEnviando(false);
     }
   }

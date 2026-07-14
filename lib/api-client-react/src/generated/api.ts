@@ -1512,11 +1512,12 @@ export const getCreateAssinaturaUrl = () => {
 }
 
 /**
- * @summary Create a subscription for the psychologist via Asaas
+ * Creates an Asaas Checkout (hosted payment page, no company banner) for the authenticated psychologist and returns its URL. The recurring subscription is created by Asaas only after the payment is confirmed (CHECKOUT_PAID webhook); the account already exists, so nothing is provisioned here.
+ * @summary Start an Asaas Checkout to (re)subscribe the psychologist
  */
-export const createAssinatura = async (createSubscriptionInput: CreateSubscriptionInput, options?: RequestInit): Promise<SubscriptionState> => {
+export const createAssinatura = async (createSubscriptionInput: CreateSubscriptionInput, options?: RequestInit): Promise<CheckoutResult> => {
 
-  return customFetch<SubscriptionState>(getCreateAssinaturaUrl(),
+  return customFetch<CheckoutResult>(getCreateAssinaturaUrl(),
   {
     ...options,
     method: 'POST',
@@ -1560,7 +1561,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateAssinaturaMutationError = ErrorType<ApiErrorResponse>
 
     /**
- * @summary Create a subscription for the psychologist via Asaas
+ * @summary Start an Asaas Checkout to (re)subscribe the psychologist
  */
 export const useCreateAssinatura = <TError = ErrorType<ApiErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssinatura>>, TError,{data: BodyType<CreateSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1722,7 +1723,7 @@ export const getIniciarCheckoutUrl = () => {
 }
 
 /**
- * Public (no auth): called at the end of the registration funnel. Creates the Asaas customer and recurring subscription from the lead data and returns the hosted invoice URL where the psychologist pays by card. NO account is created here: the account is provisioned only after the payment is confirmed (Asaas webhook). Calling again always starts a fresh checkout instead of reopening a previous pending one.
+ * Public (no auth): called at the end of the registration funnel. Creates an Asaas Checkout (hosted payment page, no company banner) from the lead data and returns its URL, where the psychologist pays by card. NO account is created here, and the recurring subscription is created by Asaas only after the payment is confirmed (CHECKOUT_PAID webhook), which then provisions the account. Calling again always starts a fresh checkout instead of reopening a previous pending one.
  * @summary Start an anonymous checkout (no account required)
  */
 export const iniciarCheckout = async (checkoutInput: CheckoutInput, options?: RequestInit): Promise<CheckoutResult> => {

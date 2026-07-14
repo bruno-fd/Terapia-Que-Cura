@@ -207,7 +207,7 @@ export interface CheckoutInput {
 }
 
 export interface CheckoutResult {
-  invoiceUrl: string;
+  checkoutUrl: string;
 }
 
 export interface Cidade {

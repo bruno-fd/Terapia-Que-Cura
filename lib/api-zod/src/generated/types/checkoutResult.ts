@@ -7,5 +7,5 @@
  */
 
 export interface CheckoutResult {
-  invoiceUrl: string;
+  checkoutUrl: string;
 }

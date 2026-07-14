@@ -99,6 +99,10 @@ export interface AsaasSubscription {
   cycle: string;
   status: string;
   nextDueDate: string | null;
+  // Presentes na listagem; usados para casar a assinatura recém-criada por um
+  // Asaas Checkout pago (externalReference = leadId; dateCreated como desempate).
+  externalReference?: string | null;
+  dateCreated?: string | null;
 }
 
 export type AsaasPaymentStatus =
@@ -129,44 +133,111 @@ interface AsaasList<T> {
   data: T[];
 }
 
-export interface CreateCustomerInput {
-  name: string;
-  cpfCnpj: string;
-  email: string;
-  mobilePhone?: string;
+// ---------------------------------------------------------------------------
+// Asaas Checkout (https://docs.asaas.com/reference/create-new-checkout).
+// Página de pagamento hospedada e mais limpa que a fatura antiga (invoiceUrl):
+// não exibe o cabeçalho com CNPJ/endereço da empresa. O fluxo é invertido em
+// relação à assinatura direta: a assinatura recorrente só é criada pela Asaas
+// DEPOIS que o pagador conclui o pagamento; até lá temos apenas o id do
+// checkout. Vinculamos a linha da nossa tabela pelo id do checkout e, no evento
+// CHECKOUT_PAID, descobrimos o id da assinatura recém-criada.
+// ---------------------------------------------------------------------------
+
+// Base pública onde o pagador acessa a página do checkout (difere da API):
+// produção usa asaas.com; sandbox usa sandbox.asaas.com.
+const ASAAS_CHECKOUT_WEB_BASE = IS_PRODUCTION_ASAAS
+  ? "https://asaas.com"
+  : "https://sandbox.asaas.com";
+
+export interface AsaasCheckout {
+  id: string;
+  // A Asaas pode devolver o link direto; quando ausente, montamos a partir do id.
+  link?: string | null;
+  status?: string;
+  // Presente no payload do webhook (id do cliente criado pela Asaas no pagamento).
+  customer?: string | null;
 }
 
-export function createCustomer(
-  input: CreateCustomerInput,
-): Promise<AsaasCustomer> {
-  return asaasFetch<AsaasCustomer>("/customers", {
-    method: "POST",
-    body: input,
-  });
-}
-
-export interface CreateSubscriptionInput {
-  customer: string;
-  value: number; // em reais
+export interface CreateCheckoutInput {
+  value: number; // valor recorrente em reais
   cycle: "MONTHLY" | "YEARLY";
-  nextDueDate: string; // yyyy-mm-dd
-  description: string;
+  nextDueDate: string; // yyyy-mm-dd (primeira cobrança)
+  itemName: string; // nome do item exibido na página (ex.: "Plano Mensal")
+  itemDescription: string;
+  successUrl: string;
+  cancelUrl: string;
+  expiredUrl: string;
+  externalReference: string; // nosso identificador (leadId ou user:<id>)
+  customer: {
+    name: string;
+    cpfCnpj: string;
+    email: string;
+    phone?: string;
+  };
 }
 
-export function createSubscription(
-  input: CreateSubscriptionInput,
-): Promise<AsaasSubscription> {
-  return asaasFetch<AsaasSubscription>("/subscriptions", {
+export function createCheckout(
+  input: CreateCheckoutInput,
+): Promise<AsaasCheckout> {
+  return asaasFetch<AsaasCheckout>("/checkouts", {
     method: "POST",
     body: {
-      ...input,
-      // Cartão de crédito: assinatura recorrente. Sem enviar os dados do
-      // cartão, a Asaas gera uma fatura hospedada (invoiceUrl) onde o cliente
-      // informa o cartão; ele fica tokenizado e as próximas cobranças de cada
-      // ciclo são automáticas.
-      billingType: "CREDIT_CARD",
+      billingTypes: ["CREDIT_CARD"],
+      chargeTypes: ["RECURRENT"],
+      // 24h para concluir o pagamento; depois o checkout expira.
+      minutesToExpire: 1440,
+      callback: {
+        successUrl: input.successUrl,
+        cancelUrl: input.cancelUrl,
+        expiredUrl: input.expiredUrl,
+      },
+      items: [
+        {
+          name: input.itemName,
+          description: input.itemDescription,
+          quantity: 1,
+          value: input.value,
+        },
+      ],
+      customerData: {
+        name: input.customer.name,
+        cpfCnpj: input.customer.cpfCnpj,
+        email: input.customer.email,
+        ...(input.customer.phone ? { phone: input.customer.phone } : {}),
+      },
+      subscription: {
+        cycle: input.cycle,
+        nextDueDate: input.nextDueDate,
+      },
+      externalReference: input.externalReference,
     },
   });
+}
+
+// URL pública da página de checkout. Prefere o link devolvido pela Asaas; se
+// ausente, monta a partir do id na base do ambiente atual.
+export function buildCheckoutUrl(checkout: AsaasCheckout): string {
+  return (
+    checkout.link ??
+    `${ASAAS_CHECKOUT_WEB_BASE}/checkoutSession/show?id=${checkout.id}`
+  );
+}
+
+// Cancela um checkout ainda não pago (best-effort). Usado ao reiniciar o
+// checkout para que um link antigo não permaneça pagável em paralelo.
+export async function cancelCheckout(id: string): Promise<void> {
+  await asaasFetch(`/checkouts/${id}/cancel`, { method: "POST" });
+}
+
+// Lista as assinaturas de um cliente. Usado no CHECKOUT_PAID para localizar a
+// assinatura recorrente que a Asaas acabou de criar para aquele cliente.
+export async function listSubscriptionsByCustomer(
+  customerId: string,
+): Promise<AsaasSubscription[]> {
+  const result = await asaasFetch<AsaasList<AsaasSubscription>>(
+    `/subscriptions?customer=${encodeURIComponent(customerId)}&limit=100`,
+  );
+  return result.data ?? [];
 }
 
 export async function listSubscriptionPayments(

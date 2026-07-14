@@ -16,7 +16,7 @@ import {
   type FunnelData,
   type Plano,
 } from "@/lib/cadastro-funnel";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Check } from "lucide-react";
 
 const STEP_LABELS = ["Identificação", "Atuação", "Pagamento"];
 
@@ -32,10 +32,24 @@ function parsePlanoParam(): Plano | null {
   return p === "mensal" || p === "anual" ? p : null;
 }
 
+type CheckoutRetornoStatus = "sucesso" | "cancelado" | "expirado";
+
+// Lê o parâmetro ?checkout= com que o Asaas Checkout redireciona de volta ao
+// final do pagamento (sucesso/cancelado/expirado).
+function parseCheckoutRetorno(): CheckoutRetornoStatus | null {
+  const c = new URLSearchParams(window.location.search).get("checkout");
+  return c === "sucesso" || c === "cancelado" || c === "expirado" ? c : null;
+}
+
 export default function CadastroFluxo() {
   // Plano vindo da landing (?plano=). É apenas a seleção inicial; o plano
   // continua editável na etapa de pagamento.
   const [planoViaUrl] = useState<Plano | null>(() => parsePlanoParam());
+  // Retorno do Asaas Checkout. O funil já foi limpo antes do redirect, então
+  // este estado faz a página mostrar uma tela de status em vez do assistente.
+  const [checkoutRetorno] = useState<CheckoutRetornoStatus | null>(() =>
+    parseCheckoutRetorno(),
+  );
 
   const ordem = [1, 2, 3];
 
@@ -128,6 +142,18 @@ export default function CadastroFluxo() {
 
   const mostrarPreco = data.step >= 2;
 
+  if (checkoutRetorno) {
+    return (
+      <CheckoutRetorno
+        status={checkoutRetorno}
+        onRecomecar={() => {
+          // Recomeça o cadastro do zero (o funil anterior já foi limpo).
+          window.location.href = window.location.pathname;
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
       <Navbar />
@@ -191,6 +217,75 @@ export default function CadastroFluxo() {
         </div>
       )}
 
+      <Footer />
+    </div>
+  );
+}
+
+// Tela de status exibida quando o Asaas Checkout redireciona de volta.
+function CheckoutRetorno({
+  status,
+  onRecomecar,
+}: {
+  status: CheckoutRetornoStatus;
+  onRecomecar: () => void;
+}) {
+  const sucesso = status === "sucesso";
+  return (
+    <div className="min-h-screen flex flex-col font-sans bg-[#F5F4F2]">
+      <Navbar />
+      <main className="flex-grow py-16">
+        <div className="container mx-auto px-6 max-w-[560px]">
+          <div className="rounded-3xl border border-neutral-200 bg-white p-8 md:p-10 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            {sucesso ? (
+              <>
+                <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent-100">
+                  <Check className="h-7 w-7 text-accent-600" />
+                </div>
+                <h1 className="text-2xl font-bold text-primary-900 mb-3">
+                  Pagamento recebido!
+                </h1>
+                <p className="text-neutral-600 mb-8">
+                  Estamos criando a sua conta. Em instantes você receberá um
+                  e-mail com o link para acessar o seu painel. Se não encontrar,
+                  confira a caixa de spam.
+                </p>
+                <Button
+                  onClick={() => {
+                    window.location.href = "/";
+                  }}
+                  className="rounded-full"
+                  data-testid="button-voltar-inicio"
+                >
+                  Voltar ao início
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100">
+                  <RotateCcw className="h-7 w-7 text-neutral-500" />
+                </div>
+                <h1 className="text-2xl font-bold text-primary-900 mb-3">
+                  {status === "expirado"
+                    ? "Seu checkout expirou"
+                    : "Pagamento não concluído"}
+                </h1>
+                <p className="text-neutral-600 mb-8">
+                  Nenhuma cobrança foi feita. Você pode refazer o cadastro e
+                  concluir o pagamento quando quiser.
+                </p>
+                <Button
+                  onClick={onRecomecar}
+                  className="rounded-full"
+                  data-testid="button-recomecar-cadastro"
+                >
+                  Recomeçar cadastro
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
       <Footer />
     </div>
   );
