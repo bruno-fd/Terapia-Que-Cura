@@ -72,7 +72,7 @@ export default function Home() {
 
       <main className="flex-grow">
         {/* Section 1 — Hero */}
-        <section className="bg-gradient-to-br from-white to-primary-50 py-6 md:py-24 overflow-hidden">
+        <section className="bg-gradient-to-br from-white to-primary-50 py-6 md:py-12 overflow-hidden">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-20">
               <div className="w-full lg:w-1/2">
@@ -104,7 +104,7 @@ export default function Home() {
                   <span className="text-primary-500 lg:text-[44px]">Te ajudamos a encontrar quem pode cuidar dela.</span>
                 </h1>
 
-                <div className="hidden lg:block space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
+                <div className="hidden lg:block space-y-4 text-base text-neutral-600 leading-relaxed mb-8">
                   <p>
                     Tem horas que a vida pesa demais. A ansiedade não passa, o relacionamento desgasta, o luto dói... E vem aquela sensação de que ninguém entenderia e que você precisa dar conta de tudo sozinho.
                   </p>
@@ -114,7 +114,7 @@ export default function Home() {
                   <p>
                     A Terapia Que Cura existe para isso: mostrar que existe um caminho, e conectar você com psicólogos que estão prontos para te ajudar.
                   </p>
-                  <p className="font-semibold text-red-600 text-xl pt-2">
+                  <p className="font-semibold text-red-600 text-lg pt-2">
                     Dê o primeiro passo. Encontre um psicólogo.
                   </p>
                   <Button
