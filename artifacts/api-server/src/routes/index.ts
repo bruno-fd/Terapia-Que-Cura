@@ -8,6 +8,7 @@ import psychologistRouter from "./psychologist";
 import cadastroRouter from "./cadastro";
 import oabRouter from "./oab";
 import cronRouter from "./cron";
+import sitemapRouter from "./sitemap";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(psychologistRouter);
 router.use(cadastroRouter);
 router.use(oabRouter);
 router.use(cronRouter);
+router.use(sitemapRouter);
 
 export default router;

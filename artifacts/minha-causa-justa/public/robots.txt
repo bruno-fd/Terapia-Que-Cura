@@ -1,2 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /painel/
+Disallow: /admin
+Disallow: /login
+Disallow: /sign-in
+Disallow: /sign-up
+
+Sitemap: https://terapiaquecura.com.br/api/sitemap.xml
