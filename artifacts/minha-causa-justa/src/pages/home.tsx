@@ -3,11 +3,8 @@ import { Link, useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { CityAutocomplete } from "@/components/CityAutocomplete";
-import { StateAutocomplete } from "@/components/StateAutocomplete";
-import { CategoriaAutocomplete } from "@/components/CategoriaAutocomplete";
 import { ArrowRight, Shield, Search, MessageCircle } from "lucide-react";
-import { CATEGORIAS, resolverBuscaCategoria, type ResultadoBusca } from "@/data/categories";
+import { CATEGORIAS } from "@/data/categories";
 import { BLOG_POSTS, type BlogPost } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
 
@@ -58,53 +55,6 @@ function imagensDistintasDaHome(posts: BlogPost[]): string[] {
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  // Texto livre digitado na busca de categorias. É a fonte da verdade: a busca
-  // sempre resolve o que está visível no campo, mesmo sem clicar numa sugestão.
-  const [queryCategoria, setQueryCategoria] = useState<string>("");
-  // Sugestão escolhida (quando houver): preserva a macro exata, importante para
-  // temas com nome repetido em macros diferentes.
-  const [catSelecionada, setCatSelecionada] = useState<ResultadoBusca | null>(null);
-  const [estado, setEstado] = useState<string>("");
-  const [cidade, setCidade] = useState<string>("");
-
-  const handleEstadoChange = (uf: string) => {
-    setEstado(uf);
-    setCidade("");
-  };
-
-  // Ao escolher uma sugestão, o campo exibe o nome e guardamos a macro escolhida.
-  const handleCategoriaSelect = (r: ResultadoBusca) => {
-    setQueryCategoria(r.nome);
-    setCatSelecionada(r);
-  };
-
-  // Digitar invalida a seleção anterior (o texto volta a ser a fonte da verdade).
-  const handleCategoriaQueryChange = (texto: string) => {
-    setQueryCategoria(texto);
-    setCatSelecionada(null);
-  };
-
-  const handleCategoriaClear = () => {
-    setQueryCategoria("");
-    setCatSelecionada(null);
-  };
-
-  const handleSearch = () => {
-    let url = "/psicologos";
-    // Resolve a seleção (macro exata) ou, sem seleção, o texto digitado.
-    const resolvido = resolverBuscaCategoria(catSelecionada, queryCategoria);
-    const slug = resolvido?.slug;
-    const subcategoria = resolvido?.subNome || undefined;
-    if (slug || subcategoria || estado || cidade) {
-      const params = new URLSearchParams();
-      if (slug) params.append("categoria", slug);
-      if (subcategoria) params.append("subcategoria", subcategoria);
-      if (estado) params.append("estado", estado);
-      if (cidade) params.append("cidade", cidade);
-      url += `?${params.toString()}`;
-    }
-    setLocation(url);
-  };
 
   // 3 posts para a seção do blog: os publicados no painel /admin vêm primeiro
   // (mais recentes), e os posts fixos completam caso ainda não haja 3 publicados.
@@ -129,41 +79,52 @@ export default function Home() {
                 {/* Mobile: hero curta com CTA */}
                 <div className="lg:hidden">
                   <h1 className="text-3xl sm:text-4xl font-bold text-primary-900 leading-[1.15] mb-3 tracking-tight">
-                    Cuidar da sua mente importa.<br />
-                    <span className="text-primary-500">A gente te ajuda a encontrar quem pode cuidar dela.</span>
+                    Sua saúde mental importa.<br />
+                    <span className="text-primary-500">Te ajudamos a encontrar quem pode cuidar dela.</span>
                   </h1>
-                  <p className="text-base text-neutral-600 leading-relaxed mb-5">
-                    Tem horas que a vida bate de frente com a gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. Para isso estamos aqui. <strong className="font-semibold text-primary-800">Conectamos você a psicólogos prontos para te ouvir.</strong>
+                  <p className="text-base text-neutral-600 leading-relaxed mb-3">
+                    Tem horas que a vida exige muito da gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. E junto vem aquela sensação de que ninguém entenderia e que você precisa lidar com tudo sozinho.
+                  </p>
+                  <p className="text-base font-semibold text-red-600 leading-relaxed mb-5">
+                    Dê o primeiro passo. Encontre um psicólogo.
                   </p>
                   <Button
                     onClick={() => setLocation("/psicologos")}
                     className="bg-primary-500 hover:bg-primary-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all w-full"
                     data-testid="button-cta-hero-mobile"
                   >
-                    Falar com um psicólogo
+                    Encontrar um psicólogo
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </div>
 
                 {/* Desktop: hero completa */}
                 <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-[56px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
-                  Cuidar da sua mente importa.<br />
-                  <span className="text-primary-500">A gente te ajuda a encontrar quem pode cuidar dela.</span>
+                  Sua saúde mental importa.<br />
+                  <span className="text-primary-500">Te ajudamos a encontrar quem pode cuidar dela.</span>
                 </h1>
 
                 <div className="hidden lg:block space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
                   <p>
-                    Tem horas que a vida bate de frente com a gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. E aí vem aquela sensação de que ninguém entenderia, de que é mais fácil seguir em frente sozinho.
+                    Tem horas que a vida exige muito da gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. E junto vem aquela sensação de que ninguém entenderia e que você precisa lidar com tudo sozinho.
                   </p>
                   <p>
-                    Mas a verdade é que buscar apoio psicológico pode fazer mais diferença do que você imagina. O que falta, na maioria das vezes, não é força de vontade. É saber por onde começar e ter ao seu lado alguém que entende do assunto.
+                    Mas a verdade é que buscar apoio psicológico pode fazer mais diferença do que você imagina.
                   </p>
                   <p>
                     A Terapia Que Cura existe para isso: mostrar que existe um caminho, e conectar você com psicólogos que trabalham com situações como a sua todo dia.
                   </p>
-                  <p className="font-semibold text-primary-800 text-xl pt-2">
-                    Você não precisa ter todas as respostas. Precisa dar o primeiro passo.
+                  <p className="font-semibold text-red-600 text-xl pt-2">
+                    Dê o primeiro passo. Encontre um psicólogo.
                   </p>
+                  <Button
+                    onClick={() => setLocation("/psicologos")}
+                    className="bg-primary-500 hover:bg-primary-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
+                    data-testid="button-cta-hero-desktop"
+                  >
+                    Encontrar um psicólogo
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
                 </div>
               </div>
 
@@ -181,48 +142,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Barra de busca horizontal full-width */}
-            <div className="hidden lg:block bg-primary-50 p-4 md:p-5 rounded-[32px] border border-primary-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10 mt-6 lg:mt-16">
-              <div className="flex flex-col lg:flex-row gap-3 lg:items-stretch">
-                <div className="lg:flex-1 min-w-0">
-                  <CategoriaAutocomplete
-                    value={queryCategoria}
-                    onSelect={handleCategoriaSelect}
-                    onClear={handleCategoriaClear}
-                    onQueryChange={handleCategoriaQueryChange}
-                    placeholder="Qual é o seu problema?"
-                    inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
-                    testId="autocomplete-problema"
-                  />
-                </div>
-                <div className="lg:flex-1 min-w-0">
-                  <StateAutocomplete
-                    value={estado}
-                    onSelect={handleEstadoChange}
-                    placeholder="Estado"
-                    inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5 pr-10"
-                    testId="select-estado"
-                  />
-                </div>
-                <div className="lg:flex-1 min-w-0">
-                  <CityAutocomplete
-                    uf={estado}
-                    onSelect={(nome) => setCidade(`${nome}, ${estado}`)}
-                    clearOnSelect={false}
-                    placeholder="Sua cidade..."
-                    inputClassName="w-full bg-white text-neutral-900 border-0 h-14 rounded-2xl shadow-sm px-5"
-                    testId="select-cidade"
-                  />
-                </div>
-                <Button
-                  onClick={handleSearch}
-                  className="bg-primary-500 hover:bg-primary-600 text-white h-14 px-8 text-base font-medium rounded-full shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 w-full lg:w-auto lg:shrink-0"
-                  data-testid="button-buscar-psicologo"
-                >
-                  Encontrar psicólogo
-                </Button>
-              </div>
-            </div>
           </div>
         </section>
 
