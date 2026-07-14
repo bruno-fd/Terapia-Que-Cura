@@ -109,10 +109,7 @@ export default function Home() {
                     Tem horas que a vida pesa demais. A ansiedade não passa, o relacionamento desgasta, o luto dói... E vem aquela sensação de que ninguém entenderia e que você precisa dar conta de tudo sozinho.
                   </p>
                   <p>
-                    Mas buscar apoio psicológico pode fazer mais diferença do que você imagina.
-                  </p>
-                  <p>
-                    A Terapia Que Cura existe para isso: mostrar que existe um caminho, e conectar você com psicólogos que estão prontos para te ajudar.
+                    Mas buscar apoio psicológico pode fazer mais diferença do que você imagina. A <strong className="font-bold">Terapia Que Cura</strong> existe para isso: mostrar que existe um caminho, e conectar você com psicólogos que estão prontos para te ajudar.
                   </p>
                   <p className="font-semibold text-red-600 text-lg pt-2">
                     Dê o primeiro passo. Encontre um psicólogo.
