@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useRoute } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -8,6 +9,31 @@ import { getPostBySlug } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
 import { slugDaCategoria } from "@/data/categories";
 import NotFound from "@/pages/not-found";
+
+const CANONICAL_ORIGIN = "https://terapiaquecura.com.br";
+
+/** Atualiza (ou cria) uma tag <meta> pelo seletor de atributo. */
+function setMeta(selector: string, attr: string, content: string) {
+  let el = document.querySelector<HTMLMetaElement>(selector);
+  if (!el) {
+    el = document.createElement("meta");
+    const [attrName, attrVal] = selector.replace(/[\[\]']/g, "").split("=");
+    el.setAttribute(attrName, attrVal);
+    document.head.appendChild(el);
+  }
+  el.setAttribute(attr, content);
+}
+
+/** Atualiza (ou cria) a tag <link rel="canonical">. */
+function setCanonical(href: string) {
+  let el = document.querySelector<HTMLLinkElement>("link[rel='canonical']");
+  if (!el) {
+    el = document.createElement("link");
+    el.rel = "canonical";
+    document.head.appendChild(el);
+  }
+  el.href = href;
+}
 
 export default function Post() {
   const [, params] = useRoute("/blog/:slug");
@@ -21,6 +47,41 @@ export default function Post() {
   const staticPost = slug ? getPostBySlug(slug) : undefined;
   // Post gerado tem precedência sobre o fixo em caso de slug repetido
   const post = generatedPost ?? staticPost;
+
+  // Atualiza title, meta description, canonical e OG tags para cada post
+  useEffect(() => {
+    if (!post) return;
+    const description = post.excerpt ?? post.subtitle ?? "";
+    const canonical = `${CANONICAL_ORIGIN}/blog/${post.slug}`;
+    const image = post.coverImageUrl ?? `${CANONICAL_ORIGIN}/opengraph.webp`;
+
+    document.title = `${post.title} | Terapia Que Cura`;
+    setMeta("meta[name='description']", "content", description);
+    setMeta("meta[property='og:title']", "content", post.title);
+    setMeta("meta[property='og:description']", "content", description);
+    setMeta("meta[property='og:image']", "content", image);
+    setMeta("meta[property='og:type']", "content", "article");
+    setMeta("meta[property='og:url']", "content", canonical);
+    setMeta("meta[name='twitter:title']", "content", post.title);
+    setMeta("meta[name='twitter:description']", "content", description);
+    setMeta("meta[name='twitter:image']", "content", image);
+    setCanonical(canonical);
+
+    return () => {
+      // Restaura os defaults ao sair da página do post
+      document.title = "Terapia Que Cura";
+      setMeta("meta[name='description']", "content", "Terapia Que Cura — encontre um psicólogo para cuidar da sua saúde mental.");
+      setMeta("meta[property='og:title']", "content", "Terapia Que Cura");
+      setMeta("meta[property='og:description']", "content", "Terapia Que Cura — encontre um psicólogo para cuidar da sua saúde mental.");
+      setMeta("meta[property='og:image']", "content", `${CANONICAL_ORIGIN}/opengraph.webp`);
+      setMeta("meta[property='og:type']", "content", "website");
+      setMeta("meta[property='og:url']", "content", CANONICAL_ORIGIN);
+      setMeta("meta[name='twitter:title']", "content", "Terapia Que Cura");
+      setMeta("meta[name='twitter:description']", "content", "Terapia Que Cura — encontre um psicólogo para cuidar da sua saúde mental.");
+      setMeta("meta[name='twitter:image']", "content", `${CANONICAL_ORIGIN}/opengraph.webp`);
+      setCanonical(CANONICAL_ORIGIN);
+    };
+  }, [post]);
 
   // Enquanto os posts gerados carregam, evita um 404 prematuro
   if (!post) {

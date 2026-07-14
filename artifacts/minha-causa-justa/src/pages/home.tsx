@@ -298,15 +298,15 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {postsHome.map((post, index) => (
-                <div key={post.slug} className="bg-background p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300">
+                <Link key={post.slug} href={`/blog/${post.slug}`} className="bg-background p-8 rounded-[32px] flex flex-col group hover:bg-primary-50 transition-colors duration-300 cursor-pointer">
                   <div className="mb-6 w-full h-48 bg-white rounded-2xl overflow-hidden relative">
                     <img src={post.coverImageUrl ?? imagensHome[index]} alt={post.coverImageAlt || post.title} loading="lazy" className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <h3 className="font-bold text-xl text-primary-900 mb-6 flex-grow leading-snug">{post.title}</h3>
-                  <Link href={`/blog/${post.slug}`} className="inline-flex items-center font-medium text-accent-600 hover:text-accent-700 transition-colors mt-auto">
+                  <span className="inline-flex items-center font-medium text-accent-600 group-hover:text-accent-700 transition-colors mt-auto">
                     Ler mais <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </div>
+                  </span>
+                </Link>
               ))}
             </div>
             
