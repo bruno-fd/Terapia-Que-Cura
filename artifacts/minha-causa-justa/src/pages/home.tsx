@@ -80,7 +80,7 @@ export default function Home() {
                 <div className="lg:hidden">
                   <h1 className="text-3xl sm:text-4xl font-bold text-primary-900 leading-[1.15] mb-3 tracking-tight">
                     Sua saúde mental importa.<br />
-                    <span className="text-primary-500">Te ajudamos a encontrar quem pode cuidar dela.</span>
+                    <span className="text-primary-500 text-2xl sm:text-3xl">Te ajudamos a encontrar quem pode cuidar dela.</span>
                   </h1>
                   <p className="text-base text-neutral-600 leading-relaxed mb-3">
                     Tem horas que a vida exige muito da gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. E junto vem aquela sensação de que ninguém entenderia e que você precisa lidar com tudo sozinho.
@@ -101,7 +101,7 @@ export default function Home() {
                 {/* Desktop: hero completa */}
                 <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-[56px] font-bold text-primary-900 leading-[1.1] mb-6 tracking-tight">
                   Sua saúde mental importa.<br />
-                  <span className="text-primary-500">Te ajudamos a encontrar quem pode cuidar dela.</span>
+                  <span className="text-primary-500 lg:text-[44px]">Te ajudamos a encontrar quem pode cuidar dela.</span>
                 </h1>
 
                 <div className="hidden lg:block space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
