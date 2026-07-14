@@ -83,7 +83,7 @@ export default function Home() {
                     <span className="text-primary-500 text-2xl sm:text-3xl">Te ajudamos a encontrar quem pode cuidar dela.</span>
                   </h1>
                   <p className="text-base text-neutral-600 leading-relaxed mb-3">
-                    Tem horas que a vida exige muito da gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. E junto vem aquela sensação de que ninguém entenderia e que você precisa lidar com tudo sozinho.
+                    Tem horas que a vida pesa demais. A ansiedade não passa, o relacionamento desgasta, o luto dói... E vem aquela sensação de que ninguém entenderia e que você precisa dar conta de tudo sozinho.
                   </p>
                   <p className="text-base font-semibold text-red-600 leading-relaxed mb-5">
                     Dê o primeiro passo. Encontre um psicólogo.
@@ -106,13 +106,13 @@ export default function Home() {
 
                 <div className="hidden lg:block space-y-5 text-lg text-neutral-600 leading-relaxed mb-10">
                   <p>
-                    Tem horas que a vida exige muito da gente. A ansiedade não passa, o relacionamento desgasta, o luto pesa, o trabalho esgota. E junto vem aquela sensação de que ninguém entenderia e que você precisa lidar com tudo sozinho.
+                    Tem horas que a vida pesa demais. A ansiedade não passa, o relacionamento desgasta, o luto dói... E vem aquela sensação de que ninguém entenderia e que você precisa dar conta de tudo sozinho.
                   </p>
                   <p>
-                    Mas a verdade é que buscar apoio psicológico pode fazer mais diferença do que você imagina.
+                    Mas buscar apoio psicológico pode fazer mais diferença do que você imagina.
                   </p>
                   <p>
-                    A Terapia Que Cura existe para isso: mostrar que existe um caminho, e conectar você com psicólogos que trabalham com situações como a sua todo dia.
+                    A Terapia Que Cura existe para isso: mostrar que existe um caminho, e conectar você com psicólogos que estão prontos para te ajudar.
                   </p>
                   <p className="font-semibold text-red-600 text-xl pt-2">
                     Dê o primeiro passo. Encontre um psicólogo.
