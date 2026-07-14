@@ -708,7 +708,6 @@ function AssinarDialog({
 }) {
   const [nome, setNome] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
-  const [telefone, setTelefone] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -730,7 +729,6 @@ function AssinarDialog({
         plano,
         nome: nome.trim(),
         cpfCnpj: cpfCnpj.trim(),
-        telefone: telefone.trim() || undefined,
       });
       if (!checkoutUrl) {
         throw new Error("Não recebemos o link de pagamento. Tente novamente.");
@@ -791,19 +789,6 @@ function AssinarDialog({
               data-testid="input-cpf"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
-              WhatsApp / Telefone
-            </label>
-            <input
-              className={inputCls}
-              value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
-              placeholder="(11) 99999-9999"
-              data-testid="input-telefone"
-            />
-          </div>
-
           {erro && (
             <p className="text-sm" style={{ color: ERROR_COLOR }} data-testid="erro-form">
               {erro}

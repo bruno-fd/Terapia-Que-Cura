@@ -199,12 +199,22 @@ export function createCheckout(
           value: input.value,
         },
       ],
-      customerData: {
-        name: input.customer.name,
-        cpfCnpj: input.customer.cpfCnpj,
-        email: input.customer.email,
-        ...(input.customer.phone ? { phone: input.customer.phone } : {}),
-      },
+      // customerData é opcional e "tudo ou nada": a Asaas EXIGE o telefone
+      // quando o objeto é enviado ("O campo phoneNumber deve ser informado").
+      // Como não coletamos telefone nas nossas páginas (o pagador prefere
+      // informar dados sensíveis na página segura do checkout), só pré-preenchemos
+      // quando houver telefone; sem ele, omitimos customerData e a Asaas coleta
+      // nome/CPF/e-mail/telefone do pagador na própria tela do checkout.
+      ...(input.customer?.phone
+        ? {
+            customerData: {
+              name: input.customer.name,
+              cpfCnpj: input.customer.cpfCnpj,
+              email: input.customer.email,
+              phone: input.customer.phone,
+            },
+          }
+        : {}),
       subscription: {
         cycle: input.cycle,
         nextDueDate: input.nextDueDate,

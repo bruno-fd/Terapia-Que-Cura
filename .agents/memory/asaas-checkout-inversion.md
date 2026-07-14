@@ -19,6 +19,18 @@ NULL, and those are backfilled on the `CHECKOUT_PAID` webhook.
 nullable `asaasCheckoutId` exists precisely because the ids don't exist until
 payment. Don't "fix" them back to NOT NULL.
 
+## customerData is optional but all-or-nothing (phone required)
+On `POST /checkouts`, `customerData` is optional — omit it and the Asaas page
+collects the payer's name/CPF/email/phone itself. But if you send it, Asaas
+**requires `phone`** ("O campo phoneNumber deve ser informado"); a partial
+`customerData` (name/cpf/email, no phone) 502s. There is no "existing customer
+id" param for checkout, so you cannot prefill just some fields.
+**Decision:** we do NOT ask for phone on our pages (users trust entering
+sensitive data on the checkout), so we omit `customerData` unless a phone is
+present — in practice it's always omitted and the payer fills everything on the
+Asaas page. CPF stays on the funnel only because it also gates CRP verification,
+not for Asaas.
+
 ## CHECKOUT_PAID is the authoritative provisioning trigger
 Payload contains `checkout.id`, `checkout.customer`, `checkout.status` — but NOT
 the created subscription id. Resolution: find our row by `asaasCheckoutId`, then
