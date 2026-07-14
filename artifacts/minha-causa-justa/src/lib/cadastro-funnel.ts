@@ -256,6 +256,25 @@ export function maskCpfCnpj(value: string): string {
     .replace(/(\d{4})(\d)/, "$1-$2");
 }
 
+// Máscara de telefone BR: (00) 0000-0000 ou (00) 00000-0000. Limita a 11 dígitos.
+export function maskTelefone(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 10) {
+    return d
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return d
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+// Telefone BR válido: 10 (fixo) ou 11 (celular) dígitos com DDD.
+export function isTelefoneValido(value: string): boolean {
+  const d = value.replace(/\D/g, "");
+  return d.length === 10 || d.length === 11;
+}
+
 export function isEmailValido(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }

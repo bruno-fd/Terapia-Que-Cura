@@ -68,6 +68,15 @@ export function StepCheckout({ data, update, onBack, onConcluir }: Props) {
       );
       return;
     }
+    // Cadastros retomados de antes do telefone ser obrigatório podem chegar
+    // aqui sem ele; sem telefone a Asaas não aceita o pré-preenchimento.
+    const telDigitos = data.telefone.replace(/\D/g, "");
+    if (telDigitos.length < 10 || telDigitos.length > 11) {
+      setErro(
+        "Não encontramos um telefone válido do seu cadastro. Volte à primeira etapa e informe seu WhatsApp/telefone.",
+      );
+      return;
+    }
     setEnviando(true);
     try {
       const { checkoutUrl } = await iniciarCheckout({

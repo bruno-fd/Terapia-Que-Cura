@@ -708,6 +708,7 @@ function AssinarDialog({
 }) {
   const [nome, setNome] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -719,8 +720,13 @@ function AssinarDialog({
 
   async function submit() {
     setErro(null);
-    if (!nome.trim() || !cpfCnpj.trim()) {
-      setErro("Preencha nome e CPF/CNPJ.");
+    if (!nome.trim() || !cpfCnpj.trim() || !telefone.trim()) {
+      setErro("Preencha nome, CPF/CNPJ e telefone.");
+      return;
+    }
+    const telDigitos = telefone.replace(/\D/g, "");
+    if (telDigitos.length < 10 || telDigitos.length > 11) {
+      setErro("Informe um telefone válido com DDD.");
       return;
     }
     setEnviando(true);
@@ -729,6 +735,7 @@ function AssinarDialog({
         plano,
         nome: nome.trim(),
         cpfCnpj: cpfCnpj.trim(),
+        telefone: telefone.trim(),
       });
       if (!checkoutUrl) {
         throw new Error("Não recebemos o link de pagamento. Tente novamente.");
@@ -787,6 +794,20 @@ function AssinarDialog({
               onChange={(e) => setCpfCnpj(e.target.value)}
               placeholder="000.000.000-00"
               data-testid="input-cpf"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              WhatsApp / Telefone <span style={{ color: ERROR_COLOR }}>*</span>
+            </label>
+            <input
+              className={inputCls}
+              type="tel"
+              inputMode="numeric"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              placeholder="(11) 99999-9999"
+              data-testid="input-telefone"
             />
           </div>
           {erro && (

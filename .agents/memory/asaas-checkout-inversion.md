@@ -25,11 +25,12 @@ collects the payer's name/CPF/email/phone itself. But if you send it, Asaas
 **requires `phone`** ("O campo phoneNumber deve ser informado"); a partial
 `customerData` (name/cpf/email, no phone) 502s. There is no "existing customer
 id" param for checkout, so you cannot prefill just some fields.
-**Decision:** we do NOT ask for phone on our pages (users trust entering
-sensitive data on the checkout), so we omit `customerData` unless a phone is
-present — in practice it's always omitted and the payer fills everything on the
-Asaas page. CPF stays on the funnel only because it also gates CRP verification,
-not for Asaas.
+**Decision (Jul 2026):** the user chose full prefill, so our pages DO collect a
+required phone (funnel step 1 + panel dialog) and we send the complete
+`customerData`. The all-or-nothing guard stays as a safe fallback: if phone is
+ever missing, omit `customerData` (checkout works, just no prefill). Card data
+is always entered on the Asaas page regardless. `telefone` stays optional in the
+API schema on purpose — server degrades gracefully instead of hard-failing.
 
 ## CHECKOUT_PAID is the authoritative provisioning trigger
 Payload contains `checkout.id`, `checkout.customer`, `checkout.status` — but NOT

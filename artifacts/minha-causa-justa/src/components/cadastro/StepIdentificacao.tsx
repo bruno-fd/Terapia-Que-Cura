@@ -4,7 +4,9 @@ import { StateAutocomplete } from "@/components/StateAutocomplete";
 import {
   isEmailValido,
   isCpfValido,
+  isTelefoneValido,
   maskCpf,
+  maskTelefone,
   type FunnelData,
 } from "@/lib/cadastro-funnel";
 import { ArrowRight } from "lucide-react";
@@ -23,6 +25,7 @@ interface Props {
 export function StepIdentificacao({ data, update, onNext }: Props) {
   const [nomeErro, setNomeErro] = useState("");
   const [emailErro, setEmailErro] = useState("");
+  const [telefoneErro, setTelefoneErro] = useState("");
   const [cpfErro, setCpfErro] = useState("");
   const [crpErro, setCrpErro] = useState("");
 
@@ -34,6 +37,7 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
   const tudoValido =
     nomeCompleto &&
     isEmailValido(data.email) &&
+    isTelefoneValido(data.telefone) &&
     isCpfValido(data.cpf) &&
     crpPreenchido;
 
@@ -50,6 +54,10 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
     }
     if (!isEmailValido(data.email)) {
       setEmailErro("Informe um e-mail válido.");
+      ok = false;
+    }
+    if (!isTelefoneValido(data.telefone)) {
+      setTelefoneErro("Informe um telefone válido com DDD.");
       ok = false;
     }
     if (!isCpfValido(data.cpf)) {
@@ -141,6 +149,41 @@ export function StepIdentificacao({ data, update, onNext }: Props) {
               data-testid="erro-email"
             >
               {emailErro}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="cad-telefone"
+            className="block text-sm font-bold text-neutral-700 mb-1.5"
+          >
+            WhatsApp / Telefone<span className="text-[#C0392B]"> *</span>
+          </label>
+          <input
+            id="cad-telefone"
+            type="tel"
+            inputMode="numeric"
+            value={data.telefone}
+            onChange={(e) => {
+              update({ telefone: maskTelefone(e.target.value) });
+              if (telefoneErro) setTelefoneErro("");
+            }}
+            onBlur={() => {
+              if (data.telefone && !isTelefoneValido(data.telefone)) {
+                setTelefoneErro("Informe um telefone válido com DDD.");
+              }
+            }}
+            placeholder="(11) 99999-9999"
+            className={inputCls(telefoneErro)}
+            data-testid="input-telefone"
+          />
+          {telefoneErro && (
+            <p
+              className="mt-1.5 text-sm text-[#C0392B]"
+              data-testid="erro-telefone"
+            >
+              {telefoneErro}
             </p>
           )}
         </div>

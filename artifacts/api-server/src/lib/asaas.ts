@@ -201,10 +201,10 @@ export function createCheckout(
       ],
       // customerData é opcional e "tudo ou nada": a Asaas EXIGE o telefone
       // quando o objeto é enviado ("O campo phoneNumber deve ser informado").
-      // Como não coletamos telefone nas nossas páginas (o pagador prefere
-      // informar dados sensíveis na página segura do checkout), só pré-preenchemos
-      // quando houver telefone; sem ele, omitimos customerData e a Asaas coleta
-      // nome/CPF/e-mail/telefone do pagador na própria tela do checkout.
+      // Coletamos o telefone nas nossas páginas justamente para pré-preencher
+      // o checkout; se por algum motivo ele faltar, omitimos customerData e a
+      // Asaas coleta nome/CPF/e-mail/telefone na própria tela do checkout
+      // (nunca enviar customerData parcial — a criação falha com 400).
       ...(input.customer?.phone
         ? {
             customerData: {
