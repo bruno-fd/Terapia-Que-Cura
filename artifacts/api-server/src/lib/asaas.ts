@@ -199,22 +199,13 @@ export function createCheckout(
           value: input.value,
         },
       ],
-      // customerData é opcional e "tudo ou nada": a Asaas EXIGE o telefone
-      // quando o objeto é enviado ("O campo phoneNumber deve ser informado").
-      // Coletamos o telefone nas nossas páginas justamente para pré-preencher
-      // o checkout; se por algum motivo ele faltar, omitimos customerData e a
-      // Asaas coleta nome/CPF/e-mail/telefone na própria tela do checkout
-      // (nunca enviar customerData parcial — a criação falha com 400).
-      ...(input.customer?.phone
-        ? {
-            customerData: {
-              name: input.customer.name,
-              cpfCnpj: input.customer.cpfCnpj,
-              email: input.customer.email,
-              phone: input.customer.phone,
-            },
-          }
-        : {}),
+      // customerData: a Asaas exige telefone E endereço completo para
+      // pré-preencher o checkout. Como não coletamos endereço no funil,
+      // omitimos customerData e a Asaas coleta todos os dados na própria
+      // página de pagamento. (Jul/2026 — ao coletar endereço no funil,
+      // reativar o bloco abaixo adicionando o campo address.)
+      //
+      // ...(input.customer?.phone ? { customerData: { name, cpfCnpj, email, phone, address: { ... } } } : {}),
       subscription: {
         cycle: input.cycle,
         nextDueDate: input.nextDueDate,
