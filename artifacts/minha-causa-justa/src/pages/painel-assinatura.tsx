@@ -245,9 +245,9 @@ export default function PainelAssinatura() {
                 <PlanoCard
                   destaque
                   titulo="Plano Anual"
-                  preco="R$ 39,90"
-                  periodo="/mês"
-                  nota="Cobrado anualmente. Equivale a 2 meses grátis."
+                  preco="R$ 478,80"
+                  periodo="/ano"
+                  nota="20% de desconto em relação ao plano mensal."
                   itens={[
                     "Tudo do plano mensal",
                     "Destaque nos resultados",

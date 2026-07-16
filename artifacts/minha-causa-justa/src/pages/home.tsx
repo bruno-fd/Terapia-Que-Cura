@@ -284,7 +284,7 @@ export default function Home() {
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
               <div className="max-w-2xl">
-                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Posts para entender a saúde mental</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-primary-900 mb-6 tracking-tight">Posts para entender a saúde mental0</h2>
                 <p className="text-lg text-neutral-600 leading-relaxed">
                   Escrevemos sobre saúde mental do jeito que a gente gostaria de ter aprendido: sem complicação, sem jargão técnico, sem precisar ter feito faculdade de psicologia para entender.
                 </p>

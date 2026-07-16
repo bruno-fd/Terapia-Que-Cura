@@ -21,11 +21,15 @@ export const PROVA_SOCIAL = {
 export function ProvaSocial({ children }: { children: ReactNode }) {
   return (
     <div
-      className="mb-4 flex items-start gap-2.5 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-800"
+      className="mb-6 flex items-start gap-3.5 rounded-2xl border-2 border-accent-200 bg-gradient-to-r from-accent-50 to-primary-50 px-5 py-4 shadow-[0_4px_20px_rgb(0,0,0,0.05)]"
       data-testid="prova-social"
     >
-      <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-accent-500" />
-      <span>{children}</span>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-600">
+        <TrendingUp className="h-5 w-5" strokeWidth={2.25} />
+      </span>
+      <span className="text-base font-semibold leading-snug text-primary-900">
+        {children}
+      </span>
     </div>
   );
 }

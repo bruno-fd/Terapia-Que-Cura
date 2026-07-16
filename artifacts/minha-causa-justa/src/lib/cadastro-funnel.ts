@@ -45,7 +45,7 @@ export interface FunnelData {
   step: number;
 }
 
-export const TOTAL_STEPS = 3;
+export const TOTAL_STEPS = 2;
 
 export const STORAGE_KEY = "mcj_cadastro_lead";
 
@@ -53,24 +53,33 @@ export const STORAGE_KEY = "mcj_cadastro_lead";
 // definida no back-end de assinatura; aqui são apenas rótulos.
 export const PLANOS: Record<
   Plano,
-  { label: string; precoMes: string; descricao: string; nota?: string }
+  {
+    label: string;
+    preco: string;
+    periodo: string;
+    descricao: string;
+    nota?: string;
+  }
 > = {
   mensal: {
     label: "Plano Mensal",
-    precoMes: "R$ 49,90",
+    preco: "R$ 49,90",
+    periodo: "/mês",
     descricao: "Cobrança mensal recorrente. Cancele quando quiser.",
   },
   anual: {
     label: "Plano Anual",
-    precoMes: "R$ 39,90",
-    descricao: "Cobrado anualmente. Equivale a 2 meses grátis.",
-    nota: "Mais vantajoso",
+    preco: "R$ 478,80",
+    periodo: "/ano",
+    descricao:
+      "Cobrado uma vez ao ano. 20% de desconto em relação ao plano mensal.",
+    nota: "20% de desconto",
   },
 };
 
 // Texto fixo de transparência de preço, exibido a partir da etapa 2.
 export const PRECO_TRANSPARENCIA =
-  "Cadastro com assinatura mensal a partir de R$ 39,90";
+  "Assinatura por R$ 49,90/mês ou R$ 478,80/ano (20% de desconto)";
 
 function gerarLeadId(): string {
   try {

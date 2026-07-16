@@ -4,7 +4,6 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { StepIdentificacao } from "@/components/cadastro/StepIdentificacao";
 import { StepAtuacao } from "@/components/cadastro/StepAtuacao";
-import { StepCheckout } from "@/components/cadastro/StepCheckout";
 import {
   emptyFunnel,
   loadFunnel,
@@ -18,11 +17,11 @@ import {
 } from "@/lib/cadastro-funnel";
 import { RotateCcw, Check } from "lucide-react";
 
-const STEP_LABELS = ["Identificação", "Atuação", "Pagamento"];
+const STEP_LABELS = ["Identificação", "Atuação e pagamento"];
 
-// Lê a etapa a partir do hash (#etapa-1..3), se presente e válido.
+// Lê a etapa a partir do hash (#etapa-1..2), se presente e válido.
 function parseHashStep(): number | null {
-  const m = /^#?etapa-([1-3])$/.exec(window.location.hash);
+  const m = /^#?etapa-([1-2])$/.exec(window.location.hash);
   return m ? Number(m[1]) : null;
 }
 
@@ -51,7 +50,7 @@ export default function CadastroFluxo() {
     parseCheckoutRetorno(),
   );
 
-  const ordem = [1, 2, 3];
+  const ordem = [1, 2];
 
   const [data, setData] = useState<FunnelData>(() => emptyFunnel());
   const [mostrarBanner, setMostrarBanner] = useState(false);
@@ -188,14 +187,6 @@ export default function CadastroFluxo() {
             )}
             {data.step === 2 && (
               <StepAtuacao
-                data={data}
-                update={update}
-                onNext={next}
-                onBack={back}
-              />
-            )}
-            {data.step === 3 && (
-              <StepCheckout
                 data={data}
                 update={update}
                 onBack={back}

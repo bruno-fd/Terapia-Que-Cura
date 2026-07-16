@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { StateAutocomplete } from "@/components/StateAutocomplete";
 import { CityAutocomplete } from "@/components/CityAutocomplete";
 import {
@@ -8,15 +7,32 @@ import {
   type ConcorrenciaResult,
 } from "@workspace/api-client-react";
 import { AREAS, PUBLICO_ATENDIDO } from "@/lib/dashboard";
-import type { FunnelData } from "@/lib/cadastro-funnel";
-import { ArrowRight, ArrowLeft, X, Loader2, Users } from "lucide-react";
+import { iniciarCheckout } from "@/lib/assinatura";
+import {
+  PLANOS,
+  type FunnelData,
+  type Plano,
+} from "@/lib/cadastro-funnel";
+import {
+  ArrowLeft,
+  X,
+  Loader2,
+  Users,
+  Check,
+  Lock,
+  Mail,
+  MapPin,
+  ShieldCheck,
+  Video,
+} from "lucide-react";
 import { ProvaSocial, PROVA_SOCIAL } from "@/components/cadastro/ProvaSocial";
 
 interface Props {
   data: FunnelData;
   update: (patch: Partial<FunnelData>) => void;
-  onNext: () => void;
   onBack: () => void;
+  // Marca o lead como concluído no back-end (best-effort) ao iniciar o checkout.
+  onConcluir: () => void;
 }
 
 // Mensagem sempre positiva, em faixas, reforçando a demanda sem desmotivar.
@@ -37,16 +53,22 @@ function mensagemConcorrencia(
   return `${area} é muito buscada em ${local}. Há bastante demanda; um perfil bem feito coloca você na frente.`;
 }
 
-export function StepAtuacao({ data, update, onNext, onBack }: Props) {
+export function StepAtuacao({ data, update, onBack, onConcluir }: Props) {
   const [selectedUf, setSelectedUf] = useState("");
   const [areaErro, setAreaErro] = useState("");
   const [localErro, setLocalErro] = useState("");
   const [counts, setCounts] = useState<ConcorrenciaResult | null>(null);
   const [loadingCount, setLoadingCount] = useState(false);
+  // Modalidade presencial: derivada de já haver cidades salvas.
+  const [presencial, setPresencial] = useState(() => data.cidades.length > 0);
+  // Checkout (antes na etapa 3, agora concluído aqui).
+  const [checkoutErro, setCheckoutErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const plano: Plano = data.plano ?? "mensal";
 
   const primeiraArea = data.areas[0] ?? "";
   const primeiraCidade = data.cidades[0];
-  // O card só aparece com cidade E ao menos uma área (contrato da Etapa 2).
+  // O card só aparece com cidade E ao menos uma área.
   const mostrarCard = !!primeiraArea && !!primeiraCidade;
 
   // Busca a contagem real quando há cidade + área.
@@ -93,6 +115,22 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
     });
   };
 
+  const toggleOnline = () => {
+    update({ atendeOnline: !data.atendeOnline });
+    setLocalErro("");
+  };
+
+  const togglePresencial = () => {
+    const novo = !presencial;
+    setPresencial(novo);
+    setLocalErro("");
+    if (!novo) {
+      // Desmarcou presencial: as cidades deixam de valer.
+      update({ cidades: [] });
+      setSelectedUf("");
+    }
+  };
+
   const addCidade = (nome: string) => {
     if (!selectedUf) return;
     if (data.cidades.some((c) => c.nome === nome && c.uf === selectedUf)) return;
@@ -112,11 +150,74 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
       setAreaErro("Selecione ao menos uma área de atuação.");
       ok = false;
     }
-    if (data.cidades.length === 0 && !data.atendeOnline) {
-      setLocalErro("Adicione ao menos uma cidade ou marque atendimento online.");
+    if (!data.atendeOnline && !presencial) {
+      setLocalErro(
+        "Marque ao menos uma forma de atendimento: online ou presencial.",
+      );
+      ok = false;
+    } else if (presencial && data.cidades.length === 0) {
+      setLocalErro("Adicione a cidade onde você atende presencialmente.");
       ok = false;
     }
-    if (ok) onNext();
+    return ok;
+  };
+
+  // Valida a etapa e vai direto para o pagamento (checkout hospedado do Asaas).
+  const irParaPagamento = async () => {
+    setCheckoutErro("");
+    if (!validar()) return;
+    const cpfDigitos = data.cpf.replace(/\D/g, "");
+    if (cpfDigitos.length < 11) {
+      setCheckoutErro(
+        "Não encontramos um CPF válido do seu cadastro. Volte à primeira etapa.",
+      );
+      return;
+    }
+    // Cadastros retomados de antes do telefone ser obrigatório podem chegar
+    // aqui sem ele.
+    const telDigitos = data.telefone.replace(/\D/g, "");
+    if (telDigitos.length < 10 || telDigitos.length > 11) {
+      setCheckoutErro(
+        "Não encontramos um telefone válido do seu cadastro. Volte à primeira etapa e informe seu WhatsApp/telefone.",
+      );
+      return;
+    }
+    setEnviando(true);
+    try {
+      const { checkoutUrl } = await iniciarCheckout({
+        leadId: data.leadId,
+        plano,
+        nome: data.nome.trim(),
+        email: data.email.trim(),
+        cpfCnpj: data.cpf.trim(),
+        telefone: data.telefone.trim() || undefined,
+      });
+      if (!checkoutUrl) {
+        throw new Error("Não recebemos o link de pagamento. Tente novamente.");
+      }
+      // Só marca o lead como concluído (remarketing) e limpa o funil após o
+      // checkout ter sido criado com sucesso, imediatamente antes do redirect.
+      onConcluir();
+      // Redireciona para a página de checkout hospedada do Asaas (cartão).
+      // Navega no topo da janela: no preview do Replit o app roda num iframe
+      // e a Asaas bloqueia ser carregada dentro de iframes ("recusou a conexão").
+      try {
+        if (window.top) {
+          window.top.location.href = checkoutUrl;
+          return;
+        }
+      } catch {
+        // acesso ao topo negado — segue com a navegação local
+      }
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      setCheckoutErro(
+        e instanceof Error
+          ? e.message
+          : "Não foi possível iniciar o pagamento. Tente novamente.",
+      );
+      setEnviando(false);
+    }
   };
 
   const localLabel = primeiraCidade
@@ -128,6 +229,14 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
       active
         ? "bg-primary-500 text-white border-primary-500"
         : "bg-white text-primary-800 border-primary-300 hover:bg-primary-50"
+    }`;
+
+  // Card de modalidade (online/presencial): grande, clicável e claro no mobile.
+  const modalidadeCard = (active: boolean) =>
+    `relative flex items-start gap-3 rounded-2xl border-2 p-4 sm:p-5 text-left transition-all w-full ${
+      active
+        ? "border-accent-500 bg-accent-50/50 shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
+        : "border-neutral-200 bg-white hover:border-primary-300"
     }`;
 
   return (
@@ -142,64 +251,125 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
 
       <div>
         <h3 className="text-sm font-bold text-neutral-700 mb-3">
-          Locais de atendimento<span className="text-[#C0392B]"> *</span>
+          Como você atende?<span className="text-[#C0392B]"> *</span>
         </h3>
-        <StateAutocomplete
-          value={selectedUf}
-          onSelect={setSelectedUf}
-          placeholder="Selecione um estado..."
-          inputClassName="w-full bg-white pr-10"
-          testId="select-estado"
-        />
-        {selectedUf && (
-          <div className="mt-3">
-            <CityAutocomplete
-              uf={selectedUf}
-              onSelect={addCidade}
-              testId="autocomplete-cidade"
-            />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={toggleOnline}
+            className={modalidadeCard(data.atendeOnline)}
+            aria-pressed={data.atendeOnline}
+            data-testid="toggle-online"
+          >
+            <span
+              className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+                data.atendeOnline
+                  ? "border-accent-500 bg-accent-500 text-white"
+                  : "border-neutral-300 bg-white text-transparent"
+              }`}
+            >
+              <Check className="h-4 w-4" strokeWidth={3} />
+            </span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 font-bold text-primary-900">
+                <Video className="h-4 w-4 text-primary-600" strokeWidth={2} />
+                Atendimento online
+              </span>
+              <span className="mt-1 block text-sm text-neutral-600">
+                Seu perfil aparece para todo o Brasil
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={togglePresencial}
+            className={modalidadeCard(presencial)}
+            aria-pressed={presencial}
+            data-testid="toggle-presencial"
+          >
+            <span
+              className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+                presencial
+                  ? "border-accent-500 bg-accent-500 text-white"
+                  : "border-neutral-300 bg-white text-transparent"
+              }`}
+            >
+              <Check className="h-4 w-4" strokeWidth={3} />
+            </span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 font-bold text-primary-900">
+                <MapPin className="h-4 w-4 text-primary-600" strokeWidth={2} />
+                Atendimento presencial
+              </span>
+              <span className="mt-1 block text-sm text-neutral-600">
+                Você aparece nas buscas da sua cidade
+              </span>
+            </span>
+          </button>
+        </div>
+
+        {presencial && (
+          <div
+            className="mt-3 rounded-2xl border border-primary-100 bg-primary-50/50 p-4 sm:p-5"
+            data-testid="bloco-presencial"
+          >
+            <p className="mb-3 text-sm font-bold text-neutral-700">
+              Em qual cidade você atende presencialmente?
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
+              <StateAutocomplete
+                value={selectedUf}
+                onSelect={setSelectedUf}
+                placeholder="Estado (UF)"
+                inputClassName="w-full bg-white pr-10"
+                testId="select-estado"
+              />
+              {selectedUf ? (
+                <CityAutocomplete
+                  uf={selectedUf}
+                  onSelect={addCidade}
+                  testId="autocomplete-cidade"
+                />
+              ) : (
+                <div className="flex h-12 items-center rounded-lg border border-dashed border-neutral-300 bg-white/60 px-4 text-sm text-neutral-400">
+                  Escolha o estado para buscar a cidade
+                </div>
+              )}
+            </div>
+
+            {data.cidades.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {data.cidades.map((c) => (
+                  <span
+                    key={`${c.nome}-${c.uf}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-white px-3 py-1.5 text-sm text-primary-800"
+                    data-testid={`tag-cidade-${c.nome}-${c.uf}`}
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-primary-500" />
+                    {c.nome}, {c.uf}
+                    <button
+                      type="button"
+                      onClick={() => removeCidade(c.nome, c.uf)}
+                      className="rounded-full p-0.5 text-primary-600 transition-colors hover:bg-primary-100 hover:text-primary-900"
+                      aria-label={`Remover ${c.nome}, ${c.uf}`}
+                      data-testid={`button-remover-cidade-${c.nome}-${c.uf}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {data.cidades.map((c) => (
-            <span
-              key={`${c.nome}-${c.uf}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-100 px-3 py-1.5 text-sm text-primary-800"
-              data-testid={`tag-cidade-${c.nome}-${c.uf}`}
-            >
-              {c.nome}, {c.uf}
-              <button
-                type="button"
-                onClick={() => removeCidade(c.nome, c.uf)}
-                className="rounded-full p-0.5 text-primary-600 transition-colors hover:bg-primary-200 hover:text-primary-900"
-                aria-label={`Remover ${c.nome}, ${c.uf}`}
-                data-testid={`button-remover-cidade-${c.nome}-${c.uf}`}
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </span>
-          ))}
-          {data.atendeOnline && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1E7D4F]/30 bg-[#1E7D4F]/10 px-3 py-1.5 text-sm font-medium text-[#1E7D4F]">
-              🌐 Online - Todo o Brasil
-            </span>
-          )}
-        </div>
-
-        <label className="mt-5 flex cursor-pointer items-center gap-2.5">
-          <Checkbox
-            checked={data.atendeOnline}
-            onCheckedChange={(v) => {
-              update({ atendeOnline: v === true });
-              if (v === true) setLocalErro("");
-            }}
-            data-testid="checkbox-online"
-          />
-          <span className="text-sm text-neutral-700">
-            Também atendo online em todo o Brasil
-          </span>
-        </label>
+        {data.atendeOnline && (
+          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#1E7D4F]/30 bg-[#1E7D4F]/10 px-3 py-1.5 text-sm font-medium text-[#1E7D4F]">
+            🌐 Online — visível para todo o Brasil
+          </p>
+        )}
 
         {localErro && (
           <p className="mt-3 text-sm text-[#C0392B]" data-testid="erro-local">
@@ -296,21 +466,121 @@ export function StepAtuacao({ data, update, onNext, onBack }: Props) {
         </div>
       )}
 
+      {/* ---------------- Plano e pagamento (antiga etapa 3) ---------------- */}
+      <div className="mt-10 border-t border-neutral-200 pt-8">
+        <h3 className="text-xl md:text-2xl font-bold text-primary-900 mb-2">
+          Escolha seu plano e finalize
+        </h3>
+        <p className="text-neutral-600 mb-6">
+          Pague com cartão de crédito no ambiente seguro do Asaas. A assinatura
+          é recorrente e renova automaticamente a cada ciclo.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+          {(Object.keys(PLANOS) as Plano[]).map((p) => {
+            const info = PLANOS[p];
+            const ativo = plano === p;
+            const destaque = p === "anual";
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  update({ plano: p });
+                  if (checkoutErro) setCheckoutErro("");
+                }}
+                className={`relative text-left rounded-2xl border-2 p-6 transition-all ${
+                  ativo
+                    ? "border-accent-500 bg-accent-50/40 shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
+                    : "border-neutral-200 bg-white hover:border-primary-300"
+                }`}
+                data-testid={`card-plano-${p}`}
+              >
+                {destaque && info.nota && (
+                  <span className="absolute -top-3 left-6 rounded-full bg-accent-100 px-3 py-1 text-xs font-bold text-accent-700">
+                    {info.nota}
+                  </span>
+                )}
+                <span
+                  className={`absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                    ativo
+                      ? "border-accent-500 bg-accent-500 text-white"
+                      : "border-neutral-300 text-transparent"
+                  }`}
+                >
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </span>
+                <p className="text-sm font-bold text-primary-700 mb-1">
+                  {info.label}
+                </p>
+                <p className="text-3xl font-bold text-primary-900">
+                  {info.preco}
+                  <span className="text-base font-normal text-neutral-500">
+                    {info.periodo}
+                  </span>
+                </p>
+                <p className="mt-2 text-sm text-neutral-600">{info.descricao}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          className="mb-6 flex items-start gap-3 rounded-2xl border border-primary-100 bg-primary-50/60 p-4"
+          data-testid="aviso-conta-pos-pagamento"
+        >
+          <Mail className="mt-0.5 h-5 w-5 shrink-0 text-primary-700" />
+          <p className="text-sm text-neutral-700">
+            Assim que o pagamento for confirmado, você recebe um e-mail para
+            criar sua senha e publicar seu perfil. Sua conta é criada só depois
+            do pagamento.
+          </p>
+        </div>
+
+        {checkoutErro && (
+          <p className="mb-4 text-sm text-[#C0392B]" data-testid="erro-checkout">
+            {checkoutErro}
+          </p>
+        )}
+
+        <Button
+          onClick={irParaPagamento}
+          disabled={enviando}
+          className="w-full h-12 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium disabled:opacity-60"
+          data-testid="button-ir-pagamento"
+        >
+          {enviando ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparando
+              pagamento...
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="mr-2 h-4 w-4" /> Ir para o pagamento com
+              cartão
+            </>
+          )}
+        </Button>
+
+        <div
+          className="mt-4 flex items-center justify-center gap-2 text-sm text-neutral-500"
+          data-testid="selo-seguranca"
+        >
+          <Lock className="h-4 w-4 text-[#1E7D4F]" />
+          Pagamento processado com segurança pela Asaas. Não armazenamos dados
+          do seu cartão.
+        </div>
+      </div>
+
       <div className="mt-8 flex items-center justify-between">
         <Button
           variant="ghost"
           onClick={onBack}
+          disabled={enviando}
           className="h-12 px-5 rounded-full text-primary-700 hover:bg-primary-50"
           data-testid="button-voltar"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-        </Button>
-        <Button
-          onClick={validar}
-          className="h-12 px-7 rounded-full bg-accent-500 hover:bg-accent-600 text-white font-medium"
-          data-testid="button-avancar"
-        >
-          Continuar <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
     </div>

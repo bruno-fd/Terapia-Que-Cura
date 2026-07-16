@@ -167,7 +167,39 @@ export default function Cadastro() {
           </div>
         </section>
 
-        {/* Section 2 — Planos */}
+        {/* Section 2 — O que muda */}
+        <section className="bg-white py-20 md:py-28">
+          <div className="container mx-auto px-6 max-w-[1200px]">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-primary-900 tracking-tight">
+                O que muda quando seu perfil está na plataforma
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              {beneficios.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="bg-[#F5F4F2] p-8 rounded-[32px] flex gap-5 hover:bg-primary-50 transition-colors duration-300"
+                    data-testid={`card-beneficio-${idx}`}
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-white text-primary-600 flex items-center justify-center shrink-0 shadow-sm">
+                      <Icon strokeWidth={1.5} className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-primary-900 mb-2 leading-tight">{item.title}</h3>
+                      <p className="text-neutral-600 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Section 3 — Planos */}
         <section id="planos" className="bg-[#EEF5FC] py-20 md:py-28">
           <div className="container mx-auto px-6 max-w-[1200px]">
             <div className="text-center max-w-2xl mx-auto mb-16">
@@ -219,9 +251,9 @@ export default function Cadastro() {
                 <div className="mb-8">
                   <h3 className="text-lg font-bold text-accent-600 mb-3">Plano Anual</h3>
                   <div className="text-4xl md:text-5xl font-bold text-primary-900 mb-3">
-                    R$ 39,90<span className="text-lg text-neutral-500 font-normal">/mês</span>
+                    R$ 478,80<span className="text-lg text-neutral-500 font-normal">/ano</span>
                   </div>
-                  <p className="text-neutral-600">Cobrado anualmente. Equivale a 2 meses grátis em relação ao plano mensal.</p>
+                  <p className="text-neutral-600">Cobrado uma vez ao ano. 20% de desconto em relação ao plano mensal.</p>
                 </div>
 
                 <ul className="space-y-4 mb-10 flex-grow">
@@ -252,38 +284,6 @@ export default function Cadastro() {
             <p className="text-center text-sm text-neutral-500 mt-10 max-w-2xl mx-auto">
               *Pagamento via cartão de crédito. Cancelamento disponível a qualquer momento. Consulte os termos de uso para mais detalhes.
             </p>
-          </div>
-        </section>
-
-        {/* Section 3 — O que muda */}
-        <section className="bg-white py-20 md:py-28">
-          <div className="container mx-auto px-6 max-w-[1200px]">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-primary-900 tracking-tight">
-                O que muda quando seu perfil está na plataforma
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              {beneficios.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={idx}
-                    className="bg-[#F5F4F2] p-8 rounded-[32px] flex gap-5 hover:bg-primary-50 transition-colors duration-300"
-                    data-testid={`card-beneficio-${idx}`}
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-white text-primary-600 flex items-center justify-center shrink-0 shadow-sm">
-                      <Icon strokeWidth={1.5} className="w-7 h-7" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-primary-900 mb-2 leading-tight">{item.title}</h3>
-                      <p className="text-neutral-600 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </section>
 
