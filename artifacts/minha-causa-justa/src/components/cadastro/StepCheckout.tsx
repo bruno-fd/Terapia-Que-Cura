@@ -94,6 +94,16 @@ export function StepCheckout({ data, update, onBack, onConcluir }: Props) {
       // checkout ter sido criado com sucesso, imediatamente antes do redirect.
       onConcluir();
       // Redireciona para a página de checkout hospedada do Asaas (cartão).
+      // Navega no topo da janela: no preview do Replit o app roda num iframe
+      // e a Asaas bloqueia ser carregada dentro de iframes ("recusou a conexão").
+      try {
+        if (window.top) {
+          window.top.location.href = checkoutUrl;
+          return;
+        }
+      } catch {
+        // acesso ao topo negado — segue com a navegação local
+      }
       window.location.href = checkoutUrl;
     } catch (e) {
       setErro(
