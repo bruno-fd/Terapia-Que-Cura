@@ -22,6 +22,13 @@ in the same project at once — publishing applies to the whole project.
    inside the running server — an in-process scheduler, or an authenticated
    endpoint hit by an external cron/uptime pinger.
 
+**Job timeout gotcha (observed in prod):** the despertador Scheduled Deployment
+kills the trigger loop at its job timeout with NO error anywhere — daily runs
+just stop after ~2 min (3–5 of 14 posts published, 0 failed/rejected in
+`blog_daily_runs`, all requests 200 in prod logs). Each category takes ~40–47s,
+so the full batch needs ~10 min. Set the despertador's job timeout to ≥20 min
+(or schedule multiple runs per day; the endpoint is idempotent and resumes).
+
 **Testing without publishing:** run the command as a temporary console workflow
 against the dev DB and watch `blog_daily_runs` + `blog_posts`; a full run does 1
 post per macrocategoria (~14), skipping any category that already has a post

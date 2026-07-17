@@ -39,6 +39,9 @@ Pré-requisito: o **app principal já publicado** (Autoscale) e com o secret
    - **Run command:** `node trigger.mjs`
    - **Schedule:** escreva algo como "todo dia às 7h" (a IA converte em cron)
    - **Timezone:** `America/Sao_Paulo`
+   - **Job timeout: 20 minutos** — IMPORTANTE. O lote completo leva ~10 min
+     (14 categorias × ~40s cada). Com timeout curto (ex.: 2 min), o Replit
+     mata o job no meio e só 3–5 posts saem por dia, sem nenhum erro nos logs.
 5. **Teste na hora:** aba **Schedule** → botão **Run Now**. Acompanhe os logs;
    você deve ver linhas como `chamada 1: processado=... faltam=13` até
    `Lote diário concluído com sucesso.`
