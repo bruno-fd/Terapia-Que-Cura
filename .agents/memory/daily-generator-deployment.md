@@ -22,12 +22,17 @@ in the same project at once — publishing applies to the whole project.
    inside the running server — an in-process scheduler, or an authenticated
    endpoint hit by an external cron/uptime pinger.
 
-**Job timeout gotcha (observed in prod):** the despertador Scheduled Deployment
-kills the trigger loop at its job timeout with NO error anywhere — daily runs
-just stop after ~2 min (3–5 of 14 posts published, 0 failed/rejected in
-`blog_daily_runs`, all requests 200 in prod logs). Each category takes ~40–47s,
-so the full batch needs ~10 min. Set the despertador's job timeout to ≥20 min
-(or schedule multiple runs per day; the endpoint is idempotent and resumes).
+**Partial-batch gotcha (observed in prod, July 2026):** daily runs stopped
+after 3–5 of 14 posts with NO error anywhere (0 failed/rejected rows, all
+requests 200 in prod logs, no further request ever arrived). Job timeout was
+NOT the cause (it was 30 min). The original trigger.mjs did `process.exit(1)`
+on the FIRST network/HTTP failure, so one transient connection error (e.g.
+Autoscale recycling a keep-alive connection) killed the whole batch silently
+from the app's perspective. Fix: trigger.mjs now retries with backoff (up to 4
+consecutive failures, 3-min per-call timeout, immediate stop only on 401/403).
+Each category takes ~40–47s → full batch ~10 min; keep despertador job timeout
+≥20 min anyway. Diagnosis path: `blog_daily_runs` timestamps + prod request
+logs — "requests stop arriving with no server error" = client-side abort.
 
 **Testing without publishing:** run the command as a temporary console workflow
 against the dev DB and watch `blog_daily_runs` + `blog_posts`; a full run does 1
