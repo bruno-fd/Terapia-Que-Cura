@@ -19,6 +19,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/generate-daily-posts.ts"),
       path.resolve(artifactDir, "src/mine-keywords.ts"),
+      path.resolve(artifactDir, "src/preview-anchored-post.ts"),
     ],
     platform: "node",
     bundle: true,

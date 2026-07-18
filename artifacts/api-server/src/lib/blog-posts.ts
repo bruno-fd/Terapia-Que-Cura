@@ -37,7 +37,7 @@ async function ensureUniqueSlug(title: string): Promise<string> {
 export async function persistGeneratedPost(
   generated: GeneratedPost,
   category: string,
-  opts: { publish: boolean },
+  opts: { publish: boolean; targetQuery?: string | null },
 ): Promise<BlogPostRow> {
   const slug = await ensureUniqueSlug(generated.title);
   const readingMinutes = computeReadingMinutes(
@@ -66,6 +66,7 @@ export async function persistGeneratedPost(
       slug,
       category,
       subcategoria,
+      targetQuery: opts.targetQuery ?? null,
       title: generated.title,
       subtitle: generated.subtitle,
       excerpt: generated.excerpt,
