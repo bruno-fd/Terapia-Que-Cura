@@ -112,6 +112,16 @@ export async function proximasPendentes(
   return candidatos.filter((c) => isRelevante(c.query)).slice(0, limite);
 }
 
+// Conjunto de macrocategorias que já têm ao menos uma pergunta pendente na
+// fila. Usado para saber o que ainda falta minerar (bootstrap da fila em prod).
+export async function macrosComFila(): Promise<Set<string>> {
+  const linhas = await db
+    .selectDistinct({ macro: blogKeywordQueueTable.macro })
+    .from(blogKeywordQueueTable)
+    .where(eq(blogKeywordQueueTable.status, "pending"));
+  return new Set(linhas.map((l) => l.macro));
+}
+
 // Perguntas pendentes do MESMO cluster (subcategoria) de uma pergunta-alvo,
 // excluindo ela própria. Alimentam os H2 e a seção de FAQ do post, tornando-o
 // um mini-hub do cluster. Só perguntas (isQuestion) e as mais fortes primeiro.
