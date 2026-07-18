@@ -23,6 +23,9 @@ export interface BlogPost {
   title: string;
   excerpt: string;
   date: string;
+  // Data de publicação em ISO 8601 (para dados estruturados/JSON-LD). O campo
+  // `date` acima é só a versão formatada para exibição.
+  publishedAtIso?: string;
   readingMinutes: number;
   body: PostSection[];
   // Conteúdo richtext (HTML), presente em posts gerados/editados no painel /admin.

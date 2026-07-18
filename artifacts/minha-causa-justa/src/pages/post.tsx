@@ -8,9 +8,30 @@ import { ChevronRight } from "lucide-react";
 import { getPostBySlug } from "@/data/blog";
 import { usePublishedPosts } from "@/data/published-posts";
 import { slugDaCategoria } from "@/data/categories";
+import { buildStructuredData } from "@/lib/structured-data";
 import NotFound from "@/pages/not-found";
 
 const CANONICAL_ORIGIN = "https://terapiaquecura.com.br";
+
+/** Injeta (ou atualiza) o bloco JSON-LD de dados estruturados do post. */
+function setJsonLd(data: unknown[]) {
+  let el = document.querySelector<HTMLScriptElement>(
+    "script[data-blog-jsonld]",
+  );
+  if (!el) {
+    el = document.createElement("script");
+    el.type = "application/ld+json";
+    el.setAttribute("data-blog-jsonld", "");
+    document.head.appendChild(el);
+  }
+  // Escapa "<" para nunca fechar o <script> indevidamente com conteúdo do post.
+  el.textContent = JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
+/** Remove o bloco JSON-LD ao sair da página do post. */
+function removeJsonLd() {
+  document.querySelector("script[data-blog-jsonld]")?.remove();
+}
 
 /** Atualiza (ou cria) uma tag <meta> pelo seletor de atributo. */
 function setMeta(selector: string, attr: string, content: string) {
@@ -66,6 +87,7 @@ export default function Post() {
     setMeta("meta[name='twitter:description']", "content", description);
     setMeta("meta[name='twitter:image']", "content", image);
     setCanonical(canonical);
+    setJsonLd(buildStructuredData(post, CANONICAL_ORIGIN));
 
     return () => {
       // Restaura os defaults ao sair da página do post
@@ -80,6 +102,7 @@ export default function Post() {
       setMeta("meta[name='twitter:description']", "content", "Terapia Que Cura — encontre um psicólogo para cuidar da sua saúde mental.");
       setMeta("meta[name='twitter:image']", "content", `${CANONICAL_ORIGIN}/opengraph.webp`);
       setCanonical(CANONICAL_ORIGIN);
+      removeJsonLd();
     };
   }, [post]);
 
