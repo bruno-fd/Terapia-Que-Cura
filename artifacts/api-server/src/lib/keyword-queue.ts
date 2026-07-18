@@ -102,6 +102,33 @@ export async function proximasPendentes(
     .limit(limite);
 }
 
+// Perguntas pendentes do MESMO cluster (subcategoria) de uma pergunta-alvo,
+// excluindo ela própria. Alimentam os H2 e a seção de FAQ do post, tornando-o
+// um mini-hub do cluster. Só perguntas (isQuestion) e as mais fortes primeiro.
+export async function perguntasDoCluster(
+  macro: string,
+  subcategoria: string | null,
+  excluirId: number,
+  limite = 5,
+): Promise<BlogKeywordQueueRow[]> {
+  const condicoes = [
+    eq(blogKeywordQueueTable.macro, macro),
+    eq(blogKeywordQueueTable.status, "pending"),
+    eq(blogKeywordQueueTable.isQuestion, true),
+  ];
+  // Se a alvo tem subcategoria, restringe ao mesmo cluster; senão, à macro toda.
+  if (subcategoria) {
+    condicoes.push(eq(blogKeywordQueueTable.subcategoria, subcategoria));
+  }
+  const linhas = await db
+    .select()
+    .from(blogKeywordQueueTable)
+    .where(and(...condicoes))
+    .orderBy(desc(blogKeywordQueueTable.score))
+    .limit(limite + 1);
+  return linhas.filter((l) => l.id !== excluirId).slice(0, limite);
+}
+
 // Marca uma pergunta como usada, ligando-a ao post gerado. Chamado na Fase 1
 // depois que o post é publicado.
 export async function marcarComoUsada(
@@ -111,5 +138,15 @@ export async function marcarComoUsada(
   await db
     .update(blogKeywordQueueTable)
     .set({ status: "used", usedPostId: postId, usedAt: new Date() })
+    .where(eq(blogKeywordQueueTable.id, id));
+}
+
+// Descarta uma pergunta (status "skipped") para garantir progresso: quando ela
+// gera um post reprovado ou já coberto, é retirada da fila em vez de ser
+// retentada indefinidamente. Há milhares na fila; perder uma é irrelevante.
+export async function marcarComoDescartada(id: number): Promise<void> {
+  await db
+    .update(blogKeywordQueueTable)
+    .set({ status: "skipped", usedAt: new Date() })
     .where(eq(blogKeywordQueueTable.id, id));
 }

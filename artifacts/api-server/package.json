@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "generate-daily-posts": "pnpm run build && node --enable-source-maps ./dist/generate-daily-posts.mjs",
     "mine-keywords": "pnpm run build && node --enable-source-maps ./dist/mine-keywords.mjs",
+    "preview-anchored-post": "pnpm run build && node --enable-source-maps ./dist/preview-anchored-post.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

@@ -390,6 +390,91 @@ O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, in
 }
 
 // ------------------------------------------------------------------
+// Geração ancorada em demanda real de busca (Fase 1)
+// ------------------------------------------------------------------
+
+// Escreve um post a partir de uma PERGUNTA real minerada do Google Autocomplete
+// (targetQuery), em vez de um tema inventado pela IA. O H1 responde a busca; as
+// perguntas-irmãs do mesmo cluster (relatedQuestions) viram H2 e alimentam uma
+// seção final de "Perguntas frequentes". Essa seção vai no próprio corpo (body)
+// de propósito: assim passa pelo mesmo revisor CFP e pela correção automática,
+// nada de conteúdo escapando da checagem de conformidade.
+//
+// Reaproveita EDITORIAL_RULES e buildGeneratedPost. Não altera generatePost: o
+// fluxo antigo continua idêntico.
+export async function generatePostAncorado(
+  category: string,
+  targetQuery: string,
+  relatedQuestions: string[],
+  subcategorias: string[] = [],
+  subcategoriaSugerida: string | null = null,
+): Promise<GeneratedPost> {
+  const subInstrucao =
+    subcategorias.length > 0
+      ? `\nO tema específico (subcategoria) mais provável é ${
+          subcategoriaSugerida ? `"${subcategoriaSugerida}"` : "um destes"
+        }. Use exatamente uma destas opções em "subcategoria": ${subcategorias
+          .map((s) => `"${s}"`)
+          .join(", ")}, ou null se nenhuma se aplicar.`
+      : `\nDefina "subcategoria" como null.`;
+
+  const listaPerguntas =
+    relatedQuestions.length > 0
+      ? relatedQuestions.map((q) => `- ${q}`).join("\n")
+      : "(nenhuma pergunta relacionada fornecida; crie perguntas frequentes plausíveis e corretas sobre o tema.)";
+
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: EDITORIAL_RULES,
+    messages: [
+      {
+        role: "user",
+        content: `Escreva um post completo do blog para a macrocategoria "${category}".
+
+Este post deve responder a uma BUSCA REAL que as pessoas fazem no Google: "${targetQuery}".
+
+DIRETRIZES DE SEO (além de todas as regras editoriais e do CFP):
+- O título H1 deve responder ou endereçar diretamente essa busca, de forma natural e correta em português (corrija acentuação e ortografia da busca crua), incluindo a palavra-chave principal, no máximo 70 caracteres.
+- Ao longo do texto, use como subtítulos (H2) as perguntas relacionadas abaixo que fizerem sentido, respondendo cada uma de forma clara no(s) parágrafo(s) seguinte(s).
+- Ao final, ANTES do encerramento, inclua uma seção com "heading" exatamente igual a "Perguntas frequentes", contendo de 3 a 4 perguntas curtas seguidas de respostas de 1 a 2 frases cada. Cada pergunta é um parágrafo terminando em "?"; a resposta é o parágrafo imediatamente seguinte. As respostas seguem as MESMAS regras do CFP (nada de diagnosticar o leitor, nada de prometer cura, encerramentos condicionais).
+
+PERGUNTAS RELACIONADAS (do mesmo tema, use as pertinentes como H2 e/ou na seção de Perguntas frequentes):
+${listaPerguntas}
+
+Siga rigorosamente todas as regras editoriais e do CFP. Entre 600 e 900 palavras no total (a seção de Perguntas frequentes conta). Nunca use travessão.
+${subInstrucao}
+
+IMAGEM DE CAPA: em "imageQuery", escreva uma frase curta em INGLÊS (2 a 5 palavras) para buscar uma foto de banco de imagens que represente o clima do texto. Prefira cenas humanas de acolhimento, natureza, luz ou objetos do cotidiano. Em temas sensíveis (suicídio, automutilação, abuso, violência), use uma imagem simbólica e acolhedora, NUNCA literal, gráfica ou perturbadora.
+
+Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
+{
+  "title": "título H1, no máximo 70 caracteres, respondendo a busca",
+  "subtitle": "subtítulo/chamada de uma frase",
+  "excerpt": "resumo de 1 a 2 frases para o card da listagem",
+  "subcategoria": "tema específico da lista, ou null",
+  "keywords": ["palavra-chave 1", "palavra-chave 2", "palavra-chave 3"],
+  "body": [
+    { "paragraphs": ["parágrafo de introdução 1", "parágrafo de introdução 2"] },
+    { "heading": "Subtítulo H2 (pode ser uma pergunta relacionada)", "paragraphs": ["parágrafo", "parágrafo"] },
+    { "heading": "Perguntas frequentes", "paragraphs": ["Pergunta 1?", "Resposta 1.", "Pergunta 2?", "Resposta 2.", "Pergunta 3?", "Resposta 3."] }
+  ],
+  "crpClosing": "parágrafo de encerramento no padrão permitido pelo CFP",
+  "imageQuery": "frase curta em inglês (2 a 5 palavras) para buscar a foto de capa"
+}
+
+O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida inclua de 3 a 5 seções com "heading" (H2), sendo a penúltima a seção "Perguntas frequentes". Não inclua o disclaimer no JSON, ele é adicionado automaticamente.`,
+      },
+    ],
+  });
+
+  const parsed = parseJson(
+    extractText(message.content),
+  ) as Partial<GeneratedPost>;
+  return buildGeneratedPost(parsed, subcategorias);
+}
+
+// ------------------------------------------------------------------
 // Verificação de veracidade (segunda passada independente da IA)
 // ------------------------------------------------------------------
 
