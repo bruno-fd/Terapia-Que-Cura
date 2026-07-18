@@ -20,6 +20,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/generate-daily-posts.ts"),
       path.resolve(artifactDir, "src/mine-keywords.ts"),
       path.resolve(artifactDir, "src/preview-anchored-post.ts"),
+      path.resolve(artifactDir, "src/clean-keyword-queue.ts"),
     ],
     platform: "node",
     bundle: true,

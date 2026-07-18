@@ -1,4 +1,4 @@
-import { sql, and, eq, desc } from "drizzle-orm";
+import { sql, and, eq, desc, inArray } from "drizzle-orm";
 import {
   db,
   blogKeywordQueueTable,
@@ -7,6 +7,7 @@ import {
 } from "@workspace/db";
 import type { SugestaoComOrigem } from "./keyword-research";
 import { normalizarQuery } from "./keyword-research";
+import { isRelevante } from "./keyword-filter";
 
 // ============================================================
 // Persistência da fila de palavras-chave (Fase 0).
@@ -41,6 +42,11 @@ export async function enfileirarSugestoes(
   let ignoradas = 0;
 
   for (const s of sugestoes) {
+    // Curadoria automática: não enfileira tema ruidoso/off-topic.
+    if (!isRelevante(s.query)) {
+      ignoradas += 1;
+      continue;
+    }
     if (titulosNorm.has(s.queryNormalized)) {
       ignoradas += 1;
       continue;
@@ -89,7 +95,10 @@ export async function proximasPendentes(
   macro: string,
   limite = 5,
 ): Promise<BlogKeywordQueueRow[]> {
-  return db
+  // Puxa um lote maior por score e filtra o ruído em memória: a fila copiada
+  // ainda tem lixo, então garantir aqui que só temas relevantes cheguem ao
+  // gerador (protege mesmo antes do limpador rodar).
+  const candidatos = await db
     .select()
     .from(blogKeywordQueueTable)
     .where(
@@ -99,7 +108,18 @@ export async function proximasPendentes(
       ),
     )
     .orderBy(desc(blogKeywordQueueTable.score))
-    .limit(limite);
+    .limit(Math.max(limite * 10, 50));
+  return candidatos.filter((c) => isRelevante(c.query)).slice(0, limite);
+}
+
+// Conjunto de macrocategorias que já têm ao menos uma pergunta pendente na
+// fila. Usado para saber o que ainda falta minerar (bootstrap da fila em prod).
+export async function macrosComFila(): Promise<Set<string>> {
+  const linhas = await db
+    .selectDistinct({ macro: blogKeywordQueueTable.macro })
+    .from(blogKeywordQueueTable)
+    .where(eq(blogKeywordQueueTable.status, "pending"));
+  return new Set(linhas.map((l) => l.macro));
 }
 
 // Perguntas pendentes do MESMO cluster (subcategoria) de uma pergunta-alvo,
@@ -125,8 +145,10 @@ export async function perguntasDoCluster(
     .from(blogKeywordQueueTable)
     .where(and(...condicoes))
     .orderBy(desc(blogKeywordQueueTable.score))
-    .limit(limite + 1);
-  return linhas.filter((l) => l.id !== excluirId).slice(0, limite);
+    .limit(Math.max((limite + 1) * 8, 40));
+  return linhas
+    .filter((l) => l.id !== excluirId && isRelevante(l.query))
+    .slice(0, limite);
 }
 
 // Marca uma pergunta como usada, ligando-a ao post gerado. Chamado na Fase 1
@@ -149,4 +171,33 @@ export async function marcarComoDescartada(id: number): Promise<void> {
     .update(blogKeywordQueueTable)
     .set({ status: "skipped", usedAt: new Date() })
     .where(eq(blogKeywordQueueTable.id, id));
+}
+
+// Varre toda a fila pendente e descarta (status "skipped") as perguntas que o
+// filtro de relevância recusa. Serve para limpar de uma vez a fila copiada,
+// cheia de ruído, sem esperar a limpeza preguiçosa do gerador. Idempotente.
+export async function limparFilaIrrelevante(): Promise<{
+  analisadas: number;
+  descartadas: number;
+}> {
+  const pendentes = await db
+    .select({ id: blogKeywordQueueTable.id, query: blogKeywordQueueTable.query })
+    .from(blogKeywordQueueTable)
+    .where(eq(blogKeywordQueueTable.status, "pending"));
+
+  const idsLixo = pendentes
+    .filter((r) => !isRelevante(r.query))
+    .map((r) => r.id);
+
+  // Atualiza em lotes para não montar um IN gigante numa query só.
+  const LOTE = 500;
+  for (let i = 0; i < idsLixo.length; i += LOTE) {
+    const lote = idsLixo.slice(i, i + LOTE);
+    await db
+      .update(blogKeywordQueueTable)
+      .set({ status: "skipped", usedAt: new Date() })
+      .where(inArray(blogKeywordQueueTable.id, lote));
+  }
+
+  return { analisadas: pendentes.length, descartadas: idsLixo.length };
 }
