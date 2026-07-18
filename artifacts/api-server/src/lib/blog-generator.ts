@@ -19,17 +19,26 @@ ESTRUTURA OBRIGATÓRIA DE CADA POST
 - Introdução: dois a três parágrafos contextualizando o tema no cotidiano do leitor, sem jargão técnico e sem diagnosticar o leitor.
 - Três a cinco seções com subtítulo (H2): cada uma cobre um ângulo (o que é, como se manifesta, quando buscar ajuda, o que a psicoterapia pode oferecer etc.), com dois a três parágrafos cada.
 - Encerramento padrão CFP: ver a seção ENCERRAMENTO abaixo.
-- Tamanho total entre 600 e 900 palavras.
+- Tamanho total entre 700 e 1100 palavras, usadas para dar profundidade concreta (não para encher com generalidades).
 
 LINGUAGEM
 - Simples, direta, coloquial mas correta. Frases curtas e médias. Parágrafos curtos.
 - Todo termo técnico de psicologia deve ser explicado imediatamente após o uso, em linguagem coloquial, entre parênteses ou em frase curta seguinte. Nunca deixe um termo sem explicação.
 
+PROFUNDIDADE, CONCRETUDE E UTILIDADE (tão importante quanto a veracidade; é a principal causa de post fraco)
+O leitor precisa terminar o texto sentindo-se verdadeiramente ajudado: com uma compreensão nova do que vive E com algo concreto que pode fazer. Um post correto porém genérico, vago, "água de salsicha", é uma FALHA, mesmo que passe no revisor. Profundidade não é academiquês nem mais estatística; é concretude e utilidade. Para cada post:
+- Nomeie a experiência com precisão: descreva como o problema realmente aparece no dia a dia, com cenas e exemplos reconhecíveis, para o leitor pensar "é exatamente isso que eu sinto". Fuja de descrições abstratas e chapa-branca.
+- Explique o porquê em linguagem simples: o mecanismo por trás do que a pessoa sente (por que o corpo reage assim, o que está acontecendo por dentro), sem inventar dados. Entender o próprio funcionamento já ajuda e não depende de estatística.
+- Entregue orientação prática e aplicável: passos concretos, estratégias de enfrentamento, como começar uma conversa, o que observar em si ou em quem se ama, como se cuidar ou apoiar alguém, o que realmente esperar da psicoterapia. Cada seção deve deixar algo utilizável, não só descrição.
+- Seja específico onde é seguro ser: sensações, situações, pensamentos comuns, estratégias. A regra de veracidade restringe DADOS numéricos/diagnósticos incertos, não a riqueza da descrição e da orientação.
+- Nada de seção-recheio: se um H2 só repete generalidades, corte ou reescreva com exemplo concreto e orientação prática.
+As orientações práticas seguem as regras do CFP: são educação geral e possibilidades, nunca prescrição, diagnóstico ou promessa de resultado para aquele leitor específico.
+
 VERACIDADE TÉCNICA (regra mais importante; é a principal causa de reprovação)
 - Só cite um dado técnico objetivo (critério diagnóstico do CID ou do DSM, estatística de prevalência, resultado de estudo, resolução do CFP, percentual) quando tiver ALTA confiança de que está correto e atualizado, e for informação consolidada e notória.
-- Na menor dúvida sobre uma estatística, um critério diagnóstico ou um percentual, NÃO o escreva. Prefira explicar o funcionamento geral: "é comum que isso aconteça", "estudos sugerem uma relação entre esses fatores", "existem critérios específicos para esse diagnóstico". É melhor um texto mais geral e correto do que um texto específico e errado.
+- Na menor dúvida sobre uma estatística, um critério diagnóstico ou um percentual, NÃO o escreva. Prefira explicar o funcionamento geral: "é comum que isso aconteça", "estudos sugerem uma relação entre esses fatores", "existem critérios específicos para esse diagnóstico". É melhor um texto mais geral e correto do que um texto específico e errado. ATENÇÃO: essa generalização vale apenas para o DADO numérico/diagnóstico incerto, não é licença para deixar o texto inteiro vago. Ao redor do dado omitido, continue concreto sobre a experiência vivida e sobre o que a pessoa pode fazer.
 - JAMAIS invente, estime ou "chute" um dado técnico, nem preencha lacunas com números plausíveis.
-- Prefira explicar sentimentos, conceitos e o funcionamento geral do tema a encher o texto de citações técnicas. Um post pode ser excelente citando pouco ou nenhum dado técnico específico.
+- Prefira explicar sentimentos, conceitos e o funcionamento geral do tema a encher o texto de citações técnicas. Um post pode ser excelente sem citar nenhum dado técnico específico, DESDE QUE seja concreto e útil (ver PROFUNDIDADE): não ter estatística nunca é desculpa para ser raso ou genérico.
 - Não afirme que uma descoberta é recente ou que "estudos comprovam definitivamente" algo sem alta confiança.
 
 ENCERRAMENTO (padrão CFP; ponto de reprovação frequente)
@@ -68,7 +77,8 @@ ANTES DE RESPONDER, CONFIRA (autoverificação obrigatória)
 2. O encerramento é condicional e está no padrão permitido, sem diagnosticar o leitor?
 3. Se o tema envolve risco (ideação suicida, automutilação, abuso), o encerramento inclui a orientação do CVV (188)?
 4. Todo termo técnico foi explicado em linguagem simples?
-5. Não há nenhum travessão nem nenhum dos padrões de estilo proibidos?`;
+5. Não há nenhum travessão nem nenhum dos padrões de estilo proibidos?
+6. PROFUNDIDADE: o leitor termina com uma compreensão nova E com algo concreto que pode fazer? Há cenas reconhecíveis do dia a dia, explicação do porquê e orientação prática? Se o texto estiver genérico, vago ou "água de salsicha", reescreva com concretude e utilidade antes de enviar.`;
 
 export interface GeneratedPost {
   title: string;
@@ -358,7 +368,7 @@ export async function generatePost(
         role: "user",
         content: `Escreva um post completo do blog para a macrocategoria "${category}", sobre o tema: "${theme}".
 
-Siga rigorosamente todas as regras editoriais e do CFP. Entre 600 e 900 palavras no total. Nunca use travessão.
+Siga rigorosamente todas as regras editoriais e do CFP. Entre 700 e 1100 palavras no total. Nunca use travessão. PROFUNDIDADE OBRIGATÓRIA: cada seção deve entregar algo concretamente útil (uma explicação do porquê, um exemplo reconhecível do dia a dia ou uma orientação prática aplicável), nunca só generalidades. O leitor precisa terminar sentindo-se de fato ajudado.
 ${subInstrucao}
 
 IMAGEM DE CAPA: em "imageQuery", escreva uma frase curta em INGLÊS (2 a 5 palavras) para buscar uma foto de banco de imagens que represente o clima do texto. Prefira cenas humanas de acolhimento, natureza, luz ou objetos do cotidiano. Em temas sensíveis (suicídio, automutilação, abuso, violência), use uma imagem simbólica e acolhedora (ex.: "supportive hands warm light", "calm sunrise horizon"), NUNCA literal, gráfica ou perturbadora.
@@ -442,7 +452,7 @@ DIRETRIZES DE SEO (além de todas as regras editoriais e do CFP):
 PERGUNTAS RELACIONADAS (do mesmo tema, use as pertinentes como H2 e/ou na seção de Perguntas frequentes):
 ${listaPerguntas}
 
-Siga rigorosamente todas as regras editoriais e do CFP. Entre 600 e 900 palavras no total (a seção de Perguntas frequentes conta). Nunca use travessão.
+Siga rigorosamente todas as regras editoriais e do CFP. Entre 700 e 1100 palavras no total (a seção de Perguntas frequentes conta). Nunca use travessão. PROFUNDIDADE OBRIGATÓRIA: responda a busca de forma realmente útil, cada seção com explicação do porquê, exemplo reconhecível do dia a dia ou orientação prática aplicável, nunca só generalidades. O leitor precisa terminar sentindo-se de fato ajudado, não com um texto raso e genérico.
 ${subInstrucao}
 
 IMAGEM DE CAPA: em "imageQuery", escreva uma frase curta em INGLÊS (2 a 5 palavras) para buscar uma foto de banco de imagens que represente o clima do texto. Prefira cenas humanas de acolhimento, natureza, luz ou objetos do cotidiano. Em temas sensíveis (suicídio, automutilação, abuso, violência), use uma imagem simbólica e acolhedora, NUNCA literal, gráfica ou perturbadora.
