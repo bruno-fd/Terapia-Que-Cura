@@ -4,11 +4,24 @@ import { MACRO_NOMES, subcategoriasDe } from "./categorias";
 import {
   generateIdeas,
   generatePost,
+  generatePostAncorado,
   verifyPost,
   correctPost,
 } from "./blog-generator";
 import { persistGeneratedPost } from "./blog-posts";
+import {
+  proximasPendentes,
+  perguntasDoCluster,
+  marcarComoUsada,
+  marcarComoDescartada,
+} from "./keyword-queue";
 import { logger } from "./logger";
+
+// Liga o fluxo ancorado em demanda real (Fase 1). Enquanto a env var não for
+// "1", tudo roda EXATAMENTE como antes (gerador clássico por ideias da IA).
+function usarFilaDeKeywords(): boolean {
+  return process.env.BLOG_USE_KEYWORD_QUEUE === "1";
+}
 
 // ============================================================
 // Gerador diário automático de posts do blog.
@@ -198,14 +211,189 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
   return "published";
 }
 
+// Versão ancorada em demanda real (Fase 1). Mesma espinha do processarCategoria
+// (idempotência, dedup de título, revisor CFP, correção), mas o TEMA vem de uma
+// pergunta real minerada do Google (fila blog_keyword_queue), não de uma ideia
+// inventada pela IA. As perguntas-irmãs do mesmo cluster viram H2 e a seção de
+// "Perguntas frequentes". Só roda quando BLOG_USE_KEYWORD_QUEUE=1.
+//
+// Fallback garantido: se a fila da categoria estiver vazia, delega ao
+// processarCategoria clássico, então nunca se produz menos que hoje.
+export async function processarCategoriaComFila(
+  category: string,
+): Promise<RunStatus> {
+  // Idempotência: pula se já houver post criado hoje nesta categoria.
+  const [jaExiste] = await db
+    .select({ id: blogPostsTable.id })
+    .from(blogPostsTable)
+    .where(
+      and(
+        eq(blogPostsTable.category, category),
+        gte(blogPostsTable.createdAt, inicioDeHoje()),
+      ),
+    )
+    .limit(1);
+
+  if (jaExiste) {
+    logger.info({ category }, "Categoria pulada: já tem post criado hoje.");
+    await registrarRun({ category, status: "skipped" });
+    return "skipped";
+  }
+
+  // Puxa as perguntas pendentes mais fortes da fila desta categoria.
+  const pendentes = await proximasPendentes(category, 10);
+
+  // Fila vazia: cai no gerador clássico (nunca fica sem post).
+  if (pendentes.length === 0) {
+    logger.info(
+      { category },
+      "Fila de keywords vazia; usando gerador clássico (fallback).",
+    );
+    return processarCategoria(category);
+  }
+
+  // Títulos e buscas-alvo já cobertos, para dedup por INTENÇÃO de busca (não só
+  // por título literal). Evita canibalização.
+  const existentes = await db
+    .select({
+      title: blogPostsTable.title,
+      targetQuery: blogPostsTable.targetQuery,
+    })
+    .from(blogPostsTable)
+    .where(eq(blogPostsTable.category, category));
+  const titulosExistentes = new Set(existentes.map((r) => normalizar(r.title)));
+  const cobertas = new Set<string>(titulosExistentes);
+  for (const r of existentes) {
+    if (r.targetQuery) cobertas.add(normalizar(r.targetQuery));
+  }
+
+  // Escolhe a pergunta mais forte ainda não coberta.
+  const alvo =
+    pendentes.find((p) => !cobertas.has(p.queryNormalized)) ?? pendentes[0];
+
+  // Se a alvo já está coberta (todas estavam), descarta e registra: a categoria
+  // já esgotou o que valia hoje. Amanhã pega a próxima da fila.
+  if (cobertas.has(alvo.queryNormalized)) {
+    await marcarComoDescartada(alvo.id);
+    logger.info(
+      { category, query: alvo.query },
+      "Pergunta-alvo já coberta por post existente; descartada.",
+    );
+    await registrarRun({
+      category,
+      status: "skipped",
+      reason: "Pergunta-alvo já coberta por um post existente.",
+    });
+    return "skipped";
+  }
+
+  // Perguntas-irmãs do mesmo cluster para os H2 e a seção de FAQ.
+  const irmas = await perguntasDoCluster(category, alvo.subcategoria, alvo.id, 5);
+  const relacionadas = irmas.map((i) => i.query);
+
+  const subcats = subcategoriasDe(category);
+  const generated = await generatePostAncorado(
+    category,
+    alvo.query,
+    relacionadas,
+    subcats,
+    alvo.subcategoria,
+  );
+
+  // Dedup por título idêntico (igual ao fluxo clássico). Descarta a query para
+  // garantir progresso.
+  if (titulosExistentes.has(normalizar(generated.title))) {
+    await marcarComoDescartada(alvo.id);
+    logger.info(
+      { category, title: generated.title },
+      "Post descartado: título repetido.",
+    );
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: generated.title,
+      reason: "Título repetido de um post já existente na categoria.",
+    });
+    return "rejected";
+  }
+
+  // Verificação de veracidade + correção guiada (idêntica ao fluxo clássico).
+  const MAX_CORRECOES = 2;
+  let atual = generated;
+  let verificacao = await verifyPost(category, alvo.query, atual);
+  let correcoes = 0;
+
+  while (!verificacao.aprovado && correcoes < MAX_CORRECOES) {
+    correcoes += 1;
+    logger.info(
+      { category, correcao: correcoes, motivos: verificacao.motivos },
+      "Post reprovado; tentando correção automática.",
+    );
+    atual = await correctPost(category, alvo.query, atual, verificacao, subcats);
+    verificacao = await verifyPost(category, alvo.query, atual);
+  }
+
+  if (!verificacao.aprovado) {
+    // Reprovado mesmo após correção: descarta a query e não publica.
+    await marcarComoDescartada(alvo.id);
+    const reason =
+      verificacao.motivos.length > 0
+        ? verificacao.motivos.join(" | ")
+        : "Reprovado na verificação de veracidade.";
+    logger.warn(
+      { category, title: atual.title, correcoes, motivos: verificacao.motivos },
+      "Post reprovado mesmo após correção; descartado.",
+    );
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: atual.title,
+      reason,
+      correctionRounds: correcoes,
+    });
+    return "rejected";
+  }
+
+  const created = await persistGeneratedPost(atual, category, {
+    publish: true,
+    targetQuery: alvo.query,
+  });
+  await marcarComoUsada(alvo.id, created.id);
+  logger.info(
+    {
+      category,
+      title: created.title,
+      slug: created.slug,
+      postId: created.id,
+      targetQuery: alvo.query,
+      correcoes,
+    },
+    "Post publicado automaticamente (ancorado em busca real).",
+  );
+  await registrarRun({
+    category,
+    status: "published",
+    title: created.title,
+    postId: created.id,
+    correctionRounds: correcoes,
+    reason: `Ancorado na busca "${alvo.query}".${
+      correcoes > 0 ? ` Publicado após ${correcoes} rodada(s) de correção.` : ""
+    }`,
+  });
+  return "published";
+}
+
 // Versão resiliente: nunca lança. Uma falha isolada vira status "failed"
 // registrado, para o lote continuar. Usada tanto pelo CLI (loop) quanto pelo
-// endpoint de disparo.
+// endpoint de disparo. Escolhe o fluxo (clássico ou ancorado na fila) conforme
+// a env var BLOG_USE_KEYWORD_QUEUE, sempre com fallback seguro.
 export async function processarCategoriaSegura(
   category: string,
 ): Promise<RunStatus> {
   try {
-    return await processarCategoria(category);
+    return usarFilaDeKeywords()
+      ? await processarCategoriaComFila(category)
+      : await processarCategoria(category);
   } catch (err) {
     logger.error({ err, category }, "Falha ao processar categoria.");
     try {

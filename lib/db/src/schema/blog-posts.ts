@@ -21,6 +21,10 @@ export const blogPostsTable = pgTable("blog_posts", {
   category: text("category").notNull(),
   // Tema específico (subcategoria) dentro da macrocategoria. Nulo = sem tema.
   subcategoria: text("subcategoria"),
+  // Busca real (Google Autocomplete) que originou o post, quando gerado pelo
+  // fluxo ancorado em demanda (Fase 1). Nulo em posts manuais ou do fluxo
+  // antigo. Serve para deduplicar por intenção de busca e para métricas.
+  targetQuery: text("target_query"),
   title: text("title").notNull(),
   subtitle: text("subtitle").notNull(),
   excerpt: text("excerpt").notNull(),
