@@ -4,10 +4,22 @@ import { MACRO_NOMES, subcategoriasDe } from "./categorias";
 import {
   generateIdeas,
   generatePost,
+  gerarEsboco,
+  expandirPost,
   verifyPost,
   correctPost,
+  type GeneratedPost,
 } from "./blog-generator";
 import { persistGeneratedPost } from "./blog-posts";
+import {
+  proximoCluster,
+  marcarClusterUsado,
+  marcarClusterPulado,
+} from "./keyword-queue";
+import {
+  verificarCanibalizacao,
+  postsRelacionadosParaCitar,
+} from "./corpus-index";
 import { logger } from "./logger";
 
 // ============================================================
@@ -73,6 +85,68 @@ async function registrarRun(entry: {
   });
 }
 
+// Escolhe o tema do post. Caminho preferido: cluster mais forte da fila de
+// buscas mineradas (geração ancorada em demanda real). Fallback: a IA inventa o
+// tema (comportamento antigo), enquanto a fila ainda não está populada para a
+// macro. Retorna o post gerado + metadados para persistir/marcar a fila.
+interface TemaGerado {
+  generated: GeneratedPost;
+  tema: string;
+  targetQuery: string | null;
+  slugsCitaveis: string[];
+  clusterRowIds: number[]; // vazio no fallback
+}
+
+async function gerarTema(
+  category: string,
+  subcats: string[],
+  titulosExistentes: Set<string>,
+): Promise<TemaGerado> {
+  const cluster = await proximoCluster(category);
+
+  if (cluster) {
+    // Caminho ancorado: esboço -> busca posts relacionados -> expansão.
+    const esboco = await gerarEsboco(
+      category,
+      cluster.buscaAlvo,
+      cluster.perguntasIrmas,
+      subcats,
+    );
+    const relacionados = await postsRelacionadosParaCitar(
+      `${esboco.h1}. ${esboco.subtitulo}`,
+      3,
+    );
+    const generated = await expandirPost(
+      category,
+      cluster.buscaAlvo,
+      esboco,
+      cluster.perguntasIrmas,
+      relacionados.map((r) => ({ title: r.title, slug: r.slug })),
+      subcats,
+    );
+    return {
+      generated,
+      tema: cluster.buscaAlvo,
+      targetQuery: cluster.buscaAlvo,
+      slugsCitaveis: relacionados.map((r) => r.slug),
+      clusterRowIds: cluster.rowIds,
+    };
+  }
+
+  // Fallback: IA inventa o tema, evitando títulos já existentes.
+  const ideias = await generateIdeas(category);
+  const tema =
+    ideias.find((i) => !titulosExistentes.has(normalizar(i))) ?? ideias[0];
+  const generated = await generatePost(category, tema, subcats);
+  return {
+    generated,
+    tema,
+    targetQuery: null,
+    slugsCitaveis: [],
+    clusterRowIds: [],
+  };
+}
+
 // Processa uma macrocategoria de ponta a ponta. Retorna o status registrado.
 export async function processarCategoria(category: string): Promise<RunStatus> {
   // Idempotência: pula se já houver post criado hoje nesta categoria.
@@ -100,13 +174,11 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
     .where(eq(blogPostsTable.category, category));
   const titulosExistentes = new Set(existentes.map((r) => normalizar(r.title)));
 
-  // Gera ideias e escolhe a primeira que ainda não virou post.
-  const ideias = await generateIdeas(category);
-  const tema =
-    ideias.find((i) => !titulosExistentes.has(normalizar(i))) ?? ideias[0];
-
   const subcats = subcategoriasDe(category);
-  const generated = await generatePost(category, tema, subcats);
+
+  const { generated, tema, targetQuery, slugsCitaveis, clusterRowIds } =
+    await gerarTema(category, subcats, titulosExistentes);
+  const doCluster = clusterRowIds.length > 0;
 
   // Também evita publicar um título idêntico a um já existente.
   if (titulosExistentes.has(normalizar(generated.title))) {
@@ -114,6 +186,12 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
       { category, title: generated.title },
       "Post descartado: título repetido.",
     );
+    if (doCluster) {
+      await marcarClusterPulado(
+        clusterRowIds,
+        "Título repetido de um post já existente.",
+      );
+    }
     await registrarRun({
       category,
       status: "rejected",
@@ -129,7 +207,7 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
   // Verificação de veracidade (segunda passada independente da IA). Se reprovar,
   // o revisor corrige o texto e reverificamos, até MAX_CORRECOES rodadas. Só
   // descartamos se continuar reprovado depois disso: nunca publicamos dado
-  // jurídico errado, mas damos ao escritor a chance de consertar.
+  // técnico errado, mas damos ao escritor a chance de consertar.
   let atual = generated;
   let verificacao = await verifyPost(category, tema, atual);
   let correcoes = 0;
@@ -159,6 +237,26 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
       },
       "Post reprovado mesmo após correção; descartado.",
     );
+    if (doCluster) await marcarClusterPulado(clusterRowIds, reason);
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: atual.title,
+      reason,
+      correctionRounds: correcoes,
+    });
+    return "rejected";
+  }
+
+  // Anti-canibalização Camada 2 (semântica + lexical) antes de publicar: se o
+  // rascunho está perto demais de um post que já ranqueia, NÃO publica (evita os
+  // dois competirem pela mesma busca). Descarta e deixa para consolidação
+  // humana; o cluster é marcado como pulado para não gerar outro concorrente.
+  const canib = await verificarCanibalizacao(atual.title, atual.excerpt);
+  if (canib.duplicado) {
+    const reason = `Provável canibalização (${canib.camada}) com o post ${canib.postId} (sim=${canib.similaridade?.toFixed(3)}). Descartado para consolidação humana.`;
+    logger.warn({ category, title: atual.title, canib }, reason);
+    if (doCluster) await marcarClusterPulado(clusterRowIds, reason);
     await registrarRun({
       category,
       status: "rejected",
@@ -171,7 +269,10 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
 
   const created = await persistGeneratedPost(atual, category, {
     publish: true,
+    targetQuery,
+    slugsCitaveis,
   });
+  if (doCluster) await marcarClusterUsado(clusterRowIds, created.id);
   logger.info(
     {
       category,
@@ -179,6 +280,8 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
       slug: created.slug,
       postId: created.id,
       correcoes,
+      ancorado: doCluster,
+      targetQuery,
     },
     correcoes > 0
       ? "Post publicado automaticamente após correção."

@@ -1,6 +1,9 @@
 import { Router, type IRouter } from "express";
 import { requireCronToken } from "../middlewares/requireCronToken";
 import { rodarProximaCategoria } from "../lib/daily-generator";
+import { minerarPorMacro } from "../lib/mine-runner";
+import { enfileirarCandidatos, estatisticasFila } from "../lib/keyword-queue";
+import { indexarCorpus } from "../lib/corpus-index";
 
 const router: IRouter = Router();
 
@@ -31,6 +34,54 @@ router.post(
       res
         .status(500)
         .json({ error: "Falha ao processar a próxima categoria." });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Mineração de demanda de UMA macrocategoria (Google Autocomplete pt+en ->
+// filtros -> fila). É uma operação LONGA (dezenas de segundos a minutos), então
+// prefira rodar como um job agendado com timeout alto, não numa requisição de
+// usuário. Uma macro por chamada mantém a duração controlada.
+//   POST /internal/blog/mine  { "macro": "Ansiedade e Estresse" }
+// ---------------------------------------------------------------------------
+router.post(
+  "/internal/blog/mine",
+  requireCronToken,
+  async (req, res): Promise<void> => {
+    const macro =
+      typeof req.body?.macro === "string" ? req.body.macro.trim() : "";
+    if (!macro) {
+      res.status(400).json({ error: "Informe a macro a minerar." });
+      return;
+    }
+    try {
+      const candidatos = await minerarPorMacro(macro);
+      const r = await enfileirarCandidatos(candidatos);
+      const stats = await estatisticasFila();
+      res.json({ macro, minerados: candidatos.length, ...r, fila: stats });
+    } catch (err) {
+      req.log.error({ err, macro }, "Falha na mineração.");
+      res.status(500).json({ error: "Falha ao minerar a macro." });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// (Re)indexa o corpus de posts publicados (anti-canibalização + citação
+// cruzada). Rápido; rode após um deploy ou importação de posts.
+//   POST /internal/blog/reindex-corpus
+// ---------------------------------------------------------------------------
+router.post(
+  "/internal/blog/reindex-corpus",
+  requireCronToken,
+  async (req, res): Promise<void> => {
+    try {
+      const r = await indexarCorpus();
+      res.json(r);
+    } catch (err) {
+      req.log.error({ err }, "Falha ao reindexar o corpus.");
+      res.status(500).json({ error: "Falha ao reindexar o corpus." });
     }
   },
 );

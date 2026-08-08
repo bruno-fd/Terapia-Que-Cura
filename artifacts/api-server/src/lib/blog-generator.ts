@@ -161,15 +161,44 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
-// Monta o HTML inicial de um post a partir das seções geradas pela IA.
-export function sectionsToHtml(body: BlogPostSection[]): string {
+// Converte um parágrafo em HTML seguro, transformando links internos em markdown
+// `[texto](/blog/slug)` em <a> APENAS quando o slug está na allowlist (os posts
+// realmente passados para citação cruzada). Slug fora da lista vira texto puro:
+// assim o modelo nunca gera link interno quebrado. O texto é sempre escapado.
+function renderParagrafo(p: string, slugsPermitidos: Set<string>): string {
+  const linkRe = /\[([^\]]+)\]\(\/blog\/([a-z0-9-]+)\)/g;
+  let out = "";
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = linkRe.exec(p)) !== null) {
+    out += escapeHtml(p.slice(last, m.index));
+    const texto = escapeHtml(m[1]);
+    const slug = m[2];
+    if (slugsPermitidos.has(slug)) {
+      out += `<a href="/blog/${slug}">${texto}</a>`;
+    } else {
+      out += texto; // link não autorizado: cai para texto puro
+    }
+    last = linkRe.lastIndex;
+  }
+  out += escapeHtml(p.slice(last));
+  return out;
+}
+
+// Monta o HTML inicial de um post a partir das seções geradas pela IA. Aceita
+// uma allowlist de slugs para os links internos da citação cruzada (vazia por
+// padrão: qualquer markdown de link vira texto puro).
+export function sectionsToHtml(
+  body: BlogPostSection[],
+  slugsPermitidos: Set<string> = new Set(),
+): string {
   const parts: string[] = [];
   for (const section of body) {
     if (section.heading) {
       parts.push(`<h2>${escapeHtml(section.heading)}</h2>`);
     }
     for (const p of section.paragraphs) {
-      parts.push(`<p>${escapeHtml(p)}</p>`);
+      parts.push(`<p>${renderParagrafo(p, slugsPermitidos)}</p>`);
     }
   }
   return parts.join("\n");
@@ -379,6 +408,185 @@ Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
 }
 
 O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, inclua de 3 a 5 seções, cada uma com "heading" (H2) e seus parágrafos. Não inclua o disclaimer no JSON, ele é adicionado automaticamente.`,
+      },
+    ],
+  });
+
+  const parsed = parseJson(
+    extractText(message.content),
+  ) as Partial<GeneratedPost>;
+  return buildGeneratedPost(parsed, subcategorias);
+}
+
+// ------------------------------------------------------------------
+// Geração ancorada por cluster (esboço -> expansão)
+//
+// Em vez de a IA inventar o tema, geramos ancorados numa busca real (a mais
+// forte do cluster = H1) e nas buscas-irmãs (viram H2 e a FAQ). Dois passos:
+// esboço curto -> expansão completa. O resultado é um GeneratedPost normal, que
+// segue pelo mesmo revisor/correção do fluxo existente.
+// ------------------------------------------------------------------
+
+export interface EsbocoPost {
+  objetivo: string;
+  h1: string;
+  subtitulo: string;
+  h2: string[];
+  subcategoria: string | null;
+}
+
+export interface PostRelacionadoParaCitar {
+  title: string;
+  slug: string;
+}
+
+// Passo 1: esboço. Dado o eixo + a busca-alvo + as perguntas-irmãs, devolve o
+// objetivo, o H1 (responde à busca, ortografia corrigida, <=70 chars, PT-BR), o
+// subtítulo e a lista de H2 (terminando em "Perguntas frequentes").
+export async function gerarEsboco(
+  macro: string,
+  buscaAlvo: string,
+  perguntasIrmas: string[],
+  subcategorias: string[] = [],
+): Promise<EsbocoPost> {
+  const irmasTxt =
+    perguntasIrmas.length > 0
+      ? `\nPerguntas relacionadas que pessoas também buscam (use para definir H2 e a FAQ):\n${perguntasIrmas
+          .map((p) => `- ${p}`)
+          .join("\n")}`
+      : "";
+  const subInstrucao =
+    subcategorias.length > 0
+      ? `Escolha "subcategoria" entre: ${subcategorias
+          .map((s) => `"${s}"`)
+          .join(", ")}, ou null.`
+      : `Defina "subcategoria" como null.`;
+
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 2048,
+    system: EDITORIAL_RULES,
+    messages: [
+      {
+        role: "user",
+        content: `Planeje (só o esboço, não escreva o post ainda) um post para a macrocategoria "${macro}", ancorado na busca real: "${buscaAlvo}".${irmasTxt}
+
+O H1 deve responder diretamente a essa busca, com ortografia e acentuação corretas, no máximo 70 caracteres, em português. A última seção (H2) deve ser exatamente "Perguntas frequentes". ${subInstrucao}
+
+Responda APENAS com JSON válido, sem texto extra:
+{
+  "objetivo": "o que o leitor deve entender ao final",
+  "h1": "título H1 (<=70 chars)",
+  "subtitulo": "subtítulo de uma frase",
+  "h2": ["Seção 1", "Seção 2", "...", "Perguntas frequentes"],
+  "subcategoria": "tema específico da lista, ou null"
+}`,
+      },
+    ],
+  });
+
+  const parsed = parseJson(extractText(message.content)) as Partial<EsbocoPost>;
+  const stripDash = (s: string) => s.replace(/—/g, "-").trim();
+  if (
+    !parsed ||
+    typeof parsed.h1 !== "string" ||
+    typeof parsed.subtitulo !== "string" ||
+    !Array.isArray(parsed.h2)
+  ) {
+    throw new Error("Resposta da IA em formato inesperado para o esboço.");
+  }
+  const h2 = parsed.h2
+    .filter((h): h is string => typeof h === "string")
+    .map(stripDash)
+    .filter(Boolean);
+  if (!h2.some((h) => /perguntas frequentes/i.test(h))) {
+    h2.push("Perguntas frequentes");
+  }
+  const subSugerida =
+    typeof parsed.subcategoria === "string"
+      ? stripDash(parsed.subcategoria)
+      : null;
+  const subcategoria =
+    subSugerida && subcategorias.includes(subSugerida) ? subSugerida : null;
+
+  return {
+    objetivo: typeof parsed.objetivo === "string" ? stripDash(parsed.objetivo) : "",
+    h1: stripDash(parsed.h1).slice(0, 90),
+    subtitulo: stripDash(parsed.subtitulo),
+    h2,
+    subcategoria,
+  };
+}
+
+// Passo 2: expansão. Escreve o post COMPLETO seguindo o esboço, respondendo à
+// FAQ com as perguntas-irmãs e citando de forma natural (máx. 2-3 links) os
+// posts internos relacionados via markdown [texto](/blog/slug), com os slugs
+// exatos fornecidos. Resultado no formato GeneratedPost.
+export async function expandirPost(
+  macro: string,
+  buscaAlvo: string,
+  esboco: EsbocoPost,
+  perguntasIrmas: string[],
+  postsRelacionados: PostRelacionadoParaCitar[],
+  subcategorias: string[] = [],
+): Promise<GeneratedPost> {
+  const h2Txt = esboco.h2.map((h) => `- ${h}`).join("\n");
+  const faqTxt =
+    perguntasIrmas.length > 0
+      ? `\nNa seção "Perguntas frequentes", responda objetivamente a estas perguntas reais:\n${perguntasIrmas
+          .map((p) => `- ${p}`)
+          .join("\n")}`
+      : "";
+  const relTxt =
+    postsRelacionados.length > 0
+      ? `\nPOSTS INTERNOS RELACIONADOS (cite de 2 a 3 no MEIO do texto, de forma natural, nunca uma lista "veja também"; use markdown [texto âncora](/blog/SLUG) com o slug EXATO):\n${postsRelacionados
+          .map((p) => `- "${p.title}" -> /blog/${p.slug}`)
+          .join("\n")}`
+      : "";
+  const subInstrucao =
+    subcategorias.length > 0
+      ? `Use "subcategoria" = ${
+          esboco.subcategoria ? `"${esboco.subcategoria}"` : "null"
+        } (deve ser uma de: ${subcategorias.map((s) => `"${s}"`).join(", ")}, ou null).`
+      : `Defina "subcategoria" como null.`;
+
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: EDITORIAL_RULES,
+    messages: [
+      {
+        role: "user",
+        content: `Escreva o post completo do blog para a macrocategoria "${macro}", ancorado na busca real "${buscaAlvo}", seguindo este esboço:
+
+OBJETIVO: ${esboco.objetivo}
+H1: ${esboco.h1}
+SUBTÍTULO: ${esboco.subtitulo}
+SEÇÕES (H2), nesta ordem:
+${h2Txt}
+${faqTxt}
+${relTxt}
+
+Siga rigorosamente todas as regras editoriais e do CFP. Entre 600 e 900 palavras. Nunca use travessão. ${subInstrucao}
+
+IMAGEM DE CAPA: em "imageQuery", uma frase curta em INGLÊS (2 a 5 palavras) para a foto de capa. Em temas sensíveis, use algo simbólico e acolhedor, nunca literal.
+
+Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
+{
+  "title": "${esboco.h1}",
+  "subtitle": "subtítulo",
+  "excerpt": "resumo de 1 a 2 frases",
+  "subcategoria": "tema da lista, ou null",
+  "keywords": ["palavra-chave 1", "palavra-chave 2", "palavra-chave 3"],
+  "body": [
+    { "paragraphs": ["introdução 1", "introdução 2"] },
+    { "heading": "Subtítulo H2", "paragraphs": ["parágrafo", "parágrafo"] }
+  ],
+  "crpClosing": "encerramento no padrão permitido pelo CFP",
+  "imageQuery": "frase curta em inglês"
+}
+
+O primeiro item de "body" é a introdução e NÃO tem "heading". A penúltima seção é "Perguntas frequentes". Não inclua o disclaimer no JSON.`,
       },
     ],
   });

@@ -18,6 +18,10 @@ async function buildAll() {
     entryPoints: [
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/generate-daily-posts.ts"),
+      path.resolve(artifactDir, "src/blog-migrate.ts"),
+      path.resolve(artifactDir, "src/mine-keywords.ts"),
+      path.resolve(artifactDir, "src/index-corpus.ts"),
+      path.resolve(artifactDir, "src/preview-post.ts"),
     ],
     platform: "node",
     bundle: true,

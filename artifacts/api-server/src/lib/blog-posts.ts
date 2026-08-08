@@ -8,6 +8,8 @@ import {
 } from "./blog-generator";
 import { subcategoriasDe } from "./categorias";
 import { fetchThemedImage, resolverQueryDeImagem } from "./pexels";
+import { indexarPost } from "./corpus-index";
+import { logger } from "./logger";
 
 // Garante um slug único na tabela de posts, adicionando um sufixo numérico
 // (ou o timestamp como último recurso) quando já existe.
@@ -37,13 +39,22 @@ async function ensureUniqueSlug(title: string): Promise<string> {
 export async function persistGeneratedPost(
   generated: GeneratedPost,
   category: string,
-  opts: { publish: boolean },
+  opts: {
+    publish: boolean;
+    // Busca real que ancorou o post (a mais forte do cluster). Persistida em
+    // target_query para dedup por intenção e métrica de conversão.
+    targetQuery?: string | null;
+    // Slugs de posts internos autorizados como links de citação cruzada. Só
+    // esses viram <a> no bodyHtml; qualquer outro link vira texto puro.
+    slugsCitaveis?: string[];
+  },
 ): Promise<BlogPostRow> {
   const slug = await ensureUniqueSlug(generated.title);
   const readingMinutes = computeReadingMinutes(
     generated.body,
     generated.crpClosing,
   );
+  const slugsPermitidos = new Set(opts.slugsCitaveis ?? []);
 
   // A IA pode sugerir um tema específico (subcategoria); só persistimos se ele
   // pertencer à macrocategoria escolhida.
@@ -72,17 +83,31 @@ export async function persistGeneratedPost(
       keywords: generated.keywords,
       readingMinutes,
       body: generated.body,
-      bodyHtml: sectionsToHtml(generated.body),
+      bodyHtml: sectionsToHtml(generated.body, slugsPermitidos),
       crpClosing: generated.crpClosing,
       coverImageUrl: imagem?.url ?? null,
       coverImageAlt: imagem?.alt ?? null,
       coverImageCredit: imagem?.credit ?? null,
       coverImageCreditUrl: imagem?.creditUrl ?? null,
+      targetQuery: opts.targetQuery ?? null,
       published: opts.publish,
       // A data de publicação só é registrada quando o post já vai ao ar.
       publishedAt: opts.publish ? new Date() : null,
     })
     .returning();
+
+  // Mantém o índice do corpus em dia (anti-canibalização + citação cruzada).
+  // Só posts publicados entram no índice; falha aqui nunca impede a criação.
+  if (created.published) {
+    try {
+      await indexarPost(created.id);
+    } catch (err) {
+      logger.warn(
+        { err, postId: created.id },
+        "Falha ao indexar o post no corpus (segue sem indexar).",
+      );
+    }
+  }
 
   return created;
 }

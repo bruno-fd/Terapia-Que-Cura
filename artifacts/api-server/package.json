@@ -8,6 +8,10 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "generate-daily-posts": "pnpm run build && node --enable-source-maps ./dist/generate-daily-posts.mjs",
+    "blog-migrate": "pnpm run build && node --enable-source-maps ./dist/blog-migrate.mjs",
+    "mine-keywords": "pnpm run build && node --enable-source-maps ./dist/mine-keywords.mjs",
+    "index-corpus": "pnpm run build && node --enable-source-maps ./dist/index-corpus.mjs",
+    "preview-post": "pnpm run build && node --enable-source-maps ./dist/preview-post.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

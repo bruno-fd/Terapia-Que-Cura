@@ -35,6 +35,9 @@ export const blogPostsTable = pgTable("blog_posts", {
   coverImageAlt: text("cover_image_alt"),
   coverImageCredit: text("cover_image_credit"),
   coverImageCreditUrl: text("cover_image_credit_url"),
+  // Busca real que ancorou o post (a query mais forte do cluster). Nula nos
+  // posts manuais/antigos. Serve para dedup por intencao e metrica de conversao.
+  targetQuery: text("target_query"),
   published: boolean("published").notNull().default(true),
   // Data da primeira publicação. Nulo enquanto o post é rascunho.
   publishedAt: timestamp("published_at", { withTimezone: true }),
