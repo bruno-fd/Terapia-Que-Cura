@@ -1,0 +1,301 @@
+From 75af2c136273bfa6453f68ae230cd98e3ebee496 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 9 Aug 2026 20:38:02 +0000
+Subject: [PATCH] Cannibalization gate: subtopic guard, stripMold cleanup,
+ cluster consolidation
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Follow-up to the entity recalibration, from validation against the real corpus.
+
+(C) Subtopic guard: besides numbered variants, entities where one is a strict
+    subset of the other with a MEANINGFUL extra qualifier are distinct topics and
+    never block ("estresse pós-traumático" vs "…no trabalho"; "avaliação para
+    cirurgia" vs "…de catarata"; general vs "tipo 1"). A filler-only extra
+    ("…sem motivo" vs "…sem motivo aparente") is NOT distinct and still blocks,
+    so real rewordings keep being caught. saoTemasDistintos = number OR subtopic.
+
+(D) stripMold cleanup: removes leftover connectives after mold removal (leading
+    "google", border/adjacent stopword runs) so "de ansiedade generalizada" →
+    "ansiedade generalizada", "burnout e para melhorar" → "burnout melhorar",
+    while a single connective between content words is preserved ("não monogamia
+    e poliamor"). Cosmetic; did not flip decisions but keeps entities clean.
+
+(B) Consolidation (explicit decision = one dense post per theme, matching the
+    gate): when a cluster post is published, the sibling questions pulled into its
+    H2/FAQ are also marked `used` (marcarComoUsadas), so they don't return as
+    separate targets the gate would later reject. Aligns the queue with the gate.
+
+Report now returns `temasDistintos` (number or subtopic) driving `bloquearia`.
+Typecheck + build pass.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_013R8r3kYmmxtUVyMSRh4xk1
+---
+ artifacts/api-server/src/lib/corpus-index.ts  | 98 ++++++++++++++++---
+ .../api-server/src/lib/daily-generator.ts     | 10 ++
+ artifacts/api-server/src/lib/keyword-queue.ts | 16 +++
+ replit.md                                     |  3 +-
+ 4 files changed, 110 insertions(+), 17 deletions(-)
+
+diff --git a/artifacts/api-server/src/lib/corpus-index.ts b/artifacts/api-server/src/lib/corpus-index.ts
+index e03bb58..5820a29 100644
+--- a/artifacts/api-server/src/lib/corpus-index.ts
++++ b/artifacts/api-server/src/lib/corpus-index.ts
+@@ -94,15 +94,53 @@ const MOLDES = [
+   "entenda",
+ ].sort((a, b) => b.length - a.length);
+ 
+-// Remove o molde do título normalizado, deixando a entidade/tema. Se sobrar
+-// vazio (título 100% molde), devolve o normalizado original para não comparar
+-// string vazia (que casaria com tudo).
++// Conectivos/preposições que não carregam tema. Usados para limpar sobras do
++// stripMold e para o teste de subtema.
++const BORDA_STOP = new Set([
++  "de", "do", "da", "dos", "das", "e", "o", "a", "os", "as", "para", "com",
++  "no", "na", "em", "que", "por", "ao", "aos",
++]);
++
++// Qualificadores "de recheio": aparecem como token extra mas NÃO tornam o tema
++// distinto (é reformulação, não subtema). "coração acelerado sem motivo" x
++// "...sem motivo aparente" continua sendo o mesmo tema (duplicata).
++const FILLER = new Set([
++  "aparente", "mesmo", "realmente", "afinal", "comum", "normal", "verdadeiro",
++  "verdadeira", "exato", "exata", "simples",
++]);
++
++// Limpa sobras do stripMold: descarta "google" inicial, remove conectivos
++// soltos nas bordas e runs de conectivos deixados no meio ao remover um molde
++// (ex.: "burnout e para melhorar" -> "burnout melhorar"), preservando um
++// conectivo único entre palavras de conteúdo ("nao monogamia e poliamor").
++function limparEntidade(s: string): string {
++  let toks = s.split(" ").filter(Boolean);
++  if (toks[0] === "google") toks = toks.slice(1);
++  const isStop = (t: string) => BORDA_STOP.has(t);
++  const out: string[] = [];
++  for (let i = 0; i < toks.length; i++) {
++    const t = toks[i];
++    if (isStop(t)) {
++      const prevStop = i === 0 || isStop(toks[i - 1]);
++      const nextStop = i === toks.length - 1 || isStop(toks[i + 1]);
++      if (i === 0 || i === toks.length - 1 || prevStop || nextStop) continue;
++    }
++    out.push(t);
++  }
++  while (out.length && isStop(out[0])) out.shift();
++  while (out.length && isStop(out[out.length - 1])) out.pop();
++  return out.join(" ");
++}
++
++// Remove o molde do título normalizado e limpa sobras, deixando a entidade/tema.
++// Se sobrar vazio (título 100% molde), devolve o normalizado original para não
++// comparar string vazia (que casaria com tudo).
+ export function stripMold(titleNormalized: string): string {
+   let s = ` ${titleNormalized} `;
+   for (const molde of MOLDES) {
+     s = s.split(` ${molde} `).join(" ");
+   }
+-  s = s.replace(/\s+/g, " ").trim();
++  s = limparEntidade(s.replace(/\s+/g, " ").trim());
+   return s || titleNormalized;
+ }
+ 
+@@ -110,8 +148,7 @@ function numerosDe(s: string): string {
+   return (s.match(/\b\d+\b/g) ?? []).sort().join(",");
+ }
+ 
+-// true quando as duas entidades são iguais EXCETO por um número (Tipo 1 x Tipo
+-// 2). Nesse caso são temas distintos e não devem bloquear.
++// Iguais exceto por um número (Bipolar Tipo 1 x Tipo 2): temas distintos.
+ function diferemApenasPorNumero(a: string, b: string): boolean {
+   const na = numerosDe(a);
+   const nb = numerosDe(b);
+@@ -121,6 +158,33 @@ function diferemApenasPorNumero(a: string, b: string): boolean {
+   return semNum(a) === semNum(b) && na !== nb;
+ }
+ 
++// Tokens de conteúdo (sem conectivos).
++function conteudo(s: string): Set<string> {
++  return new Set(s.split(" ").filter((t) => t && !BORDA_STOP.has(t)));
++}
++
++// Subtema qualificado: uma entidade é subconjunto estrito da outra, e o(s)
++// token(s) extra(s) são conteúdo significativo (não filler). Ex.: "estresse pos
++// traumatico" x "...no trabalho", "avaliacao psicologica para cirurgia" x "...de
++// catarata", "transtorno bipolar" x "transtorno bipolar tipo 1". São páginas
++// legítimas mais específicas, não duplicatas. NÃO dispara para filler puro
++// ("...sem motivo" x "...sem motivo aparente"), que continua duplicata.
++function ehSubtemaQualificado(a: string, b: string): boolean {
++  const A = conteudo(a);
++  const B = conteudo(b);
++  const [menor, maior] = A.size <= B.size ? [A, B] : [B, A];
++  if (menor.size === 0 || menor.size === maior.size) return false;
++  for (const t of menor) if (!maior.has(t)) return false; // menor ⊆ maior
++  const extras = [...maior].filter((t) => !menor.has(t));
++  return extras.some((t) => !FILLER.has(t) && !/^\d+$/.test(t));
++}
++
++// Dois temas são distintos (e portanto NÃO devem bloquear) quando diferem só por
++// número OU quando um é subtema qualificado do outro.
++function saoTemasDistintos(a: string, b: string): boolean {
++  return diferemApenasPorNumero(a, b) || ehSubtemaQualificado(a, b);
++}
++
+ function textoParaEmbedding(title: string, excerpt: string): string {
+   return `${title}. ${excerpt}`.replace(/\s+/g, " ").trim();
+ }
+@@ -257,7 +321,7 @@ export async function coberturaLexical(texto: string): Promise<number | null> {
+     if (
+       row &&
+       Number(row.sim) > LIMIAR_LEXICAL &&
+-      !diferemApenasPorNumero(cand, String(row.entity))
++      !saoTemasDistintos(cand, String(row.entity))
+     ) {
+       return Number(row.post_id);
+     }
+@@ -308,7 +372,7 @@ export async function verificarCanibalizacao(
+       if (
+         row &&
+         Number(row.sim) > LIMIAR_LEXICAL &&
+-        !diferemApenasPorNumero(candEntity, String(row.entity))
++        !saoTemasDistintos(candEntity, String(row.entity))
+       ) {
+         return {
+           duplicado: true,
+@@ -344,7 +408,7 @@ export async function verificarCanibalizacao(
+         if (
+           row &&
+           Number(row.cos) > LIMIAR_SEMANTICO &&
+-          !diferemApenasPorNumero(candEntity, String(row.entity))
++          !saoTemasDistintos(candEntity, String(row.entity))
+         ) {
+           return {
+             duplicado: true,
+@@ -435,7 +499,9 @@ export interface ParCanibalizacao {
+   camada: "lexical" | "semantica";
+   similaridade: number;
+   bloquearia: boolean;
+-  numeroDistinto: boolean;
++  // true quando são temas distintos (variante numérica ou subtema qualificado),
++  // por isso NÃO bloqueiam mesmo com similaridade alta.
++  temasDistintos: boolean;
+   a: { postId: number; title: string; slug: string; entity: string };
+   b: { postId: number; title: string; slug: string; entity: string };
+ }
+@@ -534,15 +600,15 @@ export async function relatorioCanibalizacao(): Promise<{
+   for (const r of lexicais.rows) {
+     const chave = `${r.a_id}-${r.b_id}`;
+     const sim = Number(Number(r.sim).toFixed(3));
+-    const numeroDistinto = diferemApenasPorNumero(
++    const temasDistintos = saoTemasDistintos(
+       String(r.a_entity),
+       String(r.b_entity),
+     );
+     porChave.set(chave, {
+       camada: "lexical",
+       similaridade: sim,
+-      bloquearia: sim > LIMIAR_LEXICAL && !numeroDistinto,
+-      numeroDistinto,
++      bloquearia: sim > LIMIAR_LEXICAL && !temasDistintos,
++      temasDistintos,
+       a: info(Number(r.a_id), String(r.a_entity)),
+       b: info(Number(r.b_id), String(r.b_entity)),
+     });
+@@ -551,12 +617,12 @@ export async function relatorioCanibalizacao(): Promise<{
+   for (const r of semanticos.rows) {
+     const chave = `${r.a_id}-${r.b_id}`;
+     const cos = Number(Number(r.cos).toFixed(3));
+-    const numeroDistinto = diferemApenasPorNumero(
++    const temasDistintos = saoTemasDistintos(
+       String(r.a_entity),
+       String(r.b_entity),
+     );
+     const existente = porChave.get(chave);
+-    const bloqueariaSem = cos > LIMIAR_SEMANTICO && !numeroDistinto;
++    const bloqueariaSem = cos > LIMIAR_SEMANTICO && !temasDistintos;
+     if (existente) {
+       // Par já veio pelo lexical: mantém, mas o gate bloqueia se QUALQUER camada
+       // bloquear (OR).
+@@ -566,7 +632,7 @@ export async function relatorioCanibalizacao(): Promise<{
+         camada: "semantica",
+         similaridade: cos,
+         bloquearia: bloqueariaSem,
+-        numeroDistinto,
++        temasDistintos,
+         a: info(Number(r.a_id), String(r.a_entity)),
+         b: info(Number(r.b_id), String(r.b_entity)),
+       });
+diff --git a/artifacts/api-server/src/lib/daily-generator.ts b/artifacts/api-server/src/lib/daily-generator.ts
+index ecdfd83..176b453 100644
+--- a/artifacts/api-server/src/lib/daily-generator.ts
++++ b/artifacts/api-server/src/lib/daily-generator.ts
+@@ -13,6 +13,7 @@ import {
+   proximasPendentes,
+   perguntasDoCluster,
+   marcarComoUsada,
++  marcarComoUsadas,
+   marcarComoDescartada,
+ } from "./keyword-queue";
+ import {
+@@ -427,6 +428,15 @@ export async function processarCategoriaComFila(
+     slugsCitaveis,
+   });
+   await marcarComoUsada(alvo.id, created.id);
++  // Consolidação por cluster: as perguntas-irmãs que entraram no post (H2/FAQ)
++  // também são consumidas, para não reaparecerem como alvos e serem barradas
++  // pelo gate depois (alinha a fila com a estratégia de um post por tema).
++  if (irmas.length > 0) {
++    await marcarComoUsadas(
++      irmas.map((i) => i.id),
++      created.id,
++    );
++  }
+   logger.info(
+     {
+       category,
+diff --git a/artifacts/api-server/src/lib/keyword-queue.ts b/artifacts/api-server/src/lib/keyword-queue.ts
+index bc3e864..d56ac3f 100644
+--- a/artifacts/api-server/src/lib/keyword-queue.ts
++++ b/artifacts/api-server/src/lib/keyword-queue.ts
+@@ -173,6 +173,22 @@ export async function marcarComoUsada(
+     .where(eq(blogKeywordQueueTable.id, id));
+ }
+ 
++// Marca VÁRIAS perguntas como usadas de uma vez, ligadas ao mesmo post. Usado
++// para consolidação por cluster: as perguntas-irmãs que entraram no post como H2
++// e FAQ são consumidas junto, para não voltarem como alvos separados (o que faria
++// o gate de canibalização reprová-las depois). Implementa o "marcar o cluster
++// inteiro como usado" da estratégia (um post denso por tema).
++export async function marcarComoUsadas(
++  ids: number[],
++  postId: number,
++): Promise<void> {
++  if (ids.length === 0) return;
++  await db
++    .update(blogKeywordQueueTable)
++    .set({ status: "used", usedPostId: postId, usedAt: new Date() })
++    .where(inArray(blogKeywordQueueTable.id, ids));
++}
++
+ // Descarta uma pergunta (status "skipped") para garantir progresso: quando ela
+ // gera um post reprovado ou já coberto, é retirada da fila em vez de ser
+ // retentada indefinidamente. Há milhares na fila; perder uma é irrelevante.
+diff --git a/replit.md b/replit.md
+index 385a1d3..f0eeb50 100644
+--- a/replit.md
++++ b/replit.md
+@@ -50,8 +50,9 @@ Diretório brasileiro de psicólogos: conecta pessoas a psicólogos por área/te
+ ### Blog anti-cannibalization (semantic + lexical)
+ - Problem it solves: the only duplicate guard used to be EXACT normalized-title match, which let heavy THEME cannibalization through (near-twin titles, clustered subcategorias). This adds real near-duplicate detection.
+ - Additive schema: table `blog_post_index` (`lib/db/src/schema/blog-post-index.ts`) — `post_id` (PK, FK→blog_posts), `title_normalized`, `entity_normalized` (pg_trgm; title with the boilerplate mold stripped), `embedded_text`, `embedding` vector(1024) (pgvector, nullable), `updated_at`. Nothing else changes; `blog_keyword_queue` is untouched.
+-- Two detection layers (`lib/corpus-index.ts`): Camada 1 lexical compares the ENTITY, not the whole title — `similarity(entity_normalized, stripMold(cand)) > BLOG_CANIB_LEX` (default 0.72, pg_trgm). Comparing full titles let distinct topics collide on the shared mold ("… tem cura? o que esperar do tratamento", "… o que é e como…"); `stripMold` removes those so "alcoolismo" vs "bulimia" ≈ 0. Camada 2 semantic cosine `> BLOG_CANIB_SEM` (default 0.90, pgvector). NUMBERED-VARIANT GUARD: entities equal except for a number (Bipolar Tipo 1 vs Tipo 2) are distinct topics and never block, in both layers. Both layers FAIL-OPEN: no table/extension or no embeddings → "not duplicate" (never blocks generation). Thresholds are env-tunable in prod without a logic redeploy.
++- Two detection layers (`lib/corpus-index.ts`): Camada 1 lexical compares the ENTITY, not the whole title — `similarity(entity_normalized, stripMold(cand)) > BLOG_CANIB_LEX` (default 0.72, pg_trgm). Comparing full titles let distinct topics collide on the shared mold ("… tem cura? o que esperar do tratamento", "… o que é e como…"); `stripMold` removes those so "alcoolismo" vs "bulimia" ≈ 0. Camada 2 semantic cosine `> BLOG_CANIB_SEM` (default 0.90, pgvector). DISTINCT-TOPIC GUARD (both layers never block): entities equal except for a number (Bipolar Tipo 1 vs Tipo 2), OR one entity a strict subset of the other with a meaningful extra qualifier (subtema: "estresse pós-traumático" vs "…no trabalho"; "avaliação psicológica para cirurgia" vs "…de catarata"). A filler-only extra ("…sem motivo" vs "…sem motivo aparente") is NOT a distinct topic and still blocks. `stripMold` also cleans leftover connectives so the entity is clean. Both layers FAIL-OPEN: no table/extension or no embeddings → "not duplicate" (never blocks generation). Thresholds are env-tunable in prod without a logic redeploy.
+ - Two checkpoints (reusing the existing anchored flow): (1) ENQUEUE — `enfileirarSugestoes` skips a mined search already covered lexically; and `processarCategoriaComFila` skips a target already covered before generating. (2) BEFORE PUBLISH — `verificarCanibalizacao(title, excerpt)` (L1+L2) discards a draft too close to an existing post and marks the queue item `skipped` for human consolidation.
++- STRATEGY = one dense post per theme (consolidation), matching the gate: when a cluster post is published, its sibling questions pulled into H2/FAQ are ALSO marked `used` (`marcarComoUsadas`), so they don't come back as separate targets the gate would then reject (this aligns the queue with the gate). To instead cover distinct search intents as separate posts, that consolidation + the same-entity block would need to be relaxed (intent-aware) — a deliberate change, not the current default.
+ - Cross-citation: `postsRelacionadosParaCitar` (semantic band [0.35, 0.85)) feeds related posts into `generatePostAncorado`, which cites 2-3 naturally via `[texto](/blog/slug)`. `sectionsToHtml(body, slugsPermitidos)` converts those to `<a>` ONLY for allowlisted slugs (others become plain text) — no broken internal links possible.
+ - `persistGeneratedPost` (re)indexes the post via `indexarPost` right after publishing, keeping the corpus current.
+ - Embeddings provider (`lib/embeddings.ts`, 1024 dims, fail-open, 15s timeout/attempt): the Replit OpenAI proxy does NOT route the embeddings API (documented unsupported), so precedence is: (1) `BLOG_EMBEDDING_PROVIDER=voyage`+key, (2) own key `BLOG_EMBEDDING_API_KEY` (+ optional `BLOG_EMBEDDING_BASE_URL`, default OpenAI) — RECOMMENDED, (3) the Replit proxy `AI_INTEGRATIONS_OPENAI_*` only as a last resort, with a one-time WARN. `BLOG_EMBEDDING_MODEL` overrides the model. Without any, only Camada 1 lexical runs.
+-- 
+2.43.0
+

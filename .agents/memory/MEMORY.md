@@ -13,4 +13,6 @@
 - [Publish travado por drift de schema](publish-schema-drift-extensions.md) — copiar dev→prod no publish SOBRESCREVE prod; zere o drift dropando o derivado no dev e migre por endpoint do app.
 - [Embeddings não vão pelo proxy do Replit](replit-ai-embeddings-unsupported.md) — AI Integrations não roteiam /embeddings; qualquer feature vetorial exige chave própria.
 - [Similaridade de título em blog formulaico](titulo-trigrama-formula.md) — pg_trgm sobre títulos com molde repetido mede a fórmula, não o tema; gera falso positivo de duplicata.
+- [Gate fail-open dependente de coluna nova](gate-dependente-de-schema.md) — publicar sem migrate+reindex deixa o gate silenciosamente desligado; o catch não distingue "coluna não existe" de "sem dados".
+- [Guarda de subtema precisa de teto](guarda-subtema-precisa-teto.md) — "subconjunto = subtema" libera duplicata real quando sobra resíduo de frase; use teto de similaridade e não aplique na camada semântica.
 - [Asaas Checkout lifecycle inversion](asaas-checkout-inversion.md) — sub created only AFTER payment; row keyed by asaasCheckoutId, backfilled on CHECKOUT_PAID; never activate/provision without a resolved sub id (503 to retry).
