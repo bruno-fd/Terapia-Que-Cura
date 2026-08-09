@@ -4,19 +4,24 @@ import { logger } from "./logger";
 // Provider de embeddings (vetor de 1024 dimensões). FAIL-OPEN: sem provider,
 // tudo degrada para a camada lexical (nunca lança).
 //
-// Resolução do provider (nesta ordem):
-//   1. Proxy OpenAI do Replit (SEM chave própria): AI_INTEGRATIONS_OPENAI_BASE_URL
-//      + AI_INTEGRATIONS_OPENAI_API_KEY. É o mesmo padrão da integração Anthropic
-//      já usada aqui. Modelo text-embedding-3-small, dimensions=1024.
-//   2. Chave própria OpenAI-compatível: BLOG_EMBEDDING_API_KEY (+ opcional
-//      BLOG_EMBEDDING_BASE_URL). Default https://api.openai.com/v1.
-//   3. Voyage: BLOG_EMBEDDING_PROVIDER=voyage + BLOG_EMBEDDING_API_KEY.
+// Resolução do provider (nesta ordem; a chave própria vem ANTES do proxy porque
+// o proxy do Replit não roteia embeddings):
+//   1. Voyage: BLOG_EMBEDDING_PROVIDER=voyage + BLOG_EMBEDDING_API_KEY.
+//   2. OpenAI-compatível com chave própria: BLOG_EMBEDDING_API_KEY (+ opcional
+//      BLOG_EMBEDDING_BASE_URL). Default https://api.openai.com/v1. RECOMENDADO.
+//   3. Proxy OpenAI do Replit (AI_INTEGRATIONS_OPENAI_*), só como último recurso
+//      e com aviso: a API de embeddings NÃO é suportada por ele hoje.
 //
 // Override do modelo em qualquer caso: BLOG_EMBEDDING_MODEL.
 // ============================================================
 
 // Dimensão fixa: precisa casar com a coluna vector(1024) de blog_post_index.
 export const EMBEDDING_DIMS = 1024;
+
+// Timeout por tentativa de chamada ao provider. Sem isso, uma conexão pendurada
+// só morreria no default do Node (~5 min) segurando o advisory lock da
+// categoria; com o timeout, degradamos rápido para a camada lexical.
+const EMBEDDING_TIMEOUT_MS = 15000;
 
 interface ProviderConfig {
   kind: "openai" | "voyage";
@@ -34,25 +39,16 @@ function env(name: string): string | undefined {
   return v && v.trim() ? v.trim() : undefined;
 }
 
+// Loga uma vez por processo (evita poluir o log, já que resolverProvider é
+// chamado a cada gerarEmbeddings/embeddingsDisponiveis).
+let avisouProxyReplit = false;
+
 function resolverProvider(): ProviderConfig | null {
   const modelOverride = env("BLOG_EMBEDDING_MODEL");
-
-  // 1) Proxy OpenAI do Replit (sem chave própria).
-  const proxyBase = env("AI_INTEGRATIONS_OPENAI_BASE_URL");
-  const proxyKey = env("AI_INTEGRATIONS_OPENAI_API_KEY");
-  if (proxyBase && proxyKey) {
-    return {
-      kind: "openai",
-      url: joinUrl(proxyBase, "embeddings"),
-      key: proxyKey,
-      model: modelOverride ?? "text-embedding-3-small",
-    };
-  }
-
   const provider = (env("BLOG_EMBEDDING_PROVIDER") ?? "").toLowerCase();
   const key = env("BLOG_EMBEDDING_API_KEY");
 
-  // 3) Voyage (só com provider explícito).
+  // 1) Voyage (provider explícito + chave própria).
   if (provider === "voyage" && key) {
     return {
       kind: "voyage",
@@ -62,13 +58,35 @@ function resolverProvider(): ProviderConfig | null {
     };
   }
 
-  // 2) OpenAI-compatível com chave própria.
+  // 2) OpenAI-compatível com chave própria. CAMINHO RECOMENDADO neste ambiente:
+  // é o que sabidamente funciona (o proxy do Replit não roteia embeddings).
   if (key) {
     const base = env("BLOG_EMBEDDING_BASE_URL") ?? "https://api.openai.com/v1";
     return {
       kind: "openai",
       url: joinUrl(base, "embeddings"),
       key,
+      model: modelOverride ?? "text-embedding-3-small",
+    };
+  }
+
+  // 3) Proxy OpenAI do Replit (sem chave própria) — ÚLTIMO recurso. As AI
+  // Integrations do Replit documentam que a API de embeddings NÃO é suportada
+  // pelo proxy (só chat/responses/imagens/áudio), então este caminho tende a
+  // falhar aqui. Fica por robustez (caso um dia passe a rotear), mas avisamos.
+  const proxyBase = env("AI_INTEGRATIONS_OPENAI_BASE_URL");
+  const proxyKey = env("AI_INTEGRATIONS_OPENAI_API_KEY");
+  if (proxyBase && proxyKey) {
+    if (!avisouProxyReplit) {
+      avisouProxyReplit = true;
+      logger.warn(
+        "Embeddings caindo no proxy OpenAI do Replit, que normalmente NAO roteia /embeddings. Se a Camada 2 nao preencher, configure BLOG_EMBEDDING_API_KEY.",
+      );
+    }
+    return {
+      kind: "openai",
+      url: joinUrl(proxyBase, "embeddings"),
+      key: proxyKey,
       model: modelOverride ?? "text-embedding-3-small",
     };
   }
@@ -101,6 +119,9 @@ async function chamarProvider(
       Authorization: `Bearer ${cfg.key}`,
     },
     body: JSON.stringify(body),
+    // Aborta a tentativa se o provider pendurar a conexão. O erro cai no
+    // retry/backoff de gerarEmbeddings, que devolve null (fail-open) ao esgotar.
+    signal: AbortSignal.timeout(EMBEDDING_TIMEOUT_MS),
   });
 
   if (!resp.ok) {

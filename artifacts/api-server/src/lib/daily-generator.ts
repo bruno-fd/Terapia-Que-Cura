@@ -187,6 +187,24 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
     return "rejected";
   }
 
+  // Checkpoint 2 (anti-canibalização) TAMBÉM no fluxo clássico. Este é o
+  // caminho de fallback (fila vazia) e o que gerou os posts canibalizados até
+  // hoje; sem esta trava ele seguiria publicando gêmeos. Camada 1 lexical +
+  // Camada 2 semântica. Fail-open: sem índice/extensão/embeddings, não bloqueia.
+  const canib = await verificarCanibalizacao(atual.title, atual.excerpt);
+  if (canib.duplicado) {
+    const reason = `Provável canibalização (${canib.camada}) com o post ${canib.postId} (sim=${canib.similaridade?.toFixed(3)}). Descartado para consolidação humana.`;
+    logger.warn({ category, title: atual.title, canib }, reason);
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: atual.title,
+      reason,
+      correctionRounds: correcoes,
+    });
+    return "rejected";
+  }
+
   const created = await persistGeneratedPost(atual, category, {
     publish: true,
   });
