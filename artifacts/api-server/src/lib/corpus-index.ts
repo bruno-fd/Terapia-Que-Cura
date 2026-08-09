@@ -695,29 +695,43 @@ export async function relatorioCanibalizacao(): Promise<{
 }
 
 // ------------------------------------------------------------------
-// Plano de consolidação do PASSIVO (DRY-RUN, READ-ONLY).
+// Plano de consolidação do PASSIVO (DRY-RUN, READ-ONLY) — por COMPONENTE.
 //
-// Para cada par de posts publicados que o gate atual bloquearia, decide:
-//   - tipo "reformulacao": títulos quase idênticos (mesmo post reescrito) ->
-//     candidato natural a 301 (despublicar o mais fraco, redirecionar para o
-//     mais forte).
-//   - tipo "mesma-entidade-intencao-distinta" (grupo B): mesma entidade, mas
-//     intenção diferente (sintomas x tem cura x tratamento) -> NÃO despublicar
-//     (perde texto útil); sugerir CONSOLIDAR conteúdo ou manter os dois.
-//   - tipo "reformulacao-semantica": mesma ideia com outras palavras (disparo
-//     semântico) -> revisar; provável 301.
+// Um par não basta como unidade: pares encadeiam (A~B, B~C) e conflitam (o mesmo
+// post é "manter" num par e "sair" noutro). Então trabalhamos por COMPONENTE
+// CONEXO do grafo de duplicatas: UM vencedor por componente, e todos os demais
+// redirecionam DIRETO para ele (nunca A->B->C).
 //
-// "Mais forte" (para manter): profundidade (readingMinutes) -> mais antigo
-// (publishedAt/createdAt, mais tempo indexado) -> tem capa -> tem targetQuery.
+// Grupo B (mesma entidade, intenção distinta: sintomas x tratamento x tem cura)
+// NÃO entra no grafo de 301 e tem VETO: um post que aparece num par de grupo B
+// nunca é despublicado por outro par; se cair como perdedor de um componente, o
+// componente é marcado precisaRevisao e fica fora do apply automático.
 //
-// NÃO escreve nada. O apply (despublicar + registrar 301) é um passo separado,
-// só depois da sua aprovação e da definição do mecanismo de redirect.
+// Classificação por INTENÇÃO (robusta ao resíduo do stripMold): se os títulos
+// diferem numa palavra de intenção, é grupo B; senão é reformulação.
+//
+// READ-ONLY. O apply (despublicar + registrar 301) é um passo separado.
 // ------------------------------------------------------------------
 
-export type TipoPassivo =
-  | "reformulacao"
-  | "mesma-entidade-intencao-distinta"
-  | "reformulacao-semantica";
+// Palavras de INTENÇÃO de busca: títulos de mesmo tema que diferem por uma delas
+// são posts de intenção distinta (grupo B), não reformulação.
+const INTENCAO = new Set([
+  "sintomas", "sintoma", "tratamento", "tratamentos", "tratar", "causas",
+  "causa", "cura", "diagnostico", "tipos", "tipo", "teste", "significado",
+  "prevencao", "prevenir", "consequencias", "exercicios",
+]);
+
+function intencaoDe(titleNormalized: string): Set<string> {
+  const out = new Set<string>();
+  for (const t of titleNormalized.split(" ")) if (INTENCAO.has(t)) out.add(t);
+  return out;
+}
+
+function conjuntosDiferem(a: Set<string>, b: Set<string>): boolean {
+  if (a.size !== b.size) return true;
+  for (const t of a) if (!b.has(t)) return true;
+  return false;
+}
 
 interface PostForca {
   postId: number;
@@ -730,61 +744,81 @@ interface PostForca {
   temTargetQuery: boolean;
 }
 
-export interface ParPassivo {
-  tipo: TipoPassivo;
-  acaoSugerida: "301" | "consolidar-ou-manter" | "revisar";
-  simEntidade: number;
-  simTitulo: number;
-  simSemantica: number | null;
-  criterio: string;
-  manter: { postId: number; slug: string; title: string };
-  // Quem seria despublicado + redirecionado (só nos tipos de 301). Nulo no
-  // grupo B (nada é despublicado).
-  despublicar: { postId: number; slug: string; title: string } | null;
-}
-
-function escolherMaisForte(
+// Escolhe o mais forte: profundidade -> mais antigo -> tem capa -> target_query.
+function maisForte(
   a: PostForca,
   b: PostForca,
-): { vencedor: PostForca; perdedor: PostForca; criterio: string } {
+): { vencedor: PostForca; criterio: string } {
   if (a.readingMinutes !== b.readingMinutes) {
-    const [v, p] = a.readingMinutes > b.readingMinutes ? [a, b] : [b, a];
+    const v = a.readingMinutes > b.readingMinutes ? a : b;
+    const p = v === a ? b : a;
     return {
       vencedor: v,
-      perdedor: p,
-      criterio: `maior profundidade (${v.readingMinutes} vs ${p.readingMinutes} min de leitura)`,
+      criterio: `maior profundidade (${v.readingMinutes} vs ${p.readingMinutes} min)`,
     };
   }
-  const da = (a.publishedAt ?? a.createdAt).getTime();
-  const db2 = (b.publishedAt ?? b.createdAt).getTime();
-  if (da !== db2) {
-    const [v, p] = da < db2 ? [a, b] : [b, a];
-    return { vencedor: v, perdedor: p, criterio: "mais antigo (mais tempo indexado)" };
-  }
-  if (a.temCapa !== b.temCapa) {
-    const [v, p] = a.temCapa ? [a, b] : [b, a];
-    return { vencedor: v, perdedor: p, criterio: "tem imagem de capa" };
-  }
-  if (a.temTargetQuery !== b.temTargetQuery) {
-    const [v, p] = a.temTargetQuery ? [a, b] : [b, a];
-    return { vencedor: v, perdedor: p, criterio: "ancorado em busca real (target_query)" };
-  }
-  const [v, p] = a.postId < b.postId ? [a, b] : [b, a];
-  return { vencedor: v, perdedor: p, criterio: "empate; mantido o de id menor (mais antigo)" };
+  const ta = (a.publishedAt ?? a.createdAt).getTime();
+  const tb = (b.publishedAt ?? b.createdAt).getTime();
+  if (ta !== tb)
+    return {
+      vencedor: ta < tb ? a : b,
+      criterio: "mais antigo (mais tempo indexado)",
+    };
+  if (a.temCapa !== b.temCapa)
+    return { vencedor: a.temCapa ? a : b, criterio: "tem imagem de capa" };
+  if (a.temTargetQuery !== b.temTargetQuery)
+    return {
+      vencedor: a.temTargetQuery ? a : b,
+      criterio: "ancorado em busca real (target_query)",
+    };
+  return {
+    vencedor: a.postId < b.postId ? a : b,
+    criterio: "empate; mantido o de id menor (mais antigo)",
+  };
 }
 
-// Limiar de "título quase idêntico" = reformulação pura (mesmo post reescrito).
-const TITULO_REFORMULACAO = 0.8;
+export interface ComponentePassivo {
+  id: number;
+  manter: { postId: number; slug: string; title: string };
+  criterio: string;
+  redirects: {
+    postId: number;
+    slug: string;
+    title: string;
+    de: string;
+    para: string;
+    simTitulo: number;
+    simSemantica: number | null;
+  }[];
+  // true quando um perdedor do componente também é protegido por grupo B: não
+  // pode ser despublicado sem revisão editorial. Fica fora do apply automático.
+  precisaRevisao: boolean;
+  motivoRevisao: string | null;
+}
+
+export interface ParGrupoB {
+  simSemantica: number | null;
+  a: { postId: number; slug: string; title: string };
+  b: { postId: number; slug: string; title: string };
+  nota: string;
+}
 
 export async function planoConsolidacaoPassivo(): Promise<{
-  pares: ParPassivo[];
-  resumo: { total: number; reformulacao: number; grupoB: number; semantico: number };
+  resumo: {
+    componentes: number;
+    aRedirecionar: number;
+    grupoB: number;
+    precisamRevisao: number;
+  };
+  componentes: ComponentePassivo[];
+  grupoB: ParGrupoB[];
 }> {
-  // Todos os pares candidatos, com as TRÊS medidas de uma vez.
   const distSemLimite = 1 - REPORT_SEMANTICO;
   const res = await db.execute<{
     a_id: number;
     b_id: number;
+    a_tit: string;
+    b_tit: string;
     a_ent: string;
     b_ent: string;
     sim_ent: number;
@@ -792,6 +826,7 @@ export async function planoConsolidacaoPassivo(): Promise<{
     cos: number | null;
   }>(
     sql`SELECT a.post_id AS a_id, b.post_id AS b_id,
+               a.title_normalized AS a_tit, b.title_normalized AS b_tit,
                a.entity_normalized AS a_ent, b.entity_normalized AS b_ent,
                similarity(a.entity_normalized, b.entity_normalized) AS sim_ent,
                similarity(a.title_normalized, b.title_normalized) AS sim_tit,
@@ -805,8 +840,15 @@ export async function planoConsolidacaoPassivo(): Promise<{
         LIMIT 500`,
   );
 
-  // Só os pares que o gate REALMENTE bloquearia.
-  const bloqueadores = res.rows.filter((r) => {
+  interface ParBloq {
+    aId: number;
+    bId: number;
+    simTit: number;
+    cos: number | null;
+    grupoB: boolean;
+  }
+  const bloqueadores: ParBloq[] = [];
+  for (const r of res.rows) {
     const simEnt = Number(r.sim_ent);
     const cos = r.cos === null ? null : Number(r.cos);
     const bloqLex =
@@ -816,17 +858,32 @@ export async function planoConsolidacaoPassivo(): Promise<{
       cos !== null &&
       cos > LIMIAR_SEMANTICO &&
       !distintosSemantico(String(r.a_ent), String(r.b_ent));
-    return bloqLex || bloqSem;
-  });
+    if (!bloqLex && !bloqSem) continue;
+    const grupoB = conjuntosDiferem(
+      intencaoDe(String(r.a_tit)),
+      intencaoDe(String(r.b_tit)),
+    );
+    bloqueadores.push({
+      aId: Number(r.a_id),
+      bId: Number(r.b_id),
+      simTit: Number(Number(r.sim_tit).toFixed(3)),
+      cos: cos === null ? null : Number(cos.toFixed(3)),
+      grupoB,
+    });
+  }
 
   if (bloqueadores.length === 0) {
-    return { pares: [], resumo: { total: 0, reformulacao: 0, grupoB: 0, semantico: 0 } };
+    return {
+      resumo: { componentes: 0, aRedirecionar: 0, grupoB: 0, precisamRevisao: 0 },
+      componentes: [],
+      grupoB: [],
+    };
   }
 
   const ids = new Set<number>();
-  for (const r of bloqueadores) {
-    ids.add(Number(r.a_id));
-    ids.add(Number(r.b_id));
+  for (const p of bloqueadores) {
+    ids.add(p.aId);
+    ids.add(p.bId);
   }
   const posts = await db
     .select({
@@ -841,7 +898,7 @@ export async function planoConsolidacaoPassivo(): Promise<{
     })
     .from(blogPostsTable)
     .where(inArray(blogPostsTable.id, Array.from(ids)));
-  const forcaPorId = new Map<number, PostForca>(
+  const meta = new Map<number, PostForca>(
     posts.map((p) => [
       p.id,
       {
@@ -857,49 +914,120 @@ export async function planoConsolidacaoPassivo(): Promise<{
     ]),
   );
 
-  const pares: ParPassivo[] = [];
-  for (const r of bloqueadores) {
-    const a = forcaPorId.get(Number(r.a_id));
-    const b = forcaPorId.get(Number(r.b_id));
-    if (!a || !b) continue; // algum post não está mais publicado
-    const simEnt = Number(Number(r.sim_ent).toFixed(3));
-    const simTit = Number(Number(r.sim_tit).toFixed(3));
-    const cos = r.cos === null ? null : Number(Number(r.cos).toFixed(3));
+  // Posts protegidos (aparecem em algum par grupo B): veto de despublicação.
+  const protegidos = new Set<number>();
+  for (const p of bloqueadores)
+    if (p.grupoB) {
+      protegidos.add(p.aId);
+      protegidos.add(p.bId);
+    }
 
-    let tipo: TipoPassivo;
-    if (simTit >= TITULO_REFORMULACAO) tipo = "reformulacao";
-    else if (simEnt >= 0.9) tipo = "mesma-entidade-intencao-distinta";
-    else tipo = "reformulacao-semantica";
+  // Union-Find só sobre arestas consolidáveis (não grupo B).
+  const parent = new Map<number, number>();
+  const find = (x: number): number => {
+    if (!parent.has(x)) parent.set(x, x);
+    let r = x;
+    while (parent.get(r)! !== r) r = parent.get(r)!;
+    let c = x;
+    while (parent.get(c)! !== c) {
+      const n = parent.get(c)!;
+      parent.set(c, r);
+      c = n;
+    }
+    return r;
+  };
+  const union = (a: number, b: number) => {
+    parent.set(find(a), find(b));
+  };
 
-    const { vencedor, perdedor, criterio } = escolherMaisForte(a, b);
-    const acaoSugerida =
-      tipo === "mesma-entidade-intencao-distinta"
-        ? ("consolidar-ou-manter" as const)
-        : tipo === "reformulacao"
-          ? ("301" as const)
-          : ("revisar" as const);
+  const consolidaveis = bloqueadores.filter((p) => !p.grupoB);
+  for (const p of consolidaveis) union(p.aId, p.bId);
 
-    pares.push({
-      tipo,
-      acaoSugerida,
-      simEntidade: simEnt,
-      simTitulo: simTit,
-      simSemantica: cos,
+  const nosPorComp = new Map<number, Set<number>>();
+  for (const p of consolidaveis) {
+    const r = find(p.aId);
+    if (!nosPorComp.has(r)) nosPorComp.set(r, new Set());
+    nosPorComp.get(r)!.add(p.aId);
+    nosPorComp.get(r)!.add(p.bId);
+  }
+
+  // Medida por par, para o redirect exibir a similaridade contra o vencedor.
+  const medida = new Map<string, { simTit: number; cos: number | null }>();
+  for (const p of consolidaveis) {
+    medida.set(`${p.aId}-${p.bId}`, { simTit: p.simTit, cos: p.cos });
+    medida.set(`${p.bId}-${p.aId}`, { simTit: p.simTit, cos: p.cos });
+  }
+
+  let compId = 0;
+  const componentes: ComponentePassivo[] = [];
+  for (const [, nos] of nosPorComp) {
+    const lista = Array.from(nos)
+      .map((id) => meta.get(id))
+      .filter((x): x is PostForca => !!x);
+    if (lista.length < 2) continue;
+
+    let venc = lista[0];
+    let criterio = "único par";
+    for (let i = 1; i < lista.length; i++) {
+      const r = maisForte(venc, lista[i]);
+      criterio = r.criterio;
+      venc = r.vencedor;
+    }
+    const perdedores = lista.filter((x) => x.postId !== venc.postId);
+    const perdedorProtegido = perdedores.find((x) => protegidos.has(x.postId));
+
+    compId += 1;
+    componentes.push({
+      id: compId,
+      manter: { postId: venc.postId, slug: venc.slug, title: venc.title },
       criterio,
-      manter: { postId: vencedor.postId, slug: vencedor.slug, title: vencedor.title },
-      despublicar:
-        tipo === "mesma-entidade-intencao-distinta"
-          ? null
-          : { postId: perdedor.postId, slug: perdedor.slug, title: perdedor.title },
+      redirects: perdedores.map((x) => {
+        const m = medida.get(`${x.postId}-${venc.postId}`);
+        return {
+          postId: x.postId,
+          slug: x.slug,
+          title: x.title,
+          de: x.slug,
+          para: venc.slug,
+          simTitulo: m?.simTit ?? 0,
+          simSemantica: m?.cos ?? null,
+        };
+      }),
+      precisaRevisao: !!perdedorProtegido,
+      motivoRevisao: perdedorProtegido
+        ? `O post ${perdedorProtegido.postId} ("${perdedorProtegido.title}") também aparece num par de grupo B; não pode ser despublicado sem revisão editorial (consolidar o conteúdo antes).`
+        : null,
     });
   }
 
-  pares.sort((x, y) => y.simTitulo - x.simTitulo);
-  const resumo = {
-    total: pares.length,
-    reformulacao: pares.filter((p) => p.tipo === "reformulacao").length,
-    grupoB: pares.filter((p) => p.tipo === "mesma-entidade-intencao-distinta").length,
-    semantico: pares.filter((p) => p.tipo === "reformulacao-semantica").length,
+  const grupoB: ParGrupoB[] = [];
+  for (const p of bloqueadores) {
+    if (!p.grupoB) continue;
+    const a = meta.get(p.aId);
+    const b = meta.get(p.bId);
+    if (!a || !b) continue;
+    grupoB.push({
+      simSemantica: p.cos,
+      a: { postId: a.postId, slug: a.slug, title: a.title },
+      b: { postId: b.postId, slug: b.slug, title: b.title },
+      nota: "Mesma entidade, intenções distintas. Não despublicar; consolidar editorialmente num post só ou manter ambos.",
+    });
+  }
+
+  const aRedirecionar = componentes
+    .filter((c) => !c.precisaRevisao)
+    .reduce((n, c) => n + c.redirects.length, 0);
+  const precisamRevisao = componentes.filter((c) => c.precisaRevisao).length;
+  componentes.sort((x, y) => y.redirects.length - x.redirects.length);
+
+  return {
+    resumo: {
+      componentes: componentes.length,
+      aRedirecionar,
+      grupoB: grupoB.length,
+      precisamRevisao,
+    },
+    componentes,
+    grupoB,
   };
-  return { pares, resumo };
 }
