@@ -176,13 +176,32 @@ function ehSubtemaQualificado(a: string, b: string): boolean {
   if (menor.size === 0 || menor.size === maior.size) return false;
   for (const t of menor) if (!maior.has(t)) return false; // menor ⊆ maior
   const extras = [...maior].filter((t) => !menor.has(t));
-  return extras.some((t) => !FILLER.has(t) && !/^\d+$/.test(t));
+  const significativos = extras.filter(
+    (t) => !FILLER.has(t) && !/^\d+$/.test(t),
+  );
+  // Precisa de qualificador significativo, mas POUCOS (<=2 extras): muitos
+  // tokens extra são resíduo de FRASE ("e quando pode ajudar sua familia"), não
+  // subtema. Corta o falso negativo (2) mesmo sem depender do teto.
+  return significativos.length >= 1 && extras.length <= 2;
 }
 
-// Dois temas são distintos (e portanto NÃO devem bloquear) quando diferem só por
-// número OU quando um é subtema qualificado do outro.
-function saoTemasDistintos(a: string, b: string): boolean {
-  return diferemApenasPorNumero(a, b) || ehSubtemaQualificado(a, b);
+// Teto de similaridade acima do qual "subtema" NÃO se aplica: nos dados reais o
+// subtema legítimo vive ~0.72-0.80 e a duplicata reformulada vive acima de 0.85
+// ("...desse ciclo" x "...do ciclo" = 0.868 é duplicata, não subtema). Só a
+// guarda numérica sobrevive ao teto (Tipo 1 x Tipo 2 ~ 0.846).
+const TETO_SUBTEMA = envNum("BLOG_CANIB_SUBTEMA_TETO", 0.85);
+
+// Distintos na camada LEXICAL: variante numérica (sempre) ou subtema qualificado
+// SÓ abaixo do teto de similaridade.
+function distintosLexical(a: string, b: string, sim: number): boolean {
+  if (diferemApenasPorNumero(a, b)) return true;
+  return sim < TETO_SUBTEMA && ehSubtemaQualificado(a, b);
+}
+
+// Distintos na camada SEMÂNTICA: só variante numérica. Cosseno alto é mesmo
+// conteúdo independentemente de subconjunto, então NÃO aplicamos subtema aqui.
+function distintosSemantico(a: string, b: string): boolean {
+  return diferemApenasPorNumero(a, b);
 }
 
 function textoParaEmbedding(title: string, excerpt: string): string {
@@ -298,9 +317,23 @@ export async function indexarCorpus(): Promise<{ indexados: number }> {
   return { indexados };
 }
 
+// Alerta ÚNICO (por processo) quando o gate falha ao consultar o índice. Isso
+// distingue "erro real" (tabela/coluna inexistente por deploy sem /migrate, que
+// deixa o gate fail-open e SILENCIOSO) de estado legítimo. Fail-open silencioso
+// num gate é caro: já custou um dia inteiro de geração sem checagem.
+let avisouGateIndisponivel = false;
+function avisarGateIndisponivel(err: unknown): void {
+  if (avisouGateIndisponivel) return;
+  avisouGateIndisponivel = true;
+  logger.warn(
+    { err },
+    "Gate de canibalização indisponível ao consultar blog_post_index (rode POST /internal/blog/migrate). Operando fail-open, SEM checagem, até resolver.",
+  );
+}
+
 // Cobertura LEXICAL (Camada 1, por ENTIDADE) de um texto contra o corpus. Usada
 // nos checkpoints de enfileirar e de seleção do alvo. Retorna o postId mais
-// parecido acima do limiar (ignorando variantes numéricas), ou null. Fail-open.
+// parecido acima do limiar (ignorando temas distintos), ou null. Fail-open.
 export async function coberturaLexical(texto: string): Promise<number | null> {
   const cand = stripMold(normalizarQuery(texto));
   if (!cand) return null;
@@ -321,12 +354,13 @@ export async function coberturaLexical(texto: string): Promise<number | null> {
     if (
       row &&
       Number(row.sim) > LIMIAR_LEXICAL &&
-      !saoTemasDistintos(cand, String(row.entity))
+      !distintosLexical(cand, String(row.entity), Number(row.sim))
     ) {
       return Number(row.post_id);
     }
     return null;
-  } catch {
+  } catch (err) {
+    avisarGateIndisponivel(err);
     return null; // tabela/extensão ainda não existe: não bloqueia
   }
 }
@@ -372,7 +406,7 @@ export async function verificarCanibalizacao(
       if (
         row &&
         Number(row.sim) > LIMIAR_LEXICAL &&
-        !saoTemasDistintos(candEntity, String(row.entity))
+        !distintosLexical(candEntity, String(row.entity), Number(row.sim))
       ) {
         return {
           duplicado: true,
@@ -382,7 +416,8 @@ export async function verificarCanibalizacao(
         };
       }
     }
-  } catch {
+  } catch (err) {
+    avisarGateIndisponivel(err);
     return naoDuplicado;
   }
 
@@ -408,7 +443,7 @@ export async function verificarCanibalizacao(
         if (
           row &&
           Number(row.cos) > LIMIAR_SEMANTICO &&
-          !saoTemasDistintos(candEntity, String(row.entity))
+          !distintosSemantico(candEntity, String(row.entity))
         ) {
           return {
             duplicado: true,
@@ -418,7 +453,8 @@ export async function verificarCanibalizacao(
           };
         }
       }
-    } catch {
+    } catch (err) {
+      avisarGateIndisponivel(err);
       return naoDuplicado;
     }
   }
@@ -600,9 +636,10 @@ export async function relatorioCanibalizacao(): Promise<{
   for (const r of lexicais.rows) {
     const chave = `${r.a_id}-${r.b_id}`;
     const sim = Number(Number(r.sim).toFixed(3));
-    const temasDistintos = saoTemasDistintos(
+    const temasDistintos = distintosLexical(
       String(r.a_entity),
       String(r.b_entity),
+      sim,
     );
     porChave.set(chave, {
       camada: "lexical",
@@ -617,7 +654,7 @@ export async function relatorioCanibalizacao(): Promise<{
   for (const r of semanticos.rows) {
     const chave = `${r.a_id}-${r.b_id}`;
     const cos = Number(Number(r.cos).toFixed(3));
-    const temasDistintos = saoTemasDistintos(
+    const temasDistintos = distintosSemantico(
       String(r.a_entity),
       String(r.b_entity),
     );
