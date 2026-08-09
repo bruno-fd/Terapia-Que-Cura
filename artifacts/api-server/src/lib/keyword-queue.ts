@@ -173,6 +173,22 @@ export async function marcarComoUsada(
     .where(eq(blogKeywordQueueTable.id, id));
 }
 
+// Marca VÁRIAS perguntas como usadas de uma vez, ligadas ao mesmo post. Usado
+// para consolidação por cluster: as perguntas-irmãs que entraram no post como H2
+// e FAQ são consumidas junto, para não voltarem como alvos separados (o que faria
+// o gate de canibalização reprová-las depois). Implementa o "marcar o cluster
+// inteiro como usado" da estratégia (um post denso por tema).
+export async function marcarComoUsadas(
+  ids: number[],
+  postId: number,
+): Promise<void> {
+  if (ids.length === 0) return;
+  await db
+    .update(blogKeywordQueueTable)
+    .set({ status: "used", usedPostId: postId, usedAt: new Date() })
+    .where(inArray(blogKeywordQueueTable.id, ids));
+}
+
 // Descarta uma pergunta (status "skipped") para garantir progresso: quando ela
 // gera um post reprovado ou já coberto, é retirada da fila em vez de ser
 // retentada indefinidamente. Há milhares na fila; perder uma é irrelevante.

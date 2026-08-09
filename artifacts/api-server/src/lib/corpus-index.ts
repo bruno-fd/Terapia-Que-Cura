@@ -94,15 +94,53 @@ const MOLDES = [
   "entenda",
 ].sort((a, b) => b.length - a.length);
 
-// Remove o molde do título normalizado, deixando a entidade/tema. Se sobrar
-// vazio (título 100% molde), devolve o normalizado original para não comparar
-// string vazia (que casaria com tudo).
+// Conectivos/preposições que não carregam tema. Usados para limpar sobras do
+// stripMold e para o teste de subtema.
+const BORDA_STOP = new Set([
+  "de", "do", "da", "dos", "das", "e", "o", "a", "os", "as", "para", "com",
+  "no", "na", "em", "que", "por", "ao", "aos",
+]);
+
+// Qualificadores "de recheio": aparecem como token extra mas NÃO tornam o tema
+// distinto (é reformulação, não subtema). "coração acelerado sem motivo" x
+// "...sem motivo aparente" continua sendo o mesmo tema (duplicata).
+const FILLER = new Set([
+  "aparente", "mesmo", "realmente", "afinal", "comum", "normal", "verdadeiro",
+  "verdadeira", "exato", "exata", "simples",
+]);
+
+// Limpa sobras do stripMold: descarta "google" inicial, remove conectivos
+// soltos nas bordas e runs de conectivos deixados no meio ao remover um molde
+// (ex.: "burnout e para melhorar" -> "burnout melhorar"), preservando um
+// conectivo único entre palavras de conteúdo ("nao monogamia e poliamor").
+function limparEntidade(s: string): string {
+  let toks = s.split(" ").filter(Boolean);
+  if (toks[0] === "google") toks = toks.slice(1);
+  const isStop = (t: string) => BORDA_STOP.has(t);
+  const out: string[] = [];
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i];
+    if (isStop(t)) {
+      const prevStop = i === 0 || isStop(toks[i - 1]);
+      const nextStop = i === toks.length - 1 || isStop(toks[i + 1]);
+      if (i === 0 || i === toks.length - 1 || prevStop || nextStop) continue;
+    }
+    out.push(t);
+  }
+  while (out.length && isStop(out[0])) out.shift();
+  while (out.length && isStop(out[out.length - 1])) out.pop();
+  return out.join(" ");
+}
+
+// Remove o molde do título normalizado e limpa sobras, deixando a entidade/tema.
+// Se sobrar vazio (título 100% molde), devolve o normalizado original para não
+// comparar string vazia (que casaria com tudo).
 export function stripMold(titleNormalized: string): string {
   let s = ` ${titleNormalized} `;
   for (const molde of MOLDES) {
     s = s.split(` ${molde} `).join(" ");
   }
-  s = s.replace(/\s+/g, " ").trim();
+  s = limparEntidade(s.replace(/\s+/g, " ").trim());
   return s || titleNormalized;
 }
 
@@ -110,8 +148,7 @@ function numerosDe(s: string): string {
   return (s.match(/\b\d+\b/g) ?? []).sort().join(",");
 }
 
-// true quando as duas entidades são iguais EXCETO por um número (Tipo 1 x Tipo
-// 2). Nesse caso são temas distintos e não devem bloquear.
+// Iguais exceto por um número (Bipolar Tipo 1 x Tipo 2): temas distintos.
 function diferemApenasPorNumero(a: string, b: string): boolean {
   const na = numerosDe(a);
   const nb = numerosDe(b);
@@ -119,6 +156,33 @@ function diferemApenasPorNumero(a: string, b: string): boolean {
   const semNum = (x: string) =>
     x.replace(/\b\d+\b/g, " ").replace(/\s+/g, " ").trim();
   return semNum(a) === semNum(b) && na !== nb;
+}
+
+// Tokens de conteúdo (sem conectivos).
+function conteudo(s: string): Set<string> {
+  return new Set(s.split(" ").filter((t) => t && !BORDA_STOP.has(t)));
+}
+
+// Subtema qualificado: uma entidade é subconjunto estrito da outra, e o(s)
+// token(s) extra(s) são conteúdo significativo (não filler). Ex.: "estresse pos
+// traumatico" x "...no trabalho", "avaliacao psicologica para cirurgia" x "...de
+// catarata", "transtorno bipolar" x "transtorno bipolar tipo 1". São páginas
+// legítimas mais específicas, não duplicatas. NÃO dispara para filler puro
+// ("...sem motivo" x "...sem motivo aparente"), que continua duplicata.
+function ehSubtemaQualificado(a: string, b: string): boolean {
+  const A = conteudo(a);
+  const B = conteudo(b);
+  const [menor, maior] = A.size <= B.size ? [A, B] : [B, A];
+  if (menor.size === 0 || menor.size === maior.size) return false;
+  for (const t of menor) if (!maior.has(t)) return false; // menor ⊆ maior
+  const extras = [...maior].filter((t) => !menor.has(t));
+  return extras.some((t) => !FILLER.has(t) && !/^\d+$/.test(t));
+}
+
+// Dois temas são distintos (e portanto NÃO devem bloquear) quando diferem só por
+// número OU quando um é subtema qualificado do outro.
+function saoTemasDistintos(a: string, b: string): boolean {
+  return diferemApenasPorNumero(a, b) || ehSubtemaQualificado(a, b);
 }
 
 function textoParaEmbedding(title: string, excerpt: string): string {
@@ -257,7 +321,7 @@ export async function coberturaLexical(texto: string): Promise<number | null> {
     if (
       row &&
       Number(row.sim) > LIMIAR_LEXICAL &&
-      !diferemApenasPorNumero(cand, String(row.entity))
+      !saoTemasDistintos(cand, String(row.entity))
     ) {
       return Number(row.post_id);
     }
@@ -308,7 +372,7 @@ export async function verificarCanibalizacao(
       if (
         row &&
         Number(row.sim) > LIMIAR_LEXICAL &&
-        !diferemApenasPorNumero(candEntity, String(row.entity))
+        !saoTemasDistintos(candEntity, String(row.entity))
       ) {
         return {
           duplicado: true,
@@ -344,7 +408,7 @@ export async function verificarCanibalizacao(
         if (
           row &&
           Number(row.cos) > LIMIAR_SEMANTICO &&
-          !diferemApenasPorNumero(candEntity, String(row.entity))
+          !saoTemasDistintos(candEntity, String(row.entity))
         ) {
           return {
             duplicado: true,
@@ -435,7 +499,9 @@ export interface ParCanibalizacao {
   camada: "lexical" | "semantica";
   similaridade: number;
   bloquearia: boolean;
-  numeroDistinto: boolean;
+  // true quando são temas distintos (variante numérica ou subtema qualificado),
+  // por isso NÃO bloqueiam mesmo com similaridade alta.
+  temasDistintos: boolean;
   a: { postId: number; title: string; slug: string; entity: string };
   b: { postId: number; title: string; slug: string; entity: string };
 }
@@ -534,15 +600,15 @@ export async function relatorioCanibalizacao(): Promise<{
   for (const r of lexicais.rows) {
     const chave = `${r.a_id}-${r.b_id}`;
     const sim = Number(Number(r.sim).toFixed(3));
-    const numeroDistinto = diferemApenasPorNumero(
+    const temasDistintos = saoTemasDistintos(
       String(r.a_entity),
       String(r.b_entity),
     );
     porChave.set(chave, {
       camada: "lexical",
       similaridade: sim,
-      bloquearia: sim > LIMIAR_LEXICAL && !numeroDistinto,
-      numeroDistinto,
+      bloquearia: sim > LIMIAR_LEXICAL && !temasDistintos,
+      temasDistintos,
       a: info(Number(r.a_id), String(r.a_entity)),
       b: info(Number(r.b_id), String(r.b_entity)),
     });
@@ -551,12 +617,12 @@ export async function relatorioCanibalizacao(): Promise<{
   for (const r of semanticos.rows) {
     const chave = `${r.a_id}-${r.b_id}`;
     const cos = Number(Number(r.cos).toFixed(3));
-    const numeroDistinto = diferemApenasPorNumero(
+    const temasDistintos = saoTemasDistintos(
       String(r.a_entity),
       String(r.b_entity),
     );
     const existente = porChave.get(chave);
-    const bloqueariaSem = cos > LIMIAR_SEMANTICO && !numeroDistinto;
+    const bloqueariaSem = cos > LIMIAR_SEMANTICO && !temasDistintos;
     if (existente) {
       // Par já veio pelo lexical: mantém, mas o gate bloqueia se QUALQUER camada
       // bloquear (OR).
@@ -566,7 +632,7 @@ export async function relatorioCanibalizacao(): Promise<{
         camada: "semantica",
         similaridade: cos,
         bloquearia: bloqueariaSem,
-        numeroDistinto,
+        temasDistintos,
         a: info(Number(r.a_id), String(r.a_entity)),
         b: info(Number(r.b_id), String(r.b_entity)),
       });

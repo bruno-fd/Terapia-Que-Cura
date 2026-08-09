@@ -13,6 +13,7 @@ import {
   proximasPendentes,
   perguntasDoCluster,
   marcarComoUsada,
+  marcarComoUsadas,
   marcarComoDescartada,
 } from "./keyword-queue";
 import {
@@ -427,6 +428,15 @@ export async function processarCategoriaComFila(
     slugsCitaveis,
   });
   await marcarComoUsada(alvo.id, created.id);
+  // Consolidação por cluster: as perguntas-irmãs que entraram no post (H2/FAQ)
+  // também são consumidas, para não reaparecerem como alvos e serem barradas
+  // pelo gate depois (alinha a fila com a estratégia de um post por tema).
+  if (irmas.length > 0) {
+    await marcarComoUsadas(
+      irmas.map((i) => i.id),
+      created.id,
+    );
+  }
   logger.info(
     {
       category,
