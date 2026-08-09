@@ -46,10 +46,21 @@ export async function migrarSchemaBlog(): Promise<{ steps: string[] }> {
      )`,
   );
 
-  // Índice trigrama (Camada 1 lexical).
+  // Coluna da ENTIDADE (título sem o molde). Aditiva; recalibragem da Camada 1.
+  await run(
+    "ALTER TABLE add entity_normalized",
+    "ALTER TABLE blog_post_index ADD COLUMN IF NOT EXISTS entity_normalized text NOT NULL DEFAULT ''",
+  );
+
+  // Índice trigrama sobre o título (mantido) e sobre a entidade (novo alvo da
+  // Camada 1 lexical).
   await run(
     "CREATE INDEX title_trgm (gin)",
     "CREATE INDEX IF NOT EXISTS blog_post_index_title_trgm ON blog_post_index USING gin (title_normalized gin_trgm_ops)",
+  );
+  await run(
+    "CREATE INDEX entity_trgm (gin)",
+    "CREATE INDEX IF NOT EXISTS blog_post_index_entity_trgm ON blog_post_index USING gin (entity_normalized gin_trgm_ops)",
   );
 
   // Índice vetorial (Camada 2 semântica). HNSW funciona em tabela vazia; se a

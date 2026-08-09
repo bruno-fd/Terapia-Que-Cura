@@ -31,6 +31,11 @@ export const blogPostIndexTable = pgTable("blog_post_index", {
     .primaryKey()
     .references(() => blogPostsTable.id, { onDelete: "cascade" }),
   titleNormalized: text("title_normalized").notNull(),
+  // Título normalizado COM o "molde" removido (ex.: "tem cura? o que esperar do
+  // tratamento", "o que é e como..."), deixando só a ENTIDADE/tema. É contra
+  // esta coluna que a Camada 1 lexical compara, para não colidir temas distintos
+  // que só compartilham o molde do título. Populada no index (stripMold).
+  entityNormalized: text("entity_normalized").notNull().default(""),
   embeddedText: text("embedded_text").notNull().default(""),
   embedding: vector("embedding", { dimensions: 1024 }),
   updatedAt: timestamp("updated_at", { withTimezone: true })

@@ -12,18 +12,36 @@ import { logger } from "./logger";
 // ============================================================
 // Índice do corpus + anti-canibalização + citação cruzada + diagnóstico.
 //
-// A única trava de duplicidade que existia era comparação de TÍTULO EXATO
-// normalizado. Isto acrescenta:
-//   Camada 1 lexical (pg_trgm): similarity(title_normalized, candidato) > 0.55
-//   Camada 2 semântica (pgvector, cosseno): > 0.85
+// Camada 1 lexical (pg_trgm): compara a ENTIDADE (título sem o "molde"), não o
+// título inteiro. Sem isso, o molde repetido ("... tem cura? o que esperar do
+// tratamento", "... o que é e como...", "... sintomas que você precisa
+// conhecer") domina o trigrama e faz temas DISTINTOS colidirem (Alcoolismo x
+// Bulimia). Ao comparar só a entidade, "alcoolismo" x "bulimia" ~ 0.
+// Camada 2 semântica (pgvector, cosseno): pega a reformulação de mesmo tema com
+// outras palavras.
 //
-// Tudo é FAIL-OPEN: se a tabela/extensão ainda não existir, ou não houver
-// provider de embeddings, as funções degradam (retornam "não é duplicado" /
-// lista vazia) em vez de quebrar a geração. Requer o migrate para valer.
+// Guarda de variante numérica: entidades iguais a menos de um número (Bipolar
+// Tipo 1 x Tipo 2, TEA nível 1 x 2) são temas DISTINTOS e nunca bloqueiam.
+//
+// Limiares configuráveis por env (calibráveis em produção sem redeploy de
+// lógica): BLOG_CANIB_LEX (default 0.72), BLOG_CANIB_SEM (default 0.90).
+//
+// Tudo FAIL-OPEN: sem tabela/extensão/embeddings, degrada (não bloqueia).
 // ============================================================
 
-const LIMIAR_LEXICAL = 0.55;
-const LIMIAR_SEMANTICO = 0.85;
+function envNum(name: string, def: number): number {
+  const v = Number(process.env[name]);
+  return Number.isFinite(v) && v > 0 ? v : def;
+}
+
+// Camada 1 (lexical sobre a ENTIDADE). Real duplicate após remover o molde fica
+// ~1.0; temas distintos ficam baixos. 0.72 mantém "coração acelerado sem motivo"
+// x "...sem motivo aparente" e barra "ansiedade" x "ansiedade social".
+const LIMIAR_LEXICAL = envNum("BLOG_CANIB_LEX", 0.72);
+// Camada 2 (semântica). 0.90: pega os duplicados reais de mesmo tema (0.89-0.90
+// no corpus) sem pegar mesma-macro/tema-vizinho.
+const LIMIAR_SEMANTICO = envNum("BLOG_CANIB_SEM", 0.9);
+
 // Faixa "relacionado mas não duplicado" para a citação cruzada.
 const RELACIONADO_MIN = 0.35;
 const RELACIONADO_MAX = 0.85;
@@ -31,12 +49,84 @@ const RELACIONADO_MAX = 0.85;
 const REPORT_LEXICAL = 0.5;
 const REPORT_SEMANTICO = 0.82;
 
+// "Moldes" de título: trechos boilerplate que se repetem entre posts de temas
+// diferentes. Removidos antes do trigrama para isolar a ENTIDADE. Ordenados por
+// tamanho (mais longos primeiro) no uso. Já em forma normalizada (sem acento).
+const MOLDES = [
+  "o que e e como a psicologia pode ajudar",
+  "como a psicologia pode ajudar",
+  "o que esperar do tratamento",
+  "sintomas que voce precisa conhecer",
+  "tudo o que voce precisa saber",
+  "sintomas causas e tratamento",
+  "causas sintomas e tratamento",
+  "o que e e como reconhecer",
+  "o que e e como identificar",
+  "o que e e como lidar",
+  "o que e e como tratar",
+  "o que e e o que fazer",
+  "o que e e como",
+  "sintomas e o que fazer",
+  "quando ele vira um problema",
+  "quando ela vira um problema",
+  "quando vira um problema",
+  "sinais e sintomas",
+  "causas e tratamento",
+  "qual e a diferenca",
+  "qual a diferenca",
+  "o que pode ser",
+  "o que significa",
+  "como reconhecer",
+  "como identificar",
+  "como lidar com",
+  "guia completo",
+  "o que fazer",
+  "como lidar",
+  "como tratar",
+  "como funciona",
+  "como superar",
+  "tem cura",
+  "o que e",
+  "sintomas",
+  "tratamento",
+  "diferenca",
+  "causas",
+  "entenda",
+].sort((a, b) => b.length - a.length);
+
+// Remove o molde do título normalizado, deixando a entidade/tema. Se sobrar
+// vazio (título 100% molde), devolve o normalizado original para não comparar
+// string vazia (que casaria com tudo).
+export function stripMold(titleNormalized: string): string {
+  let s = ` ${titleNormalized} `;
+  for (const molde of MOLDES) {
+    s = s.split(` ${molde} `).join(" ");
+  }
+  s = s.replace(/\s+/g, " ").trim();
+  return s || titleNormalized;
+}
+
+function numerosDe(s: string): string {
+  return (s.match(/\b\d+\b/g) ?? []).sort().join(",");
+}
+
+// true quando as duas entidades são iguais EXCETO por um número (Tipo 1 x Tipo
+// 2). Nesse caso são temas distintos e não devem bloquear.
+function diferemApenasPorNumero(a: string, b: string): boolean {
+  const na = numerosDe(a);
+  const nb = numerosDe(b);
+  if (!na && !nb) return false;
+  const semNum = (x: string) =>
+    x.replace(/\b\d+\b/g, " ").replace(/\s+/g, " ").trim();
+  return semNum(a) === semNum(b) && na !== nb;
+}
+
 function textoParaEmbedding(title: string, excerpt: string): string {
   return `${title}. ${excerpt}`.replace(/\s+/g, " ").trim();
 }
 
-// (Re)indexa um post. Post inexistente ou não publicado é removido do índice
-// (o corpus de canibalização é o que está no ar). Idempotente. Nunca lança.
+// (Re)indexa um post. Post inexistente ou não publicado é removido do índice.
+// Idempotente. Nunca lança.
 export async function indexarPost(postId: number): Promise<void> {
   try {
     const [post] = await db
@@ -57,6 +147,7 @@ export async function indexarPost(postId: number): Promise<void> {
     }
 
     const titleNormalized = normalizarQuery(post.title);
+    const entityNormalized = stripMold(titleNormalized);
     const embedded = textoParaEmbedding(post.title, post.excerpt);
     const emb = await gerarEmbedding(embedded);
 
@@ -65,6 +156,7 @@ export async function indexarPost(postId: number): Promise<void> {
       .values({
         postId: post.id,
         titleNormalized,
+        entityNormalized,
         embeddedText: embedded,
         embedding: emb ?? null,
       })
@@ -72,6 +164,7 @@ export async function indexarPost(postId: number): Promise<void> {
         target: blogPostIndexTable.postId,
         set: {
           titleNormalized,
+          entityNormalized,
           embeddedText: embedded,
           embedding: emb ?? null,
           updatedAt: new Date(),
@@ -102,18 +195,22 @@ export async function indexarCorpus(): Promise<{ indexados: number }> {
   for (let i = 0; i < posts.length; i++) {
     const p = posts[i];
     const emb = vetores ? vetores[i] : null;
+    const titleNormalized = normalizarQuery(p.title);
+    const entityNormalized = stripMold(titleNormalized);
     await db
       .insert(blogPostIndexTable)
       .values({
         postId: p.id,
-        titleNormalized: normalizarQuery(p.title),
+        titleNormalized,
+        entityNormalized,
         embeddedText: textos[i],
         embedding: emb ?? null,
       })
       .onConflictDoUpdate({
         target: blogPostIndexTable.postId,
         set: {
-          titleNormalized: normalizarQuery(p.title),
+          titleNormalized,
+          entityNormalized,
           embeddedText: textos[i],
           embedding: emb ?? null,
           updatedAt: new Date(),
@@ -137,22 +234,33 @@ export async function indexarCorpus(): Promise<{ indexados: number }> {
   return { indexados };
 }
 
-// Cobertura LEXICAL (Camada 1) de um texto contra o corpus. Usada nos dois
-// checkpoints (enfileirar e antes de publicar). Retorna o postId mais parecido
-// acima do limiar, ou null. Fail-open (null) se a tabela/extensão não existir.
+// Cobertura LEXICAL (Camada 1, por ENTIDADE) de um texto contra o corpus. Usada
+// nos checkpoints de enfileirar e de seleção do alvo. Retorna o postId mais
+// parecido acima do limiar (ignorando variantes numéricas), ou null. Fail-open.
 export async function coberturaLexical(texto: string): Promise<number | null> {
-  const cand = normalizarQuery(texto);
+  const cand = stripMold(normalizarQuery(texto));
   if (!cand) return null;
   try {
-    const res = await db.execute<{ post_id: number; sim: number }>(
-      sql`SELECT post_id, similarity(title_normalized, ${cand}) AS sim
+    const res = await db.execute<{
+      post_id: number;
+      entity: string;
+      sim: number;
+    }>(
+      sql`SELECT post_id, entity_normalized AS entity,
+                 similarity(entity_normalized, ${cand}) AS sim
           FROM blog_post_index
-          WHERE title_normalized % ${cand}
+          WHERE entity_normalized % ${cand}
           ORDER BY sim DESC
           LIMIT 1`,
     );
     const row = res.rows[0];
-    if (row && Number(row.sim) > LIMIAR_LEXICAL) return Number(row.post_id);
+    if (
+      row &&
+      Number(row.sim) > LIMIAR_LEXICAL &&
+      !diferemApenasPorNumero(cand, String(row.entity))
+    ) {
+      return Number(row.post_id);
+    }
     return null;
   } catch {
     return null; // tabela/extensão ainda não existe: não bloqueia
@@ -166,7 +274,8 @@ export interface ResultadoCanibalizacao {
   similaridade: number | null;
 }
 
-// Checagem completa (Camada 1 + Camada 2) antes de publicar. Fail-open.
+// Checagem completa (Camada 1 por entidade + Camada 2 semântica) antes de
+// publicar. Aplica a guarda de variante numérica nas duas camadas. Fail-open.
 export async function verificarCanibalizacao(
   titulo: string,
   resumo: string,
@@ -178,18 +287,29 @@ export async function verificarCanibalizacao(
     similaridade: null,
   };
 
-  const cand = normalizarQuery(titulo);
+  const candEntity = stripMold(normalizarQuery(titulo));
+
+  // Camada 1: lexical por entidade.
   try {
-    if (cand) {
-      const res = await db.execute<{ post_id: number; sim: number }>(
-        sql`SELECT post_id, similarity(title_normalized, ${cand}) AS sim
+    if (candEntity) {
+      const res = await db.execute<{
+        post_id: number;
+        entity: string;
+        sim: number;
+      }>(
+        sql`SELECT post_id, entity_normalized AS entity,
+                   similarity(entity_normalized, ${candEntity}) AS sim
             FROM blog_post_index
-            WHERE title_normalized % ${cand}
+            WHERE entity_normalized % ${candEntity}
             ORDER BY sim DESC
             LIMIT 1`,
       );
       const row = res.rows[0];
-      if (row && Number(row.sim) > LIMIAR_LEXICAL) {
+      if (
+        row &&
+        Number(row.sim) > LIMIAR_LEXICAL &&
+        !diferemApenasPorNumero(candEntity, String(row.entity))
+      ) {
         return {
           duplicado: true,
           camada: "lexical",
@@ -202,20 +322,30 @@ export async function verificarCanibalizacao(
     return naoDuplicado;
   }
 
+  // Camada 2: semântica (só com provider de embeddings).
   if (embeddingsDisponiveis()) {
     try {
       const emb = await gerarEmbedding(textoParaEmbedding(titulo, resumo));
       if (emb) {
         const vec = toPgVector(emb);
-        const res = await db.execute<{ post_id: number; cos: number }>(
-          sql`SELECT post_id, 1 - (embedding <=> ${vec}::vector) AS cos
+        const res = await db.execute<{
+          post_id: number;
+          entity: string;
+          cos: number;
+        }>(
+          sql`SELECT post_id, entity_normalized AS entity,
+                     1 - (embedding <=> ${vec}::vector) AS cos
               FROM blog_post_index
               WHERE embedding IS NOT NULL
               ORDER BY embedding <=> ${vec}::vector ASC
               LIMIT 1`,
         );
         const row = res.rows[0];
-        if (row && Number(row.cos) > LIMIAR_SEMANTICO) {
+        if (
+          row &&
+          Number(row.cos) > LIMIAR_SEMANTICO &&
+          !diferemApenasPorNumero(candEntity, String(row.entity))
+        ) {
           return {
             duplicado: true,
             camada: "semantica",
@@ -297,20 +427,23 @@ export async function postsRelacionadosParaCitar(
 
 // ------------------------------------------------------------------
 // Diagnóstico do PASSIVO (posts já publicados que se canibalizam).
-// READ-ONLY: só lista pares quase-gêmeos, não altera nada. O usuário decide o
-// que fazer (despublicar o mais fraco, fundir + 301, ou deixar).
+// READ-ONLY. `bloquearia` mostra se o gate ATUAL barraria aquele par (ajuda a
+// validar a precisão da recalibragem contra o corpus real).
 // ------------------------------------------------------------------
 
 export interface ParCanibalizacao {
   camada: "lexical" | "semantica";
   similaridade: number;
-  a: { postId: number; title: string; slug: string };
-  b: { postId: number; title: string; slug: string };
+  bloquearia: boolean;
+  numeroDistinto: boolean;
+  a: { postId: number; title: string; slug: string; entity: string };
+  b: { postId: number; title: string; slug: string; entity: string };
 }
 
 export async function relatorioCanibalizacao(): Promise<{
   pares: ParCanibalizacao[];
   totalIndexados: number;
+  bloqueariaTotal: number;
 }> {
   const [{ total } = { total: 0 }] = (
     await db.execute<{ total: number }>(
@@ -318,44 +451,53 @@ export async function relatorioCanibalizacao(): Promise<{
     )
   ).rows;
 
-  // Pares lexicais (self-join com pg_trgm).
+  // Pares lexicais por ENTIDADE (self-join com pg_trgm).
   const lexicais = await db.execute<{
     a_id: number;
     b_id: number;
+    a_entity: string;
+    b_entity: string;
     sim: number;
   }>(
     sql`SELECT a.post_id AS a_id, b.post_id AS b_id,
-               similarity(a.title_normalized, b.title_normalized) AS sim
+               a.entity_normalized AS a_entity, b.entity_normalized AS b_entity,
+               similarity(a.entity_normalized, b.entity_normalized) AS sim
         FROM blog_post_index a
         JOIN blog_post_index b ON a.post_id < b.post_id
-        WHERE a.title_normalized % b.title_normalized
-          AND similarity(a.title_normalized, b.title_normalized) >= ${REPORT_LEXICAL}
+        WHERE a.entity_normalized % b.entity_normalized
+          AND similarity(a.entity_normalized, b.entity_normalized) >= ${REPORT_LEXICAL}
         ORDER BY sim DESC
-        LIMIT 200`,
+        LIMIT 300`,
   );
 
   // Pares semânticos (self-join com pgvector), só se houver embeddings.
-  let semanticos: { rows: { a_id: number; b_id: number; cos: number }[] } = {
-    rows: [],
-  };
+  let semanticos: {
+    rows: { a_id: number; b_id: number; a_entity: string; b_entity: string; cos: number }[];
+  } = { rows: [] };
   if (embeddingsDisponiveis()) {
     try {
-      semanticos = await db.execute<{ a_id: number; b_id: number; cos: number }>(
+      semanticos = await db.execute<{
+        a_id: number;
+        b_id: number;
+        a_entity: string;
+        b_entity: string;
+        cos: number;
+      }>(
         sql`SELECT a.post_id AS a_id, b.post_id AS b_id,
+                   a.entity_normalized AS a_entity, b.entity_normalized AS b_entity,
                    1 - (a.embedding <=> b.embedding) AS cos
             FROM blog_post_index a
             JOIN blog_post_index b ON a.post_id < b.post_id
             WHERE a.embedding IS NOT NULL AND b.embedding IS NOT NULL
               AND 1 - (a.embedding <=> b.embedding) >= ${REPORT_SEMANTICO}
             ORDER BY cos DESC
-            LIMIT 200`,
+            LIMIT 300`,
       );
     } catch {
       semanticos = { rows: [] };
     }
   }
 
-  // Junta títulos/slugs.
   const ids = new Set<number>();
   for (const r of lexicais.rows) {
     ids.add(Number(r.a_id));
@@ -377,34 +519,56 @@ export async function relatorioCanibalizacao(): Promise<{
           .where(inArray(blogPostsTable.id, Array.from(ids)))
       : [];
   const porId = new Map(posts.map((p) => [p.id, p]));
-  const info = (id: number) => {
+  const info = (id: number, entity: string) => {
     const p = porId.get(id);
-    return { postId: id, title: p?.title ?? "(?)", slug: p?.slug ?? "" };
+    return {
+      postId: id,
+      title: p?.title ?? "(?)",
+      slug: p?.slug ?? "",
+      entity,
+    };
   };
 
-  // Dedup por par (a<b): mantém o maior sinal; marca a camada.
   const porChave = new Map<string, ParCanibalizacao>();
+
   for (const r of lexicais.rows) {
     const chave = `${r.a_id}-${r.b_id}`;
+    const sim = Number(Number(r.sim).toFixed(3));
+    const numeroDistinto = diferemApenasPorNumero(
+      String(r.a_entity),
+      String(r.b_entity),
+    );
     porChave.set(chave, {
       camada: "lexical",
-      similaridade: Number(Number(r.sim).toFixed(3)),
-      a: info(Number(r.a_id)),
-      b: info(Number(r.b_id)),
+      similaridade: sim,
+      bloquearia: sim > LIMIAR_LEXICAL && !numeroDistinto,
+      numeroDistinto,
+      a: info(Number(r.a_id), String(r.a_entity)),
+      b: info(Number(r.b_id), String(r.b_entity)),
     });
   }
+
   for (const r of semanticos.rows) {
     const chave = `${r.a_id}-${r.b_id}`;
-    const existente = porChave.get(chave);
     const cos = Number(Number(r.cos).toFixed(3));
-    // Se já veio pelo lexical, não sobrescreve, mas se o semântico é mais forte
-    // e o par ainda não existe, adiciona.
-    if (!existente) {
+    const numeroDistinto = diferemApenasPorNumero(
+      String(r.a_entity),
+      String(r.b_entity),
+    );
+    const existente = porChave.get(chave);
+    const bloqueariaSem = cos > LIMIAR_SEMANTICO && !numeroDistinto;
+    if (existente) {
+      // Par já veio pelo lexical: mantém, mas o gate bloqueia se QUALQUER camada
+      // bloquear (OR).
+      existente.bloquearia = existente.bloquearia || bloqueariaSem;
+    } else {
       porChave.set(chave, {
         camada: "semantica",
         similaridade: cos,
-        a: info(Number(r.a_id)),
-        b: info(Number(r.b_id)),
+        bloquearia: bloqueariaSem,
+        numeroDistinto,
+        a: info(Number(r.a_id), String(r.a_entity)),
+        b: info(Number(r.b_id), String(r.b_entity)),
       });
     }
   }
@@ -412,5 +576,6 @@ export async function relatorioCanibalizacao(): Promise<{
   const pares = Array.from(porChave.values()).sort(
     (x, y) => y.similaridade - x.similaridade,
   );
-  return { pares, totalIndexados: Number(total) };
+  const bloqueariaTotal = pares.filter((p) => p.bloquearia).length;
+  return { pares, totalIndexados: Number(total), bloqueariaTotal };
 }
