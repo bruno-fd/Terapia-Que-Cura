@@ -3,7 +3,11 @@ import { requireCronToken } from "../middlewares/requireCronToken";
 import { rodarProximaCategoria } from "../lib/daily-generator";
 import { rodarProximaMineracao } from "../lib/keyword-mine-runner";
 import { migrarSchemaBlog } from "../lib/blog-schema-migrate";
-import { indexarCorpus, relatorioCanibalizacao } from "../lib/corpus-index";
+import {
+  indexarCorpus,
+  relatorioCanibalizacao,
+  planoConsolidacaoPassivo,
+} from "../lib/corpus-index";
 
 const router: IRouter = Router();
 
@@ -126,6 +130,28 @@ router.get(
     } catch (err) {
       req.log.error({ err }, "Falha ao gerar o relatório de canibalização.");
       res.status(500).json({ error: "Falha ao gerar o relatório." });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Plano de consolidação do PASSIVO (DRY-RUN, READ-ONLY): para cada par que o
+// gate bloquearia, diz quem manter, quem despublicar, o critério de força, e o
+// tipo (reformulação -> 301; mesma entidade/intenção distinta -> consolidar ou
+// manter; reformulação semântica -> revisar). NÃO altera nada. O apply é um
+// passo separado, só após aprovação.
+//   GET /api/internal/blog/passivo-consolidacao
+// ---------------------------------------------------------------------------
+router.get(
+  "/internal/blog/passivo-consolidacao",
+  requireCronToken,
+  async (req, res): Promise<void> => {
+    try {
+      const resultado = await planoConsolidacaoPassivo();
+      res.json(resultado);
+    } catch (err) {
+      req.log.error({ err }, "Falha ao montar o plano de consolidação.");
+      res.status(500).json({ error: "Falha ao montar o plano." });
     }
   },
 );

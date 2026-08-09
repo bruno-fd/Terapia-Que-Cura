@@ -535,6 +535,11 @@ export interface ParCanibalizacao {
   camada: "lexical" | "semantica";
   similaridade: number;
   bloquearia: boolean;
+  // QUAL camada de fato dispararia o bloqueio (o merge por chave usa OR, então um
+  // par pode aparecer com `camada`/`similaridade` lexical baixa mas bloquear via
+  // cosseno). Estes dois deixam a leitura correta.
+  disparoLexical: boolean;
+  disparoSemantico: boolean;
   // true quando são temas distintos (variante numérica ou subtema qualificado),
   // por isso NÃO bloqueiam mesmo com similaridade alta.
   temasDistintos: boolean;
@@ -641,10 +646,13 @@ export async function relatorioCanibalizacao(): Promise<{
       String(r.b_entity),
       sim,
     );
+    const disparoLexical = sim > LIMIAR_LEXICAL && !temasDistintos;
     porChave.set(chave, {
       camada: "lexical",
       similaridade: sim,
-      bloquearia: sim > LIMIAR_LEXICAL && !temasDistintos,
+      bloquearia: disparoLexical,
+      disparoLexical,
+      disparoSemantico: false,
       temasDistintos,
       a: info(Number(r.a_id), String(r.a_entity)),
       b: info(Number(r.b_id), String(r.b_entity)),
@@ -662,13 +670,16 @@ export async function relatorioCanibalizacao(): Promise<{
     const bloqueariaSem = cos > LIMIAR_SEMANTICO && !temasDistintos;
     if (existente) {
       // Par já veio pelo lexical: mantém, mas o gate bloqueia se QUALQUER camada
-      // bloquear (OR).
+      // bloquear (OR). Marca a camada semântica como disparo quando for o caso.
       existente.bloquearia = existente.bloquearia || bloqueariaSem;
+      existente.disparoSemantico = bloqueariaSem;
     } else {
       porChave.set(chave, {
         camada: "semantica",
         similaridade: cos,
         bloquearia: bloqueariaSem,
+        disparoLexical: false,
+        disparoSemantico: bloqueariaSem,
         temasDistintos,
         a: info(Number(r.a_id), String(r.a_entity)),
         b: info(Number(r.b_id), String(r.b_entity)),
@@ -681,4 +692,214 @@ export async function relatorioCanibalizacao(): Promise<{
   );
   const bloqueariaTotal = pares.filter((p) => p.bloquearia).length;
   return { pares, totalIndexados: Number(total), bloqueariaTotal };
+}
+
+// ------------------------------------------------------------------
+// Plano de consolidação do PASSIVO (DRY-RUN, READ-ONLY).
+//
+// Para cada par de posts publicados que o gate atual bloquearia, decide:
+//   - tipo "reformulacao": títulos quase idênticos (mesmo post reescrito) ->
+//     candidato natural a 301 (despublicar o mais fraco, redirecionar para o
+//     mais forte).
+//   - tipo "mesma-entidade-intencao-distinta" (grupo B): mesma entidade, mas
+//     intenção diferente (sintomas x tem cura x tratamento) -> NÃO despublicar
+//     (perde texto útil); sugerir CONSOLIDAR conteúdo ou manter os dois.
+//   - tipo "reformulacao-semantica": mesma ideia com outras palavras (disparo
+//     semântico) -> revisar; provável 301.
+//
+// "Mais forte" (para manter): profundidade (readingMinutes) -> mais antigo
+// (publishedAt/createdAt, mais tempo indexado) -> tem capa -> tem targetQuery.
+//
+// NÃO escreve nada. O apply (despublicar + registrar 301) é um passo separado,
+// só depois da sua aprovação e da definição do mecanismo de redirect.
+// ------------------------------------------------------------------
+
+export type TipoPassivo =
+  | "reformulacao"
+  | "mesma-entidade-intencao-distinta"
+  | "reformulacao-semantica";
+
+interface PostForca {
+  postId: number;
+  slug: string;
+  title: string;
+  readingMinutes: number;
+  publishedAt: Date | null;
+  createdAt: Date;
+  temCapa: boolean;
+  temTargetQuery: boolean;
+}
+
+export interface ParPassivo {
+  tipo: TipoPassivo;
+  acaoSugerida: "301" | "consolidar-ou-manter" | "revisar";
+  simEntidade: number;
+  simTitulo: number;
+  simSemantica: number | null;
+  criterio: string;
+  manter: { postId: number; slug: string; title: string };
+  // Quem seria despublicado + redirecionado (só nos tipos de 301). Nulo no
+  // grupo B (nada é despublicado).
+  despublicar: { postId: number; slug: string; title: string } | null;
+}
+
+function escolherMaisForte(
+  a: PostForca,
+  b: PostForca,
+): { vencedor: PostForca; perdedor: PostForca; criterio: string } {
+  if (a.readingMinutes !== b.readingMinutes) {
+    const [v, p] = a.readingMinutes > b.readingMinutes ? [a, b] : [b, a];
+    return {
+      vencedor: v,
+      perdedor: p,
+      criterio: `maior profundidade (${v.readingMinutes} vs ${p.readingMinutes} min de leitura)`,
+    };
+  }
+  const da = (a.publishedAt ?? a.createdAt).getTime();
+  const db2 = (b.publishedAt ?? b.createdAt).getTime();
+  if (da !== db2) {
+    const [v, p] = da < db2 ? [a, b] : [b, a];
+    return { vencedor: v, perdedor: p, criterio: "mais antigo (mais tempo indexado)" };
+  }
+  if (a.temCapa !== b.temCapa) {
+    const [v, p] = a.temCapa ? [a, b] : [b, a];
+    return { vencedor: v, perdedor: p, criterio: "tem imagem de capa" };
+  }
+  if (a.temTargetQuery !== b.temTargetQuery) {
+    const [v, p] = a.temTargetQuery ? [a, b] : [b, a];
+    return { vencedor: v, perdedor: p, criterio: "ancorado em busca real (target_query)" };
+  }
+  const [v, p] = a.postId < b.postId ? [a, b] : [b, a];
+  return { vencedor: v, perdedor: p, criterio: "empate; mantido o de id menor (mais antigo)" };
+}
+
+// Limiar de "título quase idêntico" = reformulação pura (mesmo post reescrito).
+const TITULO_REFORMULACAO = 0.8;
+
+export async function planoConsolidacaoPassivo(): Promise<{
+  pares: ParPassivo[];
+  resumo: { total: number; reformulacao: number; grupoB: number; semantico: number };
+}> {
+  // Todos os pares candidatos, com as TRÊS medidas de uma vez.
+  const distSemLimite = 1 - REPORT_SEMANTICO;
+  const res = await db.execute<{
+    a_id: number;
+    b_id: number;
+    a_ent: string;
+    b_ent: string;
+    sim_ent: number;
+    sim_tit: number;
+    cos: number | null;
+  }>(
+    sql`SELECT a.post_id AS a_id, b.post_id AS b_id,
+               a.entity_normalized AS a_ent, b.entity_normalized AS b_ent,
+               similarity(a.entity_normalized, b.entity_normalized) AS sim_ent,
+               similarity(a.title_normalized, b.title_normalized) AS sim_tit,
+               CASE WHEN a.embedding IS NOT NULL AND b.embedding IS NOT NULL
+                    THEN 1 - (a.embedding <=> b.embedding) ELSE NULL END AS cos
+        FROM blog_post_index a
+        JOIN blog_post_index b ON a.post_id < b.post_id
+        WHERE a.entity_normalized % b.entity_normalized
+           OR (a.embedding IS NOT NULL AND b.embedding IS NOT NULL
+               AND (a.embedding <=> b.embedding) <= ${distSemLimite})
+        LIMIT 500`,
+  );
+
+  // Só os pares que o gate REALMENTE bloquearia.
+  const bloqueadores = res.rows.filter((r) => {
+    const simEnt = Number(r.sim_ent);
+    const cos = r.cos === null ? null : Number(r.cos);
+    const bloqLex =
+      simEnt > LIMIAR_LEXICAL &&
+      !distintosLexical(String(r.a_ent), String(r.b_ent), simEnt);
+    const bloqSem =
+      cos !== null &&
+      cos > LIMIAR_SEMANTICO &&
+      !distintosSemantico(String(r.a_ent), String(r.b_ent));
+    return bloqLex || bloqSem;
+  });
+
+  if (bloqueadores.length === 0) {
+    return { pares: [], resumo: { total: 0, reformulacao: 0, grupoB: 0, semantico: 0 } };
+  }
+
+  const ids = new Set<number>();
+  for (const r of bloqueadores) {
+    ids.add(Number(r.a_id));
+    ids.add(Number(r.b_id));
+  }
+  const posts = await db
+    .select({
+      id: blogPostsTable.id,
+      slug: blogPostsTable.slug,
+      title: blogPostsTable.title,
+      readingMinutes: blogPostsTable.readingMinutes,
+      publishedAt: blogPostsTable.publishedAt,
+      createdAt: blogPostsTable.createdAt,
+      coverImageUrl: blogPostsTable.coverImageUrl,
+      targetQuery: blogPostsTable.targetQuery,
+    })
+    .from(blogPostsTable)
+    .where(inArray(blogPostsTable.id, Array.from(ids)));
+  const forcaPorId = new Map<number, PostForca>(
+    posts.map((p) => [
+      p.id,
+      {
+        postId: p.id,
+        slug: p.slug,
+        title: p.title,
+        readingMinutes: p.readingMinutes,
+        publishedAt: p.publishedAt,
+        createdAt: p.createdAt,
+        temCapa: !!p.coverImageUrl,
+        temTargetQuery: !!p.targetQuery,
+      },
+    ]),
+  );
+
+  const pares: ParPassivo[] = [];
+  for (const r of bloqueadores) {
+    const a = forcaPorId.get(Number(r.a_id));
+    const b = forcaPorId.get(Number(r.b_id));
+    if (!a || !b) continue; // algum post não está mais publicado
+    const simEnt = Number(Number(r.sim_ent).toFixed(3));
+    const simTit = Number(Number(r.sim_tit).toFixed(3));
+    const cos = r.cos === null ? null : Number(Number(r.cos).toFixed(3));
+
+    let tipo: TipoPassivo;
+    if (simTit >= TITULO_REFORMULACAO) tipo = "reformulacao";
+    else if (simEnt >= 0.9) tipo = "mesma-entidade-intencao-distinta";
+    else tipo = "reformulacao-semantica";
+
+    const { vencedor, perdedor, criterio } = escolherMaisForte(a, b);
+    const acaoSugerida =
+      tipo === "mesma-entidade-intencao-distinta"
+        ? ("consolidar-ou-manter" as const)
+        : tipo === "reformulacao"
+          ? ("301" as const)
+          : ("revisar" as const);
+
+    pares.push({
+      tipo,
+      acaoSugerida,
+      simEntidade: simEnt,
+      simTitulo: simTit,
+      simSemantica: cos,
+      criterio,
+      manter: { postId: vencedor.postId, slug: vencedor.slug, title: vencedor.title },
+      despublicar:
+        tipo === "mesma-entidade-intencao-distinta"
+          ? null
+          : { postId: perdedor.postId, slug: perdedor.slug, title: perdedor.title },
+    });
+  }
+
+  pares.sort((x, y) => y.simTitulo - x.simTitulo);
+  const resumo = {
+    total: pares.length,
+    reformulacao: pares.filter((p) => p.tipo === "reformulacao").length,
+    grupoB: pares.filter((p) => p.tipo === "mesma-entidade-intencao-distinta").length,
+    semantico: pares.filter((p) => p.tipo === "reformulacao-semantica").length,
+  };
+  return { pares, resumo };
 }
