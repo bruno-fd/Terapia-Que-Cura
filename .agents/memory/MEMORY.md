@@ -10,4 +10,7 @@
 - [Daily generator deployment model](daily-generator-deployment.md) — one project = one deployment type, so the daily Scheduled job can't coexist with the web/autoscale deploy; use a separate project on the same prod DB or an in-app/external trigger.
 - [Daily-gen trigger endpoint concurrency](daily-generator-trigger-endpoint.md) — per-(day|category) pg advisory lock around the ~40s AI gen keeps the once-per-day/cost guarantee under concurrent or duplicate triggers.
 - [Production DB writes](prod-db-writes.md) — agent SQL on prod is read-only (writes silently roll back); populate prod data via a token-gated internal endpoint in the deployed app.
+- [Publish travado por drift de schema](publish-schema-drift-extensions.md) — copiar dev→prod no publish SOBRESCREVE prod; zere o drift dropando o derivado no dev e migre por endpoint do app.
+- [Embeddings não vão pelo proxy do Replit](replit-ai-embeddings-unsupported.md) — AI Integrations não roteiam /embeddings; qualquer feature vetorial exige chave própria.
+- [Similaridade de título em blog formulaico](titulo-trigrama-formula.md) — pg_trgm sobre títulos com molde repetido mede a fórmula, não o tema; gera falso positivo de duplicata.
 - [Asaas Checkout lifecycle inversion](asaas-checkout-inversion.md) — sub created only AFTER payment; row keyed by asaasCheckoutId, backfilled on CHECKOUT_PAID; never activate/provision without a resolved sub id (503 to retry).
