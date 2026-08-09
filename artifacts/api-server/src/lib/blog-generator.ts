@@ -171,15 +171,44 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
-// Monta o HTML inicial de um post a partir das seções geradas pela IA.
-export function sectionsToHtml(body: BlogPostSection[]): string {
+// Converte um parágrafo em HTML seguro, transformando links internos em markdown
+// `[texto](/blog/slug)` em <a> APENAS quando o slug está na allowlist (os posts
+// realmente passados para citação cruzada). Slug fora da lista vira texto puro:
+// assim o modelo nunca gera link interno quebrado. O texto é sempre escapado.
+function renderParagrafo(p: string, slugsPermitidos: Set<string>): string {
+  const linkRe = /\[([^\]]+)\]\(\/blog\/([a-z0-9-]+)\)/g;
+  let out = "";
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = linkRe.exec(p)) !== null) {
+    out += escapeHtml(p.slice(last, m.index));
+    const texto = escapeHtml(m[1]);
+    const slug = m[2];
+    if (slugsPermitidos.has(slug)) {
+      out += `<a href="/blog/${slug}">${texto}</a>`;
+    } else {
+      out += texto; // link não autorizado: cai para texto puro
+    }
+    last = linkRe.lastIndex;
+  }
+  out += escapeHtml(p.slice(last));
+  return out;
+}
+
+// Monta o HTML inicial de um post a partir das seções geradas pela IA. Aceita
+// uma allowlist de slugs para os links internos da citação cruzada (vazia por
+// padrão: qualquer markdown de link vira texto puro, retrocompatível).
+export function sectionsToHtml(
+  body: BlogPostSection[],
+  slugsPermitidos: Set<string> = new Set(),
+): string {
   const parts: string[] = [];
   for (const section of body) {
     if (section.heading) {
       parts.push(`<h2>${escapeHtml(section.heading)}</h2>`);
     }
     for (const p of section.paragraphs) {
-      parts.push(`<p>${escapeHtml(p)}</p>`);
+      parts.push(`<p>${renderParagrafo(p, slugsPermitidos)}</p>`);
     }
   }
   return parts.join("\n");
@@ -418,6 +447,7 @@ export async function generatePostAncorado(
   relatedQuestions: string[],
   subcategorias: string[] = [],
   subcategoriaSugerida: string | null = null,
+  postsRelacionados: { title: string; slug: string }[] = [],
 ): Promise<GeneratedPost> {
   const subInstrucao =
     subcategorias.length > 0
@@ -432,6 +462,13 @@ export async function generatePostAncorado(
     relatedQuestions.length > 0
       ? relatedQuestions.map((q) => `- ${q}`).join("\n")
       : "(nenhuma pergunta relacionada fornecida; crie perguntas frequentes plausíveis e corretas sobre o tema.)";
+
+  const linksInternos =
+    postsRelacionados.length > 0
+      ? `\nLINKS INTERNOS (citação cruzada): cite de forma natural, no MEIO do texto, de 2 a 3 dos posts abaixo, usando markdown [texto âncora](/blog/SLUG) com o slug EXATO. Nunca faça uma lista "veja também"; o link deve fluir na frase. Só use os slugs desta lista:\n${postsRelacionados
+          .map((p) => `- "${p.title}" -> /blog/${p.slug}`)
+          .join("\n")}`
+      : "";
 
   const message = await anthropic.messages.create({
     model: MODEL,
@@ -451,6 +488,7 @@ DIRETRIZES DE SEO (além de todas as regras editoriais e do CFP):
 
 PERGUNTAS RELACIONADAS (do mesmo tema, use as pertinentes como H2 e/ou na seção de Perguntas frequentes):
 ${listaPerguntas}
+${linksInternos}
 
 Siga rigorosamente todas as regras editoriais e do CFP. Entre 700 e 1100 palavras no total (a seção de Perguntas frequentes conta). Nunca use travessão. PROFUNDIDADE OBRIGATÓRIA: responda a busca de forma realmente útil, cada seção com explicação do porquê, exemplo reconhecível do dia a dia ou orientação prática aplicável, nunca só generalidades. O leitor precisa terminar sentindo-se de fato ajudado, não com um texto raso e genérico.
 ${subInstrucao}

@@ -11,6 +11,8 @@
     "mine-keywords": "pnpm run build && node --enable-source-maps ./dist/mine-keywords.mjs",
     "preview-anchored-post": "pnpm run build && node --enable-source-maps ./dist/preview-anchored-post.mjs",
     "clean-keyword-queue": "pnpm run build && node --enable-source-maps ./dist/clean-keyword-queue.mjs",
+    "blog-migrate": "pnpm run build && node --enable-source-maps ./dist/blog-migrate.mjs",
+    "index-corpus": "pnpm run build && node --enable-source-maps ./dist/index-corpus.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

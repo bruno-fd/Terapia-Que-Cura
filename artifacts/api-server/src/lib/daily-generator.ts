@@ -15,6 +15,11 @@ import {
   marcarComoUsada,
   marcarComoDescartada,
 } from "./keyword-queue";
+import {
+  coberturaLexical,
+  verificarCanibalizacao,
+  postsRelacionadosParaCitar,
+} from "./corpus-index";
 import { logger } from "./logger";
 
 // Liga o fluxo ancorado em demanda real (Fase 1). Enquanto a env var não for
@@ -287,9 +292,33 @@ export async function processarCategoriaComFila(
     return "skipped";
   }
 
+  // Checkpoint 1 (anti-canibalização lexical, nível tópico): se a busca-alvo já
+  // é coberta por um post existente por similaridade de título (pg_trgm), não
+  // vale gerar um concorrente. Descarta a query e sai. Fail-open: sem índice,
+  // coberturaLexical retorna null e nada muda.
+  const cobertoPor = await coberturaLexical(alvo.query);
+  if (cobertoPor) {
+    await marcarComoDescartada(alvo.id);
+    logger.info(
+      { category, query: alvo.query, cobertoPor },
+      "Busca-alvo já coberta por post existente (lexical); descartada.",
+    );
+    await registrarRun({
+      category,
+      status: "skipped",
+      reason: `Busca-alvo já coberta pelo post ${cobertoPor} (canibalização lexical).`,
+    });
+    return "skipped";
+  }
+
   // Perguntas-irmãs do mesmo cluster para os H2 e a seção de FAQ.
   const irmas = await perguntasDoCluster(category, alvo.subcategoria, alvo.id, 5);
   const relacionadas = irmas.map((i) => i.query);
+
+  // Posts internos relacionados (faixa semântica intermediária) para citação
+  // cruzada. Vazio sem embeddings. Os slugs viram a allowlist de links.
+  const relacionadosPosts = await postsRelacionadosParaCitar(alvo.query, 3);
+  const slugsCitaveis = relacionadosPosts.map((p) => p.slug);
 
   const subcats = subcategoriasDe(category);
   const generated = await generatePostAncorado(
@@ -298,6 +327,7 @@ export async function processarCategoriaComFila(
     relacionadas,
     subcats,
     alvo.subcategoria,
+    relacionadosPosts.map((p) => ({ title: p.title, slug: p.slug })),
   );
 
   // Dedup por título idêntico (igual ao fluxo clássico). Descarta a query para
@@ -354,9 +384,29 @@ export async function processarCategoriaComFila(
     return "rejected";
   }
 
+  // Checkpoint 2 (anti-canibalização antes de publicar, nível rascunho):
+  // Camada 1 lexical + Camada 2 semântica contra o corpus. Se o rascunho está
+  // perto demais de um post que já existe, NÃO publica (evita os dois
+  // competirem pela mesma busca). Descarta e deixa para consolidação humana.
+  const canib = await verificarCanibalizacao(atual.title, atual.excerpt);
+  if (canib.duplicado) {
+    await marcarComoDescartada(alvo.id);
+    const reason = `Provável canibalização (${canib.camada}) com o post ${canib.postId} (sim=${canib.similaridade?.toFixed(3)}). Descartado para consolidação humana.`;
+    logger.warn({ category, title: atual.title, canib }, reason);
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: atual.title,
+      reason,
+      correctionRounds: correcoes,
+    });
+    return "rejected";
+  }
+
   const created = await persistGeneratedPost(atual, category, {
     publish: true,
     targetQuery: alvo.query,
+    slugsCitaveis,
   });
   await marcarComoUsada(alvo.id, created.id);
   logger.info(

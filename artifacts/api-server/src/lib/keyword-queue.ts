@@ -8,6 +8,7 @@ import {
 import type { SugestaoComOrigem } from "./keyword-research";
 import { normalizarQuery } from "./keyword-research";
 import { isRelevante } from "./keyword-filter";
+import { coberturaLexical } from "./corpus-index";
 
 // ============================================================
 // Persistência da fila de palavras-chave (Fase 0).
@@ -48,6 +49,15 @@ export async function enfileirarSugestoes(
       continue;
     }
     if (titulosNorm.has(s.queryNormalized)) {
+      ignoradas += 1;
+      continue;
+    }
+
+    // Checkpoint 1 (anti-canibalização lexical, nível tópico): se já existe um
+    // post cobrindo essa busca por similaridade de título (pg_trgm), não vale
+    // enfileirar. Fail-open: sem o índice/extensão, coberturaLexical devolve
+    // null e nada muda (a fila copiada foi populada assim).
+    if (await coberturaLexical(s.query)) {
       ignoradas += 1;
       continue;
     }

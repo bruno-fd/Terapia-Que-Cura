@@ -21,6 +21,8 @@ async function buildAll() {
       path.resolve(artifactDir, "src/mine-keywords.ts"),
       path.resolve(artifactDir, "src/preview-anchored-post.ts"),
       path.resolve(artifactDir, "src/clean-keyword-queue.ts"),
+      path.resolve(artifactDir, "src/blog-migrate.ts"),
+      path.resolve(artifactDir, "src/index-corpus.ts"),
     ],
     platform: "node",
     bundle: true,

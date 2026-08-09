@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { requireCronToken } from "../middlewares/requireCronToken";
 import { rodarProximaCategoria } from "../lib/daily-generator";
 import { rodarProximaMineracao } from "../lib/keyword-mine-runner";
+import { migrarSchemaBlog } from "../lib/blog-schema-migrate";
+import { indexarCorpus, relatorioCanibalizacao } from "../lib/corpus-index";
 
 const router: IRouter = Router();
 
@@ -63,6 +65,67 @@ router.post(
     } catch (err) {
       req.log.error({ err }, "Falha na mineração de palavras-chave.");
       res.status(500).json({ error: "Falha ao minerar palavras-chave." });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Migração idempotente do schema de anti-canibalização (extensões pgvector +
+// pg_trgm, tabela blog_post_index e índices). Roda de dentro da produção porque
+// o banco é só-leitura para as ferramentas externas e o drizzle-kit push não
+// roda aqui (sem TTY). Seguro repetir.
+//   POST /api/internal/blog/migrate
+// ---------------------------------------------------------------------------
+router.post(
+  "/internal/blog/migrate",
+  requireCronToken,
+  async (req, res): Promise<void> => {
+    try {
+      const resultado = await migrarSchemaBlog();
+      res.json(resultado);
+    } catch (err) {
+      req.log.error({ err }, "Falha na migração do schema do blog.");
+      res.status(500).json({ error: "Falha ao migrar o schema do blog." });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// (Re)indexa o corpus de posts publicados em blog_post_index (Passo 0 da
+// anti-canibalização + citação cruzada). Rode após o migrate e após importar
+// posts. Idempotente.
+//   POST /api/internal/blog/reindex-corpus
+// ---------------------------------------------------------------------------
+router.post(
+  "/internal/blog/reindex-corpus",
+  requireCronToken,
+  async (req, res): Promise<void> => {
+    try {
+      const resultado = await indexarCorpus();
+      res.json(resultado);
+    } catch (err) {
+      req.log.error({ err }, "Falha ao reindexar o corpus.");
+      res.status(500).json({ error: "Falha ao reindexar o corpus." });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Diagnóstico READ-ONLY do passivo: lista pares de posts publicados que se
+// canibalizam (lexical pg_trgm + semântico pgvector). Não altera nada; serve
+// para você decidir o que fazer com cada par. Requer o corpus indexado.
+//   GET /api/internal/blog/canibalizacao-report
+// ---------------------------------------------------------------------------
+router.get(
+  "/internal/blog/canibalizacao-report",
+  requireCronToken,
+  async (req, res): Promise<void> => {
+    try {
+      const resultado = await relatorioCanibalizacao();
+      res.json(resultado);
+    } catch (err) {
+      req.log.error({ err }, "Falha ao gerar o relatório de canibalização.");
+      res.status(500).json({ error: "Falha ao gerar o relatório." });
     }
   },
 );
