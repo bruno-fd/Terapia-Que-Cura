@@ -33,6 +33,7 @@ export function mapApiPost(post: ApiBlogPost): BlogPost {
     title: post.title,
     excerpt: post.excerpt,
     date: formatDatePtBr(post.publishedAt || post.createdAt),
+    publishedAtIso: post.publishedAt || post.createdAt || undefined,
     readingMinutes: post.readingMinutes,
     body: post.body.map((section) => ({
       heading: section.heading ?? undefined,

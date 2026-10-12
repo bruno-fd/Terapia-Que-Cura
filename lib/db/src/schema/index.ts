@@ -19,6 +19,8 @@
 
 export * from "./blog-posts";
 export * from "./blog-daily-runs";
+export * from "./blog-keyword-queue";
+export * from "./blog-post-index";
 export * from "./subscriptions";
 export * from "./psicologos";
 export * from "./psicologo-atividades";

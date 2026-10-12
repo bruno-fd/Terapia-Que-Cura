@@ -1,0 +1,183 @@
+From 9bd2fe32d2b8ff52ba250acbc345a250f3e2f724 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 9 Aug 2026 03:45:00 +0000
+Subject: [PATCH] Fix review findings: cannibalization gate in classic flow,
+ embeddings timeout + precedence
+
+Addresses two code-review findings + the embeddings ordering note on top of the
+applied anti-cannibalization delta.
+
+1. Classic fallback published without any cannibalization check: when the keyword
+   queue is empty, processarCategoriaComFila delegates to the classic
+   processarCategoria, which published straight to persistGeneratedPost with no
+   checkpoint. Added Checkpoint 2 (verificarCanibalizacao, L1 lexical + L2
+   semantic) right before that persist, same treatment (rejected + reason),
+   fail-open. This is the very path that produced today's cannibalized posts.
+
+2. Embeddings fetch had no timeout: a hung provider connection would only die on
+   Node's ~5min default while holding the category advisory lock. Added
+   AbortSignal.timeout(15s) per attempt; the error falls into the existing
+   retry/backoff which returns null (degrades to lexical) fast.
+
+3. Embeddings provider precedence inverted: the Replit OpenAI proxy does NOT
+   route the embeddings API (documented as unsupported), so trying it first was
+   always-fails-first. Now own key (voyage / BLOG_EMBEDDING_API_KEY) is tried
+   first; the Replit proxy is the last resort and logs a one-time WARN.
+
+Typecheck + build pass.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_013R8r3kYmmxtUVyMSRh4xk1
+---
+ .../api-server/src/lib/daily-generator.ts     | 18 +++++
+ artifacts/api-server/src/lib/embeddings.ts    | 65 ++++++++++++-------
+ 2 files changed, 61 insertions(+), 22 deletions(-)
+
+diff --git a/artifacts/api-server/src/lib/daily-generator.ts b/artifacts/api-server/src/lib/daily-generator.ts
+index 0213ea9..ecdfd83 100644
+--- a/artifacts/api-server/src/lib/daily-generator.ts
++++ b/artifacts/api-server/src/lib/daily-generator.ts
+@@ -187,6 +187,24 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
+     return "rejected";
+   }
+ 
++  // Checkpoint 2 (anti-canibalização) TAMBÉM no fluxo clássico. Este é o
++  // caminho de fallback (fila vazia) e o que gerou os posts canibalizados até
++  // hoje; sem esta trava ele seguiria publicando gêmeos. Camada 1 lexical +
++  // Camada 2 semântica. Fail-open: sem índice/extensão/embeddings, não bloqueia.
++  const canib = await verificarCanibalizacao(atual.title, atual.excerpt);
++  if (canib.duplicado) {
++    const reason = `Provável canibalização (${canib.camada}) com o post ${canib.postId} (sim=${canib.similaridade?.toFixed(3)}). Descartado para consolidação humana.`;
++    logger.warn({ category, title: atual.title, canib }, reason);
++    await registrarRun({
++      category,
++      status: "rejected",
++      title: atual.title,
++      reason,
++      correctionRounds: correcoes,
++    });
++    return "rejected";
++  }
++
+   const created = await persistGeneratedPost(atual, category, {
+     publish: true,
+   });
+diff --git a/artifacts/api-server/src/lib/embeddings.ts b/artifacts/api-server/src/lib/embeddings.ts
+index 9be242b..619187c 100644
+--- a/artifacts/api-server/src/lib/embeddings.ts
++++ b/artifacts/api-server/src/lib/embeddings.ts
+@@ -4,13 +4,13 @@ import { logger } from "./logger";
+ // Provider de embeddings (vetor de 1024 dimensões). FAIL-OPEN: sem provider,
+ // tudo degrada para a camada lexical (nunca lança).
+ //
+-// Resolução do provider (nesta ordem):
+-//   1. Proxy OpenAI do Replit (SEM chave própria): AI_INTEGRATIONS_OPENAI_BASE_URL
+-//      + AI_INTEGRATIONS_OPENAI_API_KEY. É o mesmo padrão da integração Anthropic
+-//      já usada aqui. Modelo text-embedding-3-small, dimensions=1024.
+-//   2. Chave própria OpenAI-compatível: BLOG_EMBEDDING_API_KEY (+ opcional
+-//      BLOG_EMBEDDING_BASE_URL). Default https://api.openai.com/v1.
+-//   3. Voyage: BLOG_EMBEDDING_PROVIDER=voyage + BLOG_EMBEDDING_API_KEY.
++// Resolução do provider (nesta ordem; a chave própria vem ANTES do proxy porque
++// o proxy do Replit não roteia embeddings):
++//   1. Voyage: BLOG_EMBEDDING_PROVIDER=voyage + BLOG_EMBEDDING_API_KEY.
++//   2. OpenAI-compatível com chave própria: BLOG_EMBEDDING_API_KEY (+ opcional
++//      BLOG_EMBEDDING_BASE_URL). Default https://api.openai.com/v1. RECOMENDADO.
++//   3. Proxy OpenAI do Replit (AI_INTEGRATIONS_OPENAI_*), só como último recurso
++//      e com aviso: a API de embeddings NÃO é suportada por ele hoje.
+ //
+ // Override do modelo em qualquer caso: BLOG_EMBEDDING_MODEL.
+ // ============================================================
+@@ -18,6 +18,11 @@ import { logger } from "./logger";
+ // Dimensão fixa: precisa casar com a coluna vector(1024) de blog_post_index.
+ export const EMBEDDING_DIMS = 1024;
+ 
++// Timeout por tentativa de chamada ao provider. Sem isso, uma conexão pendurada
++// só morreria no default do Node (~5 min) segurando o advisory lock da
++// categoria; com o timeout, degradamos rápido para a camada lexical.
++const EMBEDDING_TIMEOUT_MS = 15000;
++
+ interface ProviderConfig {
+   kind: "openai" | "voyage";
+   url: string;
+@@ -34,25 +39,16 @@ function env(name: string): string | undefined {
+   return v && v.trim() ? v.trim() : undefined;
+ }
+ 
++// Loga uma vez por processo (evita poluir o log, já que resolverProvider é
++// chamado a cada gerarEmbeddings/embeddingsDisponiveis).
++let avisouProxyReplit = false;
++
+ function resolverProvider(): ProviderConfig | null {
+   const modelOverride = env("BLOG_EMBEDDING_MODEL");
+-
+-  // 1) Proxy OpenAI do Replit (sem chave própria).
+-  const proxyBase = env("AI_INTEGRATIONS_OPENAI_BASE_URL");
+-  const proxyKey = env("AI_INTEGRATIONS_OPENAI_API_KEY");
+-  if (proxyBase && proxyKey) {
+-    return {
+-      kind: "openai",
+-      url: joinUrl(proxyBase, "embeddings"),
+-      key: proxyKey,
+-      model: modelOverride ?? "text-embedding-3-small",
+-    };
+-  }
+-
+   const provider = (env("BLOG_EMBEDDING_PROVIDER") ?? "").toLowerCase();
+   const key = env("BLOG_EMBEDDING_API_KEY");
+ 
+-  // 3) Voyage (só com provider explícito).
++  // 1) Voyage (provider explícito + chave própria).
+   if (provider === "voyage" && key) {
+     return {
+       kind: "voyage",
+@@ -62,7 +58,8 @@ function resolverProvider(): ProviderConfig | null {
+     };
+   }
+ 
+-  // 2) OpenAI-compatível com chave própria.
++  // 2) OpenAI-compatível com chave própria. CAMINHO RECOMENDADO neste ambiente:
++  // é o que sabidamente funciona (o proxy do Replit não roteia embeddings).
+   if (key) {
+     const base = env("BLOG_EMBEDDING_BASE_URL") ?? "https://api.openai.com/v1";
+     return {
+@@ -73,6 +70,27 @@ function resolverProvider(): ProviderConfig | null {
+     };
+   }
+ 
++  // 3) Proxy OpenAI do Replit (sem chave própria) — ÚLTIMO recurso. As AI
++  // Integrations do Replit documentam que a API de embeddings NÃO é suportada
++  // pelo proxy (só chat/responses/imagens/áudio), então este caminho tende a
++  // falhar aqui. Fica por robustez (caso um dia passe a rotear), mas avisamos.
++  const proxyBase = env("AI_INTEGRATIONS_OPENAI_BASE_URL");
++  const proxyKey = env("AI_INTEGRATIONS_OPENAI_API_KEY");
++  if (proxyBase && proxyKey) {
++    if (!avisouProxyReplit) {
++      avisouProxyReplit = true;
++      logger.warn(
++        "Embeddings caindo no proxy OpenAI do Replit, que normalmente NAO roteia /embeddings. Se a Camada 2 nao preencher, configure BLOG_EMBEDDING_API_KEY.",
++      );
++    }
++    return {
++      kind: "openai",
++      url: joinUrl(proxyBase, "embeddings"),
++      key: proxyKey,
++      model: modelOverride ?? "text-embedding-3-small",
++    };
++  }
++
+   return null;
+ }
+ 
+@@ -101,6 +119,9 @@ async function chamarProvider(
+       Authorization: `Bearer ${cfg.key}`,
+     },
+     body: JSON.stringify(body),
++    // Aborta a tentativa se o provider pendurar a conexão. O erro cai no
++    // retry/backoff de gerarEmbeddings, que devolve null (fail-open) ao esgotar.
++    signal: AbortSignal.timeout(EMBEDDING_TIMEOUT_MS),
+   });
+ 
+   if (!resp.ok) {
+-- 
+2.43.0
+

@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "vaPK6OIm7g_1sLXyTmTXm"
@@ -42,3 +41,10 @@ id = "is6wi4wsrx7VoDXYRV_le"
 uri = "file://attached_assets/generated_images/quem-somos-foto.png"
 type = "image"
 title = "quem-somos-friendly-portrait"
+
+[[outputs]]
+id = "HdqflMPxq4Cb-s2FYlRiV"
+uri = "file://attached_assets/passivo-consolidacao-prod.json"
+type = "unspecified"
+title = "Dry-run do passivo — produção (20 pares)"
+description = "Saída completa de /api/internal/blog/passivo-consolidacao em produção: 6 reformulações, 6 semânticas para revisar e 8 do grupo B. Nada foi alterado no banco."

@@ -4,11 +4,30 @@ import { MACRO_NOMES, subcategoriasDe } from "./categorias";
 import {
   generateIdeas,
   generatePost,
+  generatePostAncorado,
   verifyPost,
   correctPost,
 } from "./blog-generator";
 import { persistGeneratedPost } from "./blog-posts";
+import {
+  proximasPendentes,
+  perguntasDoCluster,
+  marcarComoUsada,
+  marcarComoUsadas,
+  marcarComoDescartada,
+} from "./keyword-queue";
+import {
+  coberturaLexical,
+  verificarCanibalizacao,
+  postsRelacionadosParaCitar,
+} from "./corpus-index";
 import { logger } from "./logger";
+
+// Liga o fluxo ancorado em demanda real (Fase 1). Enquanto a env var não for
+// "1", tudo roda EXATAMENTE como antes (gerador clássico por ideias da IA).
+function usarFilaDeKeywords(): boolean {
+  return process.env.BLOG_USE_KEYWORD_QUEUE === "1";
+}
 
 // ============================================================
 // Gerador diário automático de posts do blog.
@@ -169,6 +188,24 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
     return "rejected";
   }
 
+  // Checkpoint 2 (anti-canibalização) TAMBÉM no fluxo clássico. Este é o
+  // caminho de fallback (fila vazia) e o que gerou os posts canibalizados até
+  // hoje; sem esta trava ele seguiria publicando gêmeos. Camada 1 lexical +
+  // Camada 2 semântica. Fail-open: sem índice/extensão/embeddings, não bloqueia.
+  const canib = await verificarCanibalizacao(atual.title, atual.excerpt);
+  if (canib.duplicado) {
+    const reason = `Provável canibalização (${canib.camada}) com o post ${canib.postId} (sim=${canib.similaridade?.toFixed(3)}). Descartado para consolidação humana.`;
+    logger.warn({ category, title: atual.title, canib }, reason);
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: atual.title,
+      reason,
+      correctionRounds: correcoes,
+    });
+    return "rejected";
+  }
+
   const created = await persistGeneratedPost(atual, category, {
     publish: true,
   });
@@ -198,14 +235,243 @@ export async function processarCategoria(category: string): Promise<RunStatus> {
   return "published";
 }
 
+// Versão ancorada em demanda real (Fase 1). Mesma espinha do processarCategoria
+// (idempotência, dedup de título, revisor CFP, correção), mas o TEMA vem de uma
+// pergunta real minerada do Google (fila blog_keyword_queue), não de uma ideia
+// inventada pela IA. As perguntas-irmãs do mesmo cluster viram H2 e a seção de
+// "Perguntas frequentes". Só roda quando BLOG_USE_KEYWORD_QUEUE=1.
+//
+// Fallback garantido: se a fila da categoria estiver vazia, delega ao
+// processarCategoria clássico, então nunca se produz menos que hoje.
+export async function processarCategoriaComFila(
+  category: string,
+): Promise<RunStatus> {
+  // Idempotência: pula se já houver post criado hoje nesta categoria.
+  const [jaExiste] = await db
+    .select({ id: blogPostsTable.id })
+    .from(blogPostsTable)
+    .where(
+      and(
+        eq(blogPostsTable.category, category),
+        gte(blogPostsTable.createdAt, inicioDeHoje()),
+      ),
+    )
+    .limit(1);
+
+  if (jaExiste) {
+    logger.info({ category }, "Categoria pulada: já tem post criado hoje.");
+    await registrarRun({ category, status: "skipped" });
+    return "skipped";
+  }
+
+  // Puxa as perguntas pendentes mais fortes da fila desta categoria.
+  const pendentes = await proximasPendentes(category, 10);
+
+  // Fila vazia: cai no gerador clássico (nunca fica sem post).
+  if (pendentes.length === 0) {
+    logger.info(
+      { category },
+      "Fila de keywords vazia; usando gerador clássico (fallback).",
+    );
+    return processarCategoria(category);
+  }
+
+  // Títulos e buscas-alvo já cobertos, para dedup por INTENÇÃO de busca (não só
+  // por título literal). Evita canibalização.
+  const existentes = await db
+    .select({
+      title: blogPostsTable.title,
+      targetQuery: blogPostsTable.targetQuery,
+    })
+    .from(blogPostsTable)
+    .where(eq(blogPostsTable.category, category));
+  const titulosExistentes = new Set(existentes.map((r) => normalizar(r.title)));
+  const cobertas = new Set<string>(titulosExistentes);
+  for (const r of existentes) {
+    if (r.targetQuery) cobertas.add(normalizar(r.targetQuery));
+  }
+
+  // Escolhe a pergunta mais forte ainda não coberta.
+  const alvo =
+    pendentes.find((p) => !cobertas.has(p.queryNormalized)) ?? pendentes[0];
+
+  // Se a alvo já está coberta (todas estavam), descarta e registra: a categoria
+  // já esgotou o que valia hoje. Amanhã pega a próxima da fila.
+  if (cobertas.has(alvo.queryNormalized)) {
+    await marcarComoDescartada(alvo.id);
+    logger.info(
+      { category, query: alvo.query },
+      "Pergunta-alvo já coberta por post existente; descartada.",
+    );
+    await registrarRun({
+      category,
+      status: "skipped",
+      reason: "Pergunta-alvo já coberta por um post existente.",
+    });
+    return "skipped";
+  }
+
+  // Checkpoint 1 (anti-canibalização lexical, nível tópico): se a busca-alvo já
+  // é coberta por um post existente por similaridade de título (pg_trgm), não
+  // vale gerar um concorrente. Descarta a query e sai. Fail-open: sem índice,
+  // coberturaLexical retorna null e nada muda.
+  const cobertoPor = await coberturaLexical(alvo.query);
+  if (cobertoPor) {
+    await marcarComoDescartada(alvo.id);
+    logger.info(
+      { category, query: alvo.query, cobertoPor },
+      "Busca-alvo já coberta por post existente (lexical); descartada.",
+    );
+    await registrarRun({
+      category,
+      status: "skipped",
+      reason: `Busca-alvo já coberta pelo post ${cobertoPor} (canibalização lexical).`,
+    });
+    return "skipped";
+  }
+
+  // Perguntas-irmãs do mesmo cluster para os H2 e a seção de FAQ.
+  const irmas = await perguntasDoCluster(category, alvo.subcategoria, alvo.id, 5);
+  const relacionadas = irmas.map((i) => i.query);
+
+  // Posts internos relacionados (faixa semântica intermediária) para citação
+  // cruzada. Vazio sem embeddings. Os slugs viram a allowlist de links.
+  const relacionadosPosts = await postsRelacionadosParaCitar(alvo.query, 3);
+  const slugsCitaveis = relacionadosPosts.map((p) => p.slug);
+
+  const subcats = subcategoriasDe(category);
+  const generated = await generatePostAncorado(
+    category,
+    alvo.query,
+    relacionadas,
+    subcats,
+    alvo.subcategoria,
+    relacionadosPosts.map((p) => ({ title: p.title, slug: p.slug })),
+  );
+
+  // Dedup por título idêntico (igual ao fluxo clássico). Descarta a query para
+  // garantir progresso.
+  if (titulosExistentes.has(normalizar(generated.title))) {
+    await marcarComoDescartada(alvo.id);
+    logger.info(
+      { category, title: generated.title },
+      "Post descartado: título repetido.",
+    );
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: generated.title,
+      reason: "Título repetido de um post já existente na categoria.",
+    });
+    return "rejected";
+  }
+
+  // Verificação de veracidade + correção guiada (idêntica ao fluxo clássico).
+  const MAX_CORRECOES = 2;
+  let atual = generated;
+  let verificacao = await verifyPost(category, alvo.query, atual);
+  let correcoes = 0;
+
+  while (!verificacao.aprovado && correcoes < MAX_CORRECOES) {
+    correcoes += 1;
+    logger.info(
+      { category, correcao: correcoes, motivos: verificacao.motivos },
+      "Post reprovado; tentando correção automática.",
+    );
+    atual = await correctPost(category, alvo.query, atual, verificacao, subcats);
+    verificacao = await verifyPost(category, alvo.query, atual);
+  }
+
+  if (!verificacao.aprovado) {
+    // Reprovado mesmo após correção: descarta a query e não publica.
+    await marcarComoDescartada(alvo.id);
+    const reason =
+      verificacao.motivos.length > 0
+        ? verificacao.motivos.join(" | ")
+        : "Reprovado na verificação de veracidade.";
+    logger.warn(
+      { category, title: atual.title, correcoes, motivos: verificacao.motivos },
+      "Post reprovado mesmo após correção; descartado.",
+    );
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: atual.title,
+      reason,
+      correctionRounds: correcoes,
+    });
+    return "rejected";
+  }
+
+  // Checkpoint 2 (anti-canibalização antes de publicar, nível rascunho):
+  // Camada 1 lexical + Camada 2 semântica contra o corpus. Se o rascunho está
+  // perto demais de um post que já existe, NÃO publica (evita os dois
+  // competirem pela mesma busca). Descarta e deixa para consolidação humana.
+  const canib = await verificarCanibalizacao(atual.title, atual.excerpt);
+  if (canib.duplicado) {
+    await marcarComoDescartada(alvo.id);
+    const reason = `Provável canibalização (${canib.camada}) com o post ${canib.postId} (sim=${canib.similaridade?.toFixed(3)}). Descartado para consolidação humana.`;
+    logger.warn({ category, title: atual.title, canib }, reason);
+    await registrarRun({
+      category,
+      status: "rejected",
+      title: atual.title,
+      reason,
+      correctionRounds: correcoes,
+    });
+    return "rejected";
+  }
+
+  const created = await persistGeneratedPost(atual, category, {
+    publish: true,
+    targetQuery: alvo.query,
+    slugsCitaveis,
+  });
+  await marcarComoUsada(alvo.id, created.id);
+  // Consolidação por cluster: as perguntas-irmãs que entraram no post (H2/FAQ)
+  // também são consumidas, para não reaparecerem como alvos e serem barradas
+  // pelo gate depois (alinha a fila com a estratégia de um post por tema).
+  if (irmas.length > 0) {
+    await marcarComoUsadas(
+      irmas.map((i) => i.id),
+      created.id,
+    );
+  }
+  logger.info(
+    {
+      category,
+      title: created.title,
+      slug: created.slug,
+      postId: created.id,
+      targetQuery: alvo.query,
+      correcoes,
+    },
+    "Post publicado automaticamente (ancorado em busca real).",
+  );
+  await registrarRun({
+    category,
+    status: "published",
+    title: created.title,
+    postId: created.id,
+    correctionRounds: correcoes,
+    reason: `Ancorado na busca "${alvo.query}".${
+      correcoes > 0 ? ` Publicado após ${correcoes} rodada(s) de correção.` : ""
+    }`,
+  });
+  return "published";
+}
+
 // Versão resiliente: nunca lança. Uma falha isolada vira status "failed"
 // registrado, para o lote continuar. Usada tanto pelo CLI (loop) quanto pelo
-// endpoint de disparo.
+// endpoint de disparo. Escolhe o fluxo (clássico ou ancorado na fila) conforme
+// a env var BLOG_USE_KEYWORD_QUEUE, sempre com fallback seguro.
 export async function processarCategoriaSegura(
   category: string,
 ): Promise<RunStatus> {
   try {
-    return await processarCategoria(category);
+    return usarFilaDeKeywords()
+      ? await processarCategoriaComFila(category)
+      : await processarCategoria(category);
   } catch (err) {
     logger.error({ err, category }, "Falha ao processar categoria.");
     try {

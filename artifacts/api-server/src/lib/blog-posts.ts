@@ -8,6 +8,7 @@ import {
 } from "./blog-generator";
 import { subcategoriasDe } from "./categorias";
 import { fetchThemedImage, resolverQueryDeImagem } from "./pexels";
+import { indexarPost } from "./corpus-index";
 
 // Garante um slug único na tabela de posts, adicionando um sufixo numérico
 // (ou o timestamp como último recurso) quando já existe.
@@ -37,9 +38,16 @@ async function ensureUniqueSlug(title: string): Promise<string> {
 export async function persistGeneratedPost(
   generated: GeneratedPost,
   category: string,
-  opts: { publish: boolean },
+  opts: {
+    publish: boolean;
+    targetQuery?: string | null;
+    // Slugs de posts internos autorizados como links de citação cruzada. Só
+    // esses viram <a> no bodyHtml; qualquer outro link vira texto puro.
+    slugsCitaveis?: string[];
+  },
 ): Promise<BlogPostRow> {
   const slug = await ensureUniqueSlug(generated.title);
+  const slugsPermitidos = new Set(opts.slugsCitaveis ?? []);
   const readingMinutes = computeReadingMinutes(
     generated.body,
     generated.crpClosing,
@@ -66,13 +74,14 @@ export async function persistGeneratedPost(
       slug,
       category,
       subcategoria,
+      targetQuery: opts.targetQuery ?? null,
       title: generated.title,
       subtitle: generated.subtitle,
       excerpt: generated.excerpt,
       keywords: generated.keywords,
       readingMinutes,
       body: generated.body,
-      bodyHtml: sectionsToHtml(generated.body),
+      bodyHtml: sectionsToHtml(generated.body, slugsPermitidos),
       crpClosing: generated.crpClosing,
       coverImageUrl: imagem?.url ?? null,
       coverImageAlt: imagem?.alt ?? null,
@@ -83,6 +92,12 @@ export async function persistGeneratedPost(
       publishedAt: opts.publish ? new Date() : null,
     })
     .returning();
+
+  // Mantém o índice do corpus em dia (anti-canibalização + citação cruzada).
+  // Só posts publicados entram; indexarPost é fail-open (nunca lança).
+  if (created.published) {
+    await indexarPost(created.id);
+  }
 
   return created;
 }

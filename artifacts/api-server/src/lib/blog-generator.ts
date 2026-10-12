@@ -19,17 +19,26 @@ ESTRUTURA OBRIGATÓRIA DE CADA POST
 - Introdução: dois a três parágrafos contextualizando o tema no cotidiano do leitor, sem jargão técnico e sem diagnosticar o leitor.
 - Três a cinco seções com subtítulo (H2): cada uma cobre um ângulo (o que é, como se manifesta, quando buscar ajuda, o que a psicoterapia pode oferecer etc.), com dois a três parágrafos cada.
 - Encerramento padrão CFP: ver a seção ENCERRAMENTO abaixo.
-- Tamanho total entre 600 e 900 palavras.
+- Tamanho total entre 700 e 1100 palavras, usadas para dar profundidade concreta (não para encher com generalidades).
 
 LINGUAGEM
 - Simples, direta, coloquial mas correta. Frases curtas e médias. Parágrafos curtos.
 - Todo termo técnico de psicologia deve ser explicado imediatamente após o uso, em linguagem coloquial, entre parênteses ou em frase curta seguinte. Nunca deixe um termo sem explicação.
 
+PROFUNDIDADE, CONCRETUDE E UTILIDADE (tão importante quanto a veracidade; é a principal causa de post fraco)
+O leitor precisa terminar o texto sentindo-se verdadeiramente ajudado: com uma compreensão nova do que vive E com algo concreto que pode fazer. Um post correto porém genérico, vago, "água de salsicha", é uma FALHA, mesmo que passe no revisor. Profundidade não é academiquês nem mais estatística; é concretude e utilidade. Para cada post:
+- Nomeie a experiência com precisão: descreva como o problema realmente aparece no dia a dia, com cenas e exemplos reconhecíveis, para o leitor pensar "é exatamente isso que eu sinto". Fuja de descrições abstratas e chapa-branca.
+- Explique o porquê em linguagem simples: o mecanismo por trás do que a pessoa sente (por que o corpo reage assim, o que está acontecendo por dentro), sem inventar dados. Entender o próprio funcionamento já ajuda e não depende de estatística.
+- Entregue orientação prática e aplicável: passos concretos, estratégias de enfrentamento, como começar uma conversa, o que observar em si ou em quem se ama, como se cuidar ou apoiar alguém, o que realmente esperar da psicoterapia. Cada seção deve deixar algo utilizável, não só descrição.
+- Seja específico onde é seguro ser: sensações, situações, pensamentos comuns, estratégias. A regra de veracidade restringe DADOS numéricos/diagnósticos incertos, não a riqueza da descrição e da orientação.
+- Nada de seção-recheio: se um H2 só repete generalidades, corte ou reescreva com exemplo concreto e orientação prática.
+As orientações práticas seguem as regras do CFP: são educação geral e possibilidades, nunca prescrição, diagnóstico ou promessa de resultado para aquele leitor específico.
+
 VERACIDADE TÉCNICA (regra mais importante; é a principal causa de reprovação)
 - Só cite um dado técnico objetivo (critério diagnóstico do CID ou do DSM, estatística de prevalência, resultado de estudo, resolução do CFP, percentual) quando tiver ALTA confiança de que está correto e atualizado, e for informação consolidada e notória.
-- Na menor dúvida sobre uma estatística, um critério diagnóstico ou um percentual, NÃO o escreva. Prefira explicar o funcionamento geral: "é comum que isso aconteça", "estudos sugerem uma relação entre esses fatores", "existem critérios específicos para esse diagnóstico". É melhor um texto mais geral e correto do que um texto específico e errado.
+- Na menor dúvida sobre uma estatística, um critério diagnóstico ou um percentual, NÃO o escreva. Prefira explicar o funcionamento geral: "é comum que isso aconteça", "estudos sugerem uma relação entre esses fatores", "existem critérios específicos para esse diagnóstico". É melhor um texto mais geral e correto do que um texto específico e errado. ATENÇÃO: essa generalização vale apenas para o DADO numérico/diagnóstico incerto, não é licença para deixar o texto inteiro vago. Ao redor do dado omitido, continue concreto sobre a experiência vivida e sobre o que a pessoa pode fazer.
 - JAMAIS invente, estime ou "chute" um dado técnico, nem preencha lacunas com números plausíveis.
-- Prefira explicar sentimentos, conceitos e o funcionamento geral do tema a encher o texto de citações técnicas. Um post pode ser excelente citando pouco ou nenhum dado técnico específico.
+- Prefira explicar sentimentos, conceitos e o funcionamento geral do tema a encher o texto de citações técnicas. Um post pode ser excelente sem citar nenhum dado técnico específico, DESDE QUE seja concreto e útil (ver PROFUNDIDADE): não ter estatística nunca é desculpa para ser raso ou genérico.
 - Não afirme que uma descoberta é recente ou que "estudos comprovam definitivamente" algo sem alta confiança.
 
 ENCERRAMENTO (padrão CFP; ponto de reprovação frequente)
@@ -68,7 +77,8 @@ ANTES DE RESPONDER, CONFIRA (autoverificação obrigatória)
 2. O encerramento é condicional e está no padrão permitido, sem diagnosticar o leitor?
 3. Se o tema envolve risco (ideação suicida, automutilação, abuso), o encerramento inclui a orientação do CVV (188)?
 4. Todo termo técnico foi explicado em linguagem simples?
-5. Não há nenhum travessão nem nenhum dos padrões de estilo proibidos?`;
+5. Não há nenhum travessão nem nenhum dos padrões de estilo proibidos?
+6. PROFUNDIDADE: o leitor termina com uma compreensão nova E com algo concreto que pode fazer? Há cenas reconhecíveis do dia a dia, explicação do porquê e orientação prática? Se o texto estiver genérico, vago ou "água de salsicha", reescreva com concretude e utilidade antes de enviar.`;
 
 export interface GeneratedPost {
   title: string;
@@ -161,15 +171,44 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
-// Monta o HTML inicial de um post a partir das seções geradas pela IA.
-export function sectionsToHtml(body: BlogPostSection[]): string {
+// Converte um parágrafo em HTML seguro, transformando links internos em markdown
+// `[texto](/blog/slug)` em <a> APENAS quando o slug está na allowlist (os posts
+// realmente passados para citação cruzada). Slug fora da lista vira texto puro:
+// assim o modelo nunca gera link interno quebrado. O texto é sempre escapado.
+function renderParagrafo(p: string, slugsPermitidos: Set<string>): string {
+  const linkRe = /\[([^\]]+)\]\(\/blog\/([a-z0-9-]+)\)/g;
+  let out = "";
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = linkRe.exec(p)) !== null) {
+    out += escapeHtml(p.slice(last, m.index));
+    const texto = escapeHtml(m[1]);
+    const slug = m[2];
+    if (slugsPermitidos.has(slug)) {
+      out += `<a href="/blog/${slug}">${texto}</a>`;
+    } else {
+      out += texto; // link não autorizado: cai para texto puro
+    }
+    last = linkRe.lastIndex;
+  }
+  out += escapeHtml(p.slice(last));
+  return out;
+}
+
+// Monta o HTML inicial de um post a partir das seções geradas pela IA. Aceita
+// uma allowlist de slugs para os links internos da citação cruzada (vazia por
+// padrão: qualquer markdown de link vira texto puro, retrocompatível).
+export function sectionsToHtml(
+  body: BlogPostSection[],
+  slugsPermitidos: Set<string> = new Set(),
+): string {
   const parts: string[] = [];
   for (const section of body) {
     if (section.heading) {
       parts.push(`<h2>${escapeHtml(section.heading)}</h2>`);
     }
     for (const p of section.paragraphs) {
-      parts.push(`<p>${escapeHtml(p)}</p>`);
+      parts.push(`<p>${renderParagrafo(p, slugsPermitidos)}</p>`);
     }
   }
   return parts.join("\n");
@@ -358,7 +397,7 @@ export async function generatePost(
         role: "user",
         content: `Escreva um post completo do blog para a macrocategoria "${category}", sobre o tema: "${theme}".
 
-Siga rigorosamente todas as regras editoriais e do CFP. Entre 600 e 900 palavras no total. Nunca use travessão.
+Siga rigorosamente todas as regras editoriais e do CFP. Entre 700 e 1100 palavras no total. Nunca use travessão. PROFUNDIDADE OBRIGATÓRIA: cada seção deve entregar algo concretamente útil (uma explicação do porquê, um exemplo reconhecível do dia a dia ou uma orientação prática aplicável), nunca só generalidades. O leitor precisa terminar sentindo-se de fato ajudado.
 ${subInstrucao}
 
 IMAGEM DE CAPA: em "imageQuery", escreva uma frase curta em INGLÊS (2 a 5 palavras) para buscar uma foto de banco de imagens que represente o clima do texto. Prefira cenas humanas de acolhimento, natureza, luz ou objetos do cotidiano. Em temas sensíveis (suicídio, automutilação, abuso, violência), use uma imagem simbólica e acolhedora (ex.: "supportive hands warm light", "calm sunrise horizon"), NUNCA literal, gráfica ou perturbadora.
@@ -379,6 +418,100 @@ Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
 }
 
 O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida, inclua de 3 a 5 seções, cada uma com "heading" (H2) e seus parágrafos. Não inclua o disclaimer no JSON, ele é adicionado automaticamente.`,
+      },
+    ],
+  });
+
+  const parsed = parseJson(
+    extractText(message.content),
+  ) as Partial<GeneratedPost>;
+  return buildGeneratedPost(parsed, subcategorias);
+}
+
+// ------------------------------------------------------------------
+// Geração ancorada em demanda real de busca (Fase 1)
+// ------------------------------------------------------------------
+
+// Escreve um post a partir de uma PERGUNTA real minerada do Google Autocomplete
+// (targetQuery), em vez de um tema inventado pela IA. O H1 responde a busca; as
+// perguntas-irmãs do mesmo cluster (relatedQuestions) viram H2 e alimentam uma
+// seção final de "Perguntas frequentes". Essa seção vai no próprio corpo (body)
+// de propósito: assim passa pelo mesmo revisor CFP e pela correção automática,
+// nada de conteúdo escapando da checagem de conformidade.
+//
+// Reaproveita EDITORIAL_RULES e buildGeneratedPost. Não altera generatePost: o
+// fluxo antigo continua idêntico.
+export async function generatePostAncorado(
+  category: string,
+  targetQuery: string,
+  relatedQuestions: string[],
+  subcategorias: string[] = [],
+  subcategoriaSugerida: string | null = null,
+  postsRelacionados: { title: string; slug: string }[] = [],
+): Promise<GeneratedPost> {
+  const subInstrucao =
+    subcategorias.length > 0
+      ? `\nO tema específico (subcategoria) mais provável é ${
+          subcategoriaSugerida ? `"${subcategoriaSugerida}"` : "um destes"
+        }. Use exatamente uma destas opções em "subcategoria": ${subcategorias
+          .map((s) => `"${s}"`)
+          .join(", ")}, ou null se nenhuma se aplicar.`
+      : `\nDefina "subcategoria" como null.`;
+
+  const listaPerguntas =
+    relatedQuestions.length > 0
+      ? relatedQuestions.map((q) => `- ${q}`).join("\n")
+      : "(nenhuma pergunta relacionada fornecida; crie perguntas frequentes plausíveis e corretas sobre o tema.)";
+
+  const linksInternos =
+    postsRelacionados.length > 0
+      ? `\nLINKS INTERNOS (citação cruzada): cite de forma natural, no MEIO do texto, de 2 a 3 dos posts abaixo, usando markdown [texto âncora](/blog/SLUG) com o slug EXATO. Nunca faça uma lista "veja também"; o link deve fluir na frase. Só use os slugs desta lista:\n${postsRelacionados
+          .map((p) => `- "${p.title}" -> /blog/${p.slug}`)
+          .join("\n")}`
+      : "";
+
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: EDITORIAL_RULES,
+    messages: [
+      {
+        role: "user",
+        content: `Escreva um post completo do blog para a macrocategoria "${category}".
+
+Este post deve responder a uma BUSCA REAL que as pessoas fazem no Google: "${targetQuery}".
+
+DIRETRIZES DE SEO (além de todas as regras editoriais e do CFP):
+- O título H1 deve responder ou endereçar diretamente essa busca, de forma natural e correta em português (corrija acentuação e ortografia da busca crua), incluindo a palavra-chave principal, no máximo 70 caracteres.
+- Ao longo do texto, use como subtítulos (H2) as perguntas relacionadas abaixo que fizerem sentido, respondendo cada uma de forma clara no(s) parágrafo(s) seguinte(s).
+- Ao final, ANTES do encerramento, inclua uma seção com "heading" exatamente igual a "Perguntas frequentes", contendo de 3 a 4 perguntas curtas seguidas de respostas de 1 a 2 frases cada. Cada pergunta é um parágrafo terminando em "?"; a resposta é o parágrafo imediatamente seguinte. As respostas seguem as MESMAS regras do CFP (nada de diagnosticar o leitor, nada de prometer cura, encerramentos condicionais).
+
+PERGUNTAS RELACIONADAS (do mesmo tema, use as pertinentes como H2 e/ou na seção de Perguntas frequentes):
+${listaPerguntas}
+${linksInternos}
+
+Siga rigorosamente todas as regras editoriais e do CFP. Entre 700 e 1100 palavras no total (a seção de Perguntas frequentes conta). Nunca use travessão. PROFUNDIDADE OBRIGATÓRIA: responda a busca de forma realmente útil, cada seção com explicação do porquê, exemplo reconhecível do dia a dia ou orientação prática aplicável, nunca só generalidades. O leitor precisa terminar sentindo-se de fato ajudado, não com um texto raso e genérico.
+${subInstrucao}
+
+IMAGEM DE CAPA: em "imageQuery", escreva uma frase curta em INGLÊS (2 a 5 palavras) para buscar uma foto de banco de imagens que represente o clima do texto. Prefira cenas humanas de acolhimento, natureza, luz ou objetos do cotidiano. Em temas sensíveis (suicídio, automutilação, abuso, violência), use uma imagem simbólica e acolhedora, NUNCA literal, gráfica ou perturbadora.
+
+Responda APENAS com JSON válido, sem texto extra, exatamente neste formato:
+{
+  "title": "título H1, no máximo 70 caracteres, respondendo a busca",
+  "subtitle": "subtítulo/chamada de uma frase",
+  "excerpt": "resumo de 1 a 2 frases para o card da listagem",
+  "subcategoria": "tema específico da lista, ou null",
+  "keywords": ["palavra-chave 1", "palavra-chave 2", "palavra-chave 3"],
+  "body": [
+    { "paragraphs": ["parágrafo de introdução 1", "parágrafo de introdução 2"] },
+    { "heading": "Subtítulo H2 (pode ser uma pergunta relacionada)", "paragraphs": ["parágrafo", "parágrafo"] },
+    { "heading": "Perguntas frequentes", "paragraphs": ["Pergunta 1?", "Resposta 1.", "Pergunta 2?", "Resposta 2.", "Pergunta 3?", "Resposta 3."] }
+  ],
+  "crpClosing": "parágrafo de encerramento no padrão permitido pelo CFP",
+  "imageQuery": "frase curta em inglês (2 a 5 palavras) para buscar a foto de capa"
+}
+
+O primeiro item de "body" é a introdução e NÃO tem "heading". Em seguida inclua de 3 a 5 seções com "heading" (H2), sendo a penúltima a seção "Perguntas frequentes". Não inclua o disclaimer no JSON, ele é adicionado automaticamente.`,
       },
     ],
   });

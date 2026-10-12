@@ -31,3 +31,4 @@ ASAAS_BASE_URL = "https://api.asaas.com/v3"
 ASAAS_BASE_URL = "https://api.asaas.com/v3"
 
 [userenv.shared]
+BLOG_USE_KEYWORD_QUEUE = "1"

@@ -1,0 +1,182 @@
+From d5a85d5f3dbda8c32d5cc054ab8326390f41e4ce Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 9 Aug 2026 20:55:24 +0000
+Subject: [PATCH] Cannibalization gate: cap subtopic guard below a similarity
+ ceiling + warn on unavailable gate
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes 2 false negatives the corpus validation found: the subtopic guard let real
+duplicates escape when stripMold left phrase residue read as a "qualifier".
+
+- Subtopic guard (ehSubtemaQualificado) now applies ONLY below a trigram ceiling
+  BLOG_CANIB_SUBTEMA_TETO (default 0.85). Real subtopics live ~0.72-0.80; a
+  reworded duplicate lives above 0.85 ("...desse ciclo" vs "...do ciclo" = 0.868
+  now blocks again). The numeric guard is EXEMPT from the ceiling (Tipo 1 vs
+  Tipo 2 = 0.846 stays distinct).
+- Subtopic guard is NOT applied on the semantic layer: cos > 0.90 is same content
+  regardless of subset ("Orientação de pais…" 0.928 now blocks again). Only the
+  numeric guard there. (distintosLexical vs distintosSemantico.)
+- Also cap subtopic extras at <=2 tokens (phrase residue like "e quando pode
+  ajudar sua familia" is not a subtopic), cutting the semantic case even without
+  the ceiling.
+- Operability: the gate's fail-open catch was SILENT — a deploy without /migrate
+  left Camada 1 throwing (missing column), caught, returning naoDuplicado AND
+  returning early, so Camada 2 never ran: a full day generated with no gate. Now
+  a one-time WARN fires ("rode /migrate; operando fail-open") so this is visible.
+
+Measured on the real corpus: lexical blocks 14→15 (Brigas back), semantic 1→2
+(Orientação de pais back), no legit subtopic re-blocks. Typecheck + build pass.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_013R8r3kYmmxtUVyMSRh4xk1
+---
+ artifacts/api-server/src/lib/corpus-index.ts | 65 +++++++++++++++-----
+ 1 file changed, 51 insertions(+), 14 deletions(-)
+
+diff --git a/artifacts/api-server/src/lib/corpus-index.ts b/artifacts/api-server/src/lib/corpus-index.ts
+index 5820a29..2f8134d 100644
+--- a/artifacts/api-server/src/lib/corpus-index.ts
++++ b/artifacts/api-server/src/lib/corpus-index.ts
+@@ -176,13 +176,32 @@ function ehSubtemaQualificado(a: string, b: string): boolean {
+   if (menor.size === 0 || menor.size === maior.size) return false;
+   for (const t of menor) if (!maior.has(t)) return false; // menor ⊆ maior
+   const extras = [...maior].filter((t) => !menor.has(t));
+-  return extras.some((t) => !FILLER.has(t) && !/^\d+$/.test(t));
++  const significativos = extras.filter(
++    (t) => !FILLER.has(t) && !/^\d+$/.test(t),
++  );
++  // Precisa de qualificador significativo, mas POUCOS (<=2 extras): muitos
++  // tokens extra são resíduo de FRASE ("e quando pode ajudar sua familia"), não
++  // subtema. Corta o falso negativo (2) mesmo sem depender do teto.
++  return significativos.length >= 1 && extras.length <= 2;
++}
++
++// Teto de similaridade acima do qual "subtema" NÃO se aplica: nos dados reais o
++// subtema legítimo vive ~0.72-0.80 e a duplicata reformulada vive acima de 0.85
++// ("...desse ciclo" x "...do ciclo" = 0.868 é duplicata, não subtema). Só a
++// guarda numérica sobrevive ao teto (Tipo 1 x Tipo 2 ~ 0.846).
++const TETO_SUBTEMA = envNum("BLOG_CANIB_SUBTEMA_TETO", 0.85);
++
++// Distintos na camada LEXICAL: variante numérica (sempre) ou subtema qualificado
++// SÓ abaixo do teto de similaridade.
++function distintosLexical(a: string, b: string, sim: number): boolean {
++  if (diferemApenasPorNumero(a, b)) return true;
++  return sim < TETO_SUBTEMA && ehSubtemaQualificado(a, b);
+ }
+ 
+-// Dois temas são distintos (e portanto NÃO devem bloquear) quando diferem só por
+-// número OU quando um é subtema qualificado do outro.
+-function saoTemasDistintos(a: string, b: string): boolean {
+-  return diferemApenasPorNumero(a, b) || ehSubtemaQualificado(a, b);
++// Distintos na camada SEMÂNTICA: só variante numérica. Cosseno alto é mesmo
++// conteúdo independentemente de subconjunto, então NÃO aplicamos subtema aqui.
++function distintosSemantico(a: string, b: string): boolean {
++  return diferemApenasPorNumero(a, b);
+ }
+ 
+ function textoParaEmbedding(title: string, excerpt: string): string {
+@@ -298,9 +317,23 @@ export async function indexarCorpus(): Promise<{ indexados: number }> {
+   return { indexados };
+ }
+ 
++// Alerta ÚNICO (por processo) quando o gate falha ao consultar o índice. Isso
++// distingue "erro real" (tabela/coluna inexistente por deploy sem /migrate, que
++// deixa o gate fail-open e SILENCIOSO) de estado legítimo. Fail-open silencioso
++// num gate é caro: já custou um dia inteiro de geração sem checagem.
++let avisouGateIndisponivel = false;
++function avisarGateIndisponivel(err: unknown): void {
++  if (avisouGateIndisponivel) return;
++  avisouGateIndisponivel = true;
++  logger.warn(
++    { err },
++    "Gate de canibalização indisponível ao consultar blog_post_index (rode POST /internal/blog/migrate). Operando fail-open, SEM checagem, até resolver.",
++  );
++}
++
+ // Cobertura LEXICAL (Camada 1, por ENTIDADE) de um texto contra o corpus. Usada
+ // nos checkpoints de enfileirar e de seleção do alvo. Retorna o postId mais
+-// parecido acima do limiar (ignorando variantes numéricas), ou null. Fail-open.
++// parecido acima do limiar (ignorando temas distintos), ou null. Fail-open.
+ export async function coberturaLexical(texto: string): Promise<number | null> {
+   const cand = stripMold(normalizarQuery(texto));
+   if (!cand) return null;
+@@ -321,12 +354,13 @@ export async function coberturaLexical(texto: string): Promise<number | null> {
+     if (
+       row &&
+       Number(row.sim) > LIMIAR_LEXICAL &&
+-      !saoTemasDistintos(cand, String(row.entity))
++      !distintosLexical(cand, String(row.entity), Number(row.sim))
+     ) {
+       return Number(row.post_id);
+     }
+     return null;
+-  } catch {
++  } catch (err) {
++    avisarGateIndisponivel(err);
+     return null; // tabela/extensão ainda não existe: não bloqueia
+   }
+ }
+@@ -372,7 +406,7 @@ export async function verificarCanibalizacao(
+       if (
+         row &&
+         Number(row.sim) > LIMIAR_LEXICAL &&
+-        !saoTemasDistintos(candEntity, String(row.entity))
++        !distintosLexical(candEntity, String(row.entity), Number(row.sim))
+       ) {
+         return {
+           duplicado: true,
+@@ -382,7 +416,8 @@ export async function verificarCanibalizacao(
+         };
+       }
+     }
+-  } catch {
++  } catch (err) {
++    avisarGateIndisponivel(err);
+     return naoDuplicado;
+   }
+ 
+@@ -408,7 +443,7 @@ export async function verificarCanibalizacao(
+         if (
+           row &&
+           Number(row.cos) > LIMIAR_SEMANTICO &&
+-          !saoTemasDistintos(candEntity, String(row.entity))
++          !distintosSemantico(candEntity, String(row.entity))
+         ) {
+           return {
+             duplicado: true,
+@@ -418,7 +453,8 @@ export async function verificarCanibalizacao(
+           };
+         }
+       }
+-    } catch {
++    } catch (err) {
++      avisarGateIndisponivel(err);
+       return naoDuplicado;
+     }
+   }
+@@ -600,9 +636,10 @@ export async function relatorioCanibalizacao(): Promise<{
+   for (const r of lexicais.rows) {
+     const chave = `${r.a_id}-${r.b_id}`;
+     const sim = Number(Number(r.sim).toFixed(3));
+-    const temasDistintos = saoTemasDistintos(
++    const temasDistintos = distintosLexical(
+       String(r.a_entity),
+       String(r.b_entity),
++      sim,
+     );
+     porChave.set(chave, {
+       camada: "lexical",
+@@ -617,7 +654,7 @@ export async function relatorioCanibalizacao(): Promise<{
+   for (const r of semanticos.rows) {
+     const chave = `${r.a_id}-${r.b_id}`;
+     const cos = Number(Number(r.cos).toFixed(3));
+-    const temasDistintos = saoTemasDistintos(
++    const temasDistintos = distintosSemantico(
+       String(r.a_entity),
+       String(r.b_entity),
+     );
+-- 
+2.43.0
+
