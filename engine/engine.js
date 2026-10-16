@@ -110,7 +110,8 @@ FMT.frases = {
     }
     this.nz = U.noise1(hash(JSON.stringify(j)));
     const cortes = [0, ...this.tl.slice(1).map(x => x.t0), ...(this.fe ? [this.fe.t0] : []), this.dur];
-    return { dur: this.dur, fps: 30, alpha: this.alpha, cortes };
+    const f1 = this.tl[0], capa_t = f1 ? f1.t0 + (f1.t1 - f1.t0) * .55 : this.dur * .5;
+    return { dur: this.dur, fps: 30, alpha: this.alpha, cortes, capa_t };
   },
   frame(t) {
     const c = ctx, j = this.j, p = U.clamp(t / this.dur);
