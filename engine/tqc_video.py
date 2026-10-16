@@ -168,9 +168,11 @@ def doc(a):
     if base:
         d['refeito_em'] = _agora().isoformat(timespec='seconds')
         d['ajuste_anterior'] = base.get('ajuste', '')
-    if job.get('fundo', {}).get('clipe_id'):
-        d['clipe_ids'] = [str(job['fundo']['clipe_id'])]
-        d['credito'] = job['fundo'].get('credito', '')
+    f = job.get('fundo', {})
+    ids = [str(x) for x in (f.get('clipe_ids') or ([f['clipe_id']] if f.get('clipe_id') else []))]
+    if ids:
+        d['clipe_ids'] = ids
+        d['credito'] = f.get('credito', '')
     return d
 
 
