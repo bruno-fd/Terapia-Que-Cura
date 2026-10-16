@@ -121,9 +121,10 @@ def estado(d, n=1, linha=None, tema=None):
                 'tema_id': q.get('tema_id'), 'tema': q.get('tema'), 'subtema': q.get('subtema', ''), 'abordagem': q.get('abordagem'), 'legenda': q.get('legenda', ''),
                 'data_hora': q.get('data_hora'), 'roteiro': q.get('roteiro')} for q in vids if q.get('status') == 'ajuste']
     clipes = sorted({c for q in vids for c in (q.get('clipe_ids') or [])})
+    pedidos = [{'id': p['id'], 'linha_id': p.get('linha_id'), 'status': p.get('status'), 'criado_em': p.get('criado_em')} for p in _load(d, 'pedidos') if p.get('status') in ('pendente', 'produzindo')]
     return {'agora': agora.isoformat(timespec='minutes'), 'aguardando': sum(q.get('status') == 'aguardando' for q in vids),
             'limite_aguardando': int(cv.get('limite_aguardando', 4)), 'linhas_video': [{'id': l['id'], 'nome': l.get('nome'), 'template': l.get('template'), 'descricao': l.get('descricao', ''), 'instrucoes': l.get('instrucoes', ''), 'tom': l.get('tom', '')} for l in LV],
-            'pautas': pautas, 'slots_livres': slots, 'ajustes': ajustes, 'clipes_usados': clipes, 'stock': 'ok' if stock_ok() else 'bloqueado'}
+            'pautas': pautas, 'slots_livres': slots, 'ajustes': ajustes, 'clipes_usados': clipes, 'pedidos_pendentes': pedidos, 'stock': 'ok' if stock_ok() else 'bloqueado'}
 
 
 def render(job_path, out, clipe=None):

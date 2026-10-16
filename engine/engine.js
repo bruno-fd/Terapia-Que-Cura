@@ -89,6 +89,13 @@ function assinatura(c, y, { light = true, alpha = 1 } = {}) {
 }
 
 const FMT = {};
+function veu(c, centro, k, rgb) { // faixa escura que dá leitura ao texto (embaixo ou no centro)
+  const g = centro ? c.createLinearGradient(0, H * .22, 0, H * .78) : c.createLinearGradient(0, H * .42, 0, H);
+  if (centro) { g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.5, `rgba(${rgb},${(.55 * k).toFixed(3)})`); g.addColorStop(1, `rgba(${rgb},0)`); }
+  else { g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.45, `rgba(${rgb},${(.5 * k).toFixed(3)})`); g.addColorStop(1, `rgba(${rgb},${(.72 * k).toFixed(3)})`); }
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+}
+const CORES_MARCA = { amarelo: [255, 233, 64], rosa: [255, 150, 195], verde: [160, 232, 120], azul: [140, 205, 255], laranja: [255, 190, 90] };
 
 /* ---------- 1. Frases que se sucedem (sobre pintura viva ou sobre clipe) ---------- */
 FMT.frases = {
@@ -97,9 +104,13 @@ FMT.frases = {
     await fontes(['500 80px "EB Garamond"', 'italic 400 60px "EB Garamond"', '600 34px Fredoka']);
     const c = ctx; let t = .35;
     const F1 = '500 #px "EB Garamond"', FI = 'italic 400 #px "EB Garamond"';
-    this.ab = j.abertura ? { t0: t, ...caber(c, j.abertura, FI, 76, 880, 3, 50) } : null; if (this.ab) t += 1.6;
-    this.tl = (j.frases || []).map(f => { const d = U.clamp(.35 + f.length / 24, 1.05, 2.1); const it = { t0: t, t1: t + d, ...caber(c, f, F1, 100, 900, 3, 60) }; t += d; return it; });
-    this.fe = j.fecho ? { t0: t, ...caber(c, j.fecho, F1, 108, 900, 4, 64) } : null; if (this.fe) t += 3.2;
+    // ajustes que o Bruno pode pedir: tamanho da letra, ritmo (maior = mais lento) e posição do texto
+    const K = U.clamp(+j.tamanho || 1, .75, 1.35), R = U.clamp(+j.ritmo || 1, .6, 1.6), z = v => Math.round(v * K / 2) * 2;
+    this.centro = j.posicao === 'centro';
+    this.Y = this.centro ? { ab: .40, fr: .52, fe: .50 } : { ab: .615, fr: .745, fe: .70 };
+    this.ab = j.abertura ? { t0: t, ...caber(c, j.abertura, FI, z(76), 880, 3, z(50)) } : null; if (this.ab) t += 1.6 * R;
+    this.tl = (j.frases || []).map(f => { const d = U.clamp(.35 + f.length / 24, 1.05, 2.1) * R; const it = { t0: t, t1: t + d, ...caber(c, f, F1, z(100), 900, 3, z(60)) }; t += d; return it; });
+    this.fe = j.fecho ? { t0: t, ...caber(c, j.fecho, F1, z(108), 900, 4, z(64)) } : null; if (this.fe) t += this.tl.length ? Math.max(2.6, 3.2 * R) : Math.max(4.5, 5.2 * R); // frase única fica mais tempo
     this.dur = t + .3;
     this.alpha = !!(j.fundo && (j.fundo.tipo === 'clipe' || j.fundo.tipo === 'clipes'));
     if (!this.alpha) {
@@ -121,26 +132,25 @@ FMT.frases = {
       const cx = W / 2 + this.nz(t * .12) * 20, cy = H / 2 + this.nz(t * .1 + 50) * 26;
       c.drawImage(this.pint, cx - w / 2, cy - h / 2, w, h);
       c.fillStyle = `rgba(12,9,7,${this.escurecer.toFixed(3)})`; c.fillRect(0, 0, W, H);
-      const g = c.createLinearGradient(0, H * .42, 0, H); g.addColorStop(0, 'rgba(8,6,5,0)'); g.addColorStop(.45, 'rgba(8,6,5,.50)'); g.addColorStop(1, 'rgba(8,6,5,.72)'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+      veu(c, this.centro, 1, '8,6,5');
       const lx = W * .78 + this.nz(t * .2 + 9) * 90, lg = c.createRadialGradient(lx, H * .16, 0, lx, H * .16, 760);
       lg.addColorStop(0, `rgba(255,214,150,${(.10 + .05 * Math.sin(t * 1.3)).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,214,150,0)');
       c.globalCompositeOperation = 'screen'; c.fillStyle = lg; c.fillRect(0, 0, W, H); c.globalCompositeOperation = 'source-over';
     } else {
       const kk = U.clamp(((+(j.fundo.luma ?? 110)) - 35) / 90, .3, 1); // clipe escuro pede menos véu
-      const g = c.createLinearGradient(0, H * .42, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.45, `rgba(0,0,0,${(.42 * kk).toFixed(3)})`); g.addColorStop(1, `rgba(0,0,0,${(.62 * kk).toFixed(3)})`);
-      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      veu(c, this.centro, .85 * kk, '0,0,0');
     }
     const CR = j.cor || COR.creme, fe = this.fe, feIn = fe ? U.ss(fe.t0 - .15, fe.t0 + .45, t) : 0;
     if (this.ab) {
       const q = U.clamp((t - this.ab.t0) / .7);
-      texto(c, { ...this.ab, x: W / 2, y: H * .615, lh: this.ab.size * 1.18, cor: CR, alpha: U.eo(q) * (1 - feIn), dy: (1 - U.eo(q)) * 16, blur: (1 - q) * 8 });
+      texto(c, { ...this.ab, x: W / 2, y: H * this.Y.ab, lh: this.ab.size * 1.18, cor: CR, alpha: U.eo(q) * (1 - feIn), dy: (1 - U.eo(q)) * 16, blur: (1 - q) * 8 });
     }
     for (const it of this.tl) {
       if (t < it.t0 - .05 || t > it.t1 + .45) continue;
       const ai = U.clamp((t - it.t0) / .38), ao = U.clamp((t - (it.t1 - .22)) / .3);
-      texto(c, { ...it, x: W / 2, y: H * .745, lh: it.size * 1.1, cor: CR, alpha: U.eo(ai) * (1 - ao), dy: (1 - U.eo(ai)) * 18 - ao * 10, blur: (1 - ai) * 9 + ao * 6 });
+      texto(c, { ...it, x: W / 2, y: H * this.Y.fr, lh: it.size * 1.1, cor: CR, alpha: U.eo(ai) * (1 - ao), dy: (1 - U.eo(ai)) * 18 - ao * 10, blur: (1 - ai) * 9 + ao * 6 });
     }
-    if (fe) { const ai = U.clamp((t - fe.t0) / .6); if (ai > 0) texto(c, { ...fe, x: W / 2, y: H * .70, lh: fe.size * 1.1, cor: CR, alpha: U.eo(ai), dy: (1 - U.eo(ai)) * 18, blur: (1 - ai) * 9 }); }
+    if (fe) { const ai = U.clamp((t - fe.t0) / .6); if (ai > 0) texto(c, { ...fe, x: W / 2, y: H * this.Y.fe, lh: fe.size * 1.1, cor: CR, alpha: U.eo(ai), dy: (1 - U.eo(ai)) * 18, blur: (1 - ai) * 9 }); }
     assinatura(c, H - 120, { light: true, alpha: U.ss(this.dur - 2.7, this.dur - 2.0, t) * .95 });
     if (!this.alpha) grao(c, Math.floor(t * 10), .07);
   }
@@ -235,10 +245,11 @@ FMT.marcatexto = {
       c.lineTo(x1 + sl, top(x1 + sl)); c.lineTo(x1, bot(x1));
       for (let x = x1; x > x0; x -= 14) c.lineTo(x, bot(x));
       c.lineTo(x0, bot(x0)); c.closePath();
-      c.fillStyle = 'rgba(255,233,64,.62)'; c.fill();
+      const cm = CORES_MARCA[this.j.cor_marca] || CORES_MARCA.amarelo;
+      c.fillStyle = `rgba(${cm},.62)`; c.fill();
       c.save(); c.clip();
-      for (let k = 0; k < 7; k++) { const yy = yc - hh / 2 + (k + .5) * hh / 7 + L.nz(k * 7.3) * 2; c.fillStyle = `rgba(255,224,40,${(.10 + .12 * Math.abs(L.nz(k * 3.1 + 9))).toFixed(3)})`; c.fillRect(x0, yy - 3, x1 - x0 + sl, 4 + 3 * Math.abs(L.nz(k + 20))); }
-      if (q >= 1) { c.fillStyle = 'rgba(255,215,40,.22)'; c.fillRect(x1 - 6, yc - hh / 2, 12 + sl, hh); }
+      for (let k = 0; k < 7; k++) { const yy = yc - hh / 2 + (k + .5) * hh / 7 + L.nz(k * 7.3) * 2; c.fillStyle = `rgba(${cm.map(v => Math.round(v * .95))},${(.10 + .12 * Math.abs(L.nz(k * 3.1 + 9))).toFixed(3)})`; c.fillRect(x0, yy - 3, x1 - x0 + sl, 4 + 3 * Math.abs(L.nz(k + 20))); }
+      if (q >= 1) { c.fillStyle = `rgba(${cm.map(v => Math.round(v * .9))},.22)`; c.fillRect(x1 - 6, yc - hh / 2, 12 + sl, hh); }
       c.restore();
     }
     c.restore();
