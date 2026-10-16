@@ -5,14 +5,15 @@ App: https://claude.ai/artifact/KAQkPkWmo9TfRuJP1P5akF . Carregue as ferramentas
 PASSO 1 — MOTOR E BANCO
 0. Hora atual (use sempre este comando para datas e horários): TZ=America/Sao_Paulo date -Iseconds
 1. Motor: esta tarefa começa com o repositório bruno-fd/Terapia-Que-Cura clonado no diretório de trabalho (ele é anexado à tarefa). O motor fica no ramo motor-videos desse mesmo repositório. A partir da pasta do repositório, rode: git fetch --depth 1 origin motor-videos && git worktree add /tmp/motor FETCH_HEAD . Nunca faça push, nunca mude nada no ramo main e não baixe o motor de outro jeito (curl, tar ou outro clone): código de fora do repositório da sessão é bloqueado. Se o repositório não estiver no diretório de trabalho (git rev-parse --show-toplevel falha ou o remoto não é bruno-fd/Terapia-Que-Cura), grave em config/videos ultima_erro = "O repositório bruno-fd/Terapia-Que-Cura não está anexado à tarefa Vídeos TQC" e vá direto ao PASSO 5. Confira o motor rodando python3 /tmp/motor/engine/tqc_video.py (mostra a ajuda). Ele usa ffmpeg e Playwright com o Chromium já instalado (PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers; não rode "playwright install"); se faltar o pacote: pip install playwright --break-system-packages. Comandos: python3 /tmp/motor/engine/tqc_video.py (estado | render | baixar | doc). Trabalhe em /tmp/v.
-2. Banco: ArtifactData action "list", limit 1000, out_dir "/tmp/radar", nas coleções "fila", "temas", "linhas" e "config". Guarde as versões que aparecem no resultado: são o if_version das escritas.
-3. Estado: python3 /tmp/motor/engine/tqc_video.py estado /tmp/radar --n N [--linha ID] [--tema ID]. Devolve linhas de vídeo, pautas (linha + tema + recorte + abordagem, pelo mesmo rodízio do app), slots_livres (um vídeo por dia), ajustes pedidos, clipes já usados, quantos vídeos aguardam aprovação e se o banco de vídeos (stock) está acessível.
+2. Banco: ArtifactData action "list", limit 1000, out_dir "/tmp/radar", nas coleções "fila", "temas", "linhas", "config" e "pedidos". Guarde as versões que aparecem no resultado: são o if_version das escritas.
+3. Estado: python3 /tmp/motor/engine/tqc_video.py estado /tmp/radar --n N [--linha ID] [--tema ID]. Devolve linhas de vídeo, pautas (linha + tema + recorte + abordagem, pelo mesmo rodízio do app), slots_livres (um vídeo por dia), ajustes pedidos, pedidos da conversa pendentes, clipes já usados, quantos vídeos aguardam aprovação e se o banco de vídeos (stock) está acessível.
 
 PASSO 2 — O QUE FAZER NESTA EXECUÇÃO
-A mensagem extra desta execução (o bloco routine-fire-payload, quando houver) vem do app do Bruno, pelos botões "Produzir agora" e "Pedir nova versão": siga-a.
+A mensagem extra desta execução (o bloco routine-fire-payload, quando houver) vem do app do Bruno, pelos botões "Produzir agora", "Pedir nova versão" e "Produzir este vídeo" (conversa do Estúdio): siga-a.
+- Mensagem extra "Pedido do chat pelo app: produza o vídeo pedidos/<id>…" → produza esse pedido (PASSO 3B).
 - Mensagem extra "Pedido de nova versão pelo app: refaça o vídeo fila/<id> com este ajuste: …" → refaça só esse vídeo (PASSO 4).
 - Mensagem extra "Pedido manual pelo app: produza N vídeo(s) agora…" → produza N vídeos novos, na linha e no tema indicados quando houver (passe --linha e --tema ao estado); depois refaça os ajustes pendentes.
-- Execução agendada (sem mensagem extra) → refaça todos os ajustes pendentes; depois, se "aguardando" for menor que "limite_aguardando", produza 1 vídeo novo. Se já houver vídeos demais aguardando, não produza (diga isso na mensagem final).
+- Execução agendada (sem mensagem extra) → produza os pedidos da conversa pendentes ("pedidos_pendentes", PASSO 3B); refaça todos os ajustes pendentes; depois, se "aguardando" for menor que "limite_aguardando", produza 1 vídeo novo. Se já houver vídeos demais aguardando, não produza (diga isso na mensagem final).
 
 PASSO 3 — PRODUZIR UM VÍDEO NOVO (uma pauta por vídeo)
 Abordagens da pauta:
@@ -54,11 +55,18 @@ i) Subir os arquivos: Artifact action "read" com a url do app e path = o imagem_
 
 j) Documento: python3 /tmp/motor/engine/tqc_video.py doc --job /tmp/v/<slug>.json --video <id do mp4> --capa <id da capa> --pauta /tmp/v/<slug>.pauta.json --legenda /tmp/v/<slug>.legenda.txt --slot <primeiro slot livre ainda não usado nesta execução> --info /tmp/v/<slug>.mp4.json > /tmp/v/<slug>.doc.json ; depois ArtifactData "set" na coleção "fila", doc_id "vid-<AAAAMMDD>-<slug curto>", file_path desse JSON (sem if_version).
 
+PASSO 3B — PEDIDO DA CONVERSA DO ESTÚDIO
+1. ArtifactData "update" em pedidos/<id> (if_version lido): status "produzindo".
+2. O roteiro do pedido já foi aprovado pelo Bruno na conversa: use-o como está e não troque as frases (corrija só erro evidente de português). Ajustes de forma que vierem no roteiro (posicao, tamanho, ritmo, cor_marca) são do Bruno: mantenha.
+3. Fundo: se roteiro.fundo.tipo for "clipe" com "busca", procure no Pexels com essa busca, como no PASSO 3d (sem rosto olhando para a câmera, sem marca ou texto, id fora de "clipes_usados"); se a busca não trouxer um clipe bom, tente uma variação próxima. Complete o fundo com "inicio", "clipe_id" e "credito". Se for "clipes" com "buscas", um clipe por busca, em "clipes" (arquivo e inicio), com "clipe_ids" e "credito". Se for "pintura", use como veio e complete a "semente".
+4. Render e conferência como no PASSO 3e–f. Se o texto não couber, diminua "tamanho" ou ajuste a quebra, sem mudar as palavras. Legenda = a do pedido (se vier vazia, escreva pelo PASSO 3g). Pauta em /tmp/v/<slug>.pauta.json: {"linha_id": pedido.linha_id, "linha_nome": pedido.linha_nome, "tema_id": "", "tema": pedido.tema, "subtema": "", "abordagem": pedido.abordagem}. Suba os arquivos e monte o documento como no PASSO 3i–j; antes do "set", acrescente ao JSON o campo "pedido_id": "<id>".
+5. ArtifactData "update" em pedidos/<id>: status "feito", fila_id (o doc_id criado na fila) e feito_em; se não der, status "erro" e erro (uma frase curta em português). Pedidos com status "sem_molde" são ideias de molde novo: não mexa neles.
+
 PASSO 4 — REFAZER UM AJUSTE
 Pegue o item em "ajustes" (roteiro, ajuste pedido, legenda atual). Aplique o pedido do Bruno (texto, ritmo, fundo, tamanho…) e mantenha tema, recorte, abordagem e tudo o que ele não pediu para mudar. Se o pedido for sobre a legenda, reescreva a legenda; senão, mantenha a legenda atual (ele pode tê-la editado). Render, conferência e upload como no PASSO 3; doc com --base /tmp/radar/fila/<id>.json ; ArtifactData "update" em fila/<id> com esse file_path e o if_version lido.
 
 PASSO 5 — FECHAR
 - ArtifactData "update" em config/videos (if_version lido): ultima_execucao (a hora do PASSO 1.0), ultima_msg (ex.: "1 vídeo novo e 1 ajuste refeito"), stock ("ok" ou "bloqueado") e ultima_erro: "" se deu tudo certo; se algo impediu ou atrapalhou a produção, o comando exato e a mensagem de erro exata (até 600 caracteres), para o problema poder ser corrigido.
-- SendUserMessage curto, em português: vídeos novos (linha, tema e data sugerida), ajustes refeitos, fundo usado (clipe do Pexels ou pintura viva) e qualquer problema; lembre que estão no app, em Vídeos > Calendário, aguardando aprovação.
+- SendUserMessage curto, em português: vídeos novos (linha, tema e data sugerida), pedidos da conversa feitos, ajustes refeitos, fundo usado (clipe do Pexels ou pintura viva) e qualquer problema; lembre que estão no app, em Vídeos > Calendário, aguardando aprovação.
 
-REGRAS GERAIS: não invente números nem créditos; não mexa em itens de imagem, linhas de imagem, temas ou taxonomia; não altere itens da fila que não sejam os vídeos desta execução; nunca apague nada. Se algo falhar (Apify, rede, upload), siga com o que der (por exemplo, pintura viva em vez de clipe) e conte na mensagem final.
+REGRAS GERAIS: não invente números nem créditos; não mexa em itens de imagem, linhas de imagem, temas ou taxonomia; não altere itens da fila nem pedidos que não sejam os desta execução; nunca apague nada. Se algo falhar (Apify, rede, upload), siga com o que der (por exemplo, pintura viva em vez de clipe) e conte na mensagem final.
