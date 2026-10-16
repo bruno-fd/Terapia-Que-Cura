@@ -41,13 +41,29 @@ function quebrar(c, txt, maxW) {
   }
   return out;
 }
+const CURTAS = new Set(['o', 'a', 'os', 'as', 'e', 'é', 'de', 'do', 'da', 'em', 'no', 'na', 'um', 'uma', 'que', 'se', 'por', 'pra', 'com', 'ao', 'à', 'nem', 'mas', 'ou']);
+function arrumar(c, L, maxW) { // nada de palavra curta pendurada no fim da linha
+  for (let i = 0; i < L.length - 1; i++) {
+    const ws = L[i].split(' '); if (ws.length < 2) continue;
+    const ult = ws[ws.length - 1].toLowerCase();
+    if (CURTAS.has(ult) && c.measureText(ws[ws.length - 1] + ' ' + L[i + 1]).width <= maxW) { L[i + 1] = ws.pop() + ' ' + L[i + 1]; L[i] = ws.join(' '); }
+  }
+  return L;
+}
 function equilibrar(c, txt, maxW) {
   const L = quebrar(c, txt, maxW); if (L.length < 2) return L;
+  // frases com pontuação: uma por linha, se couberem
+  const partes = String(txt).split(/(?<=[.!?…:;])\s+/).filter(Boolean);
+  if (partes.length > 1 && partes.length <= L.length + 1 && partes.every(p => c.measureText(p).width <= maxW)) return partes;
   let lo = maxW * .45, hi = maxW;
   for (let k = 0; k < 14; k++) { const m = (lo + hi) / 2; if (quebrar(c, txt, m).length > L.length) lo = m; else hi = m; }
-  return quebrar(c, txt, hi);
+  return arrumar(c, quebrar(c, txt, hi), maxW);
 }
 function caber(c, txt, font, size, maxW, maxL, min) {
+  const partes = String(txt).split(/(?<=[.!?…:;])\s+/).filter(Boolean);
+  if (partes.length > 1 && partes.length <= maxL) { // uma frase por linha, mesmo que a letra diminua um pouco
+    for (let s = size; s >= Math.max(min, size * .78); s -= 2) { c.font = font.replace('#', s); if (partes.every(p => c.measureText(p).width <= maxW)) return { size: s, lines: partes, font }; }
+  }
   let s = size;
   for (;;) { c.font = font.replace('#', s); const L = equilibrar(c, txt, maxW); if (L.length <= maxL || s <= min) return { size: s, lines: L, font }; s -= 4; }
 }
@@ -109,7 +125,8 @@ FMT.frases = {
       lg.addColorStop(0, `rgba(255,214,150,${(.10 + .05 * Math.sin(t * 1.3)).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,214,150,0)');
       c.globalCompositeOperation = 'screen'; c.fillStyle = lg; c.fillRect(0, 0, W, H); c.globalCompositeOperation = 'source-over';
     } else {
-      const g = c.createLinearGradient(0, H * .42, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.45, 'rgba(0,0,0,.42)'); g.addColorStop(1, 'rgba(0,0,0,.62)');
+      const kk = U.clamp(((+(j.fundo.luma ?? 110)) - 35) / 90, .3, 1); // clipe escuro pede menos véu
+      const g = c.createLinearGradient(0, H * .42, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.45, `rgba(0,0,0,${(.42 * kk).toFixed(3)})`); g.addColorStop(1, `rgba(0,0,0,${(.62 * kk).toFixed(3)})`);
       c.fillStyle = g; c.fillRect(0, 0, W, H);
     }
     const CR = j.cor || COR.creme, fe = this.fe, feIn = fe ? U.ss(fe.t0 - .15, fe.t0 + .45, t) : 0;

@@ -32,6 +32,14 @@ def _dur(path):
     return float(out.strip() or 0)
 
 
+def _luma(path, ini=0.0):
+    """Brilho médio (0-255) de alguns quadros do clipe, para dosar o véu escuro sob o texto."""
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-ss', str(ini), '-i', path, '-t', '6', '-vf', 'fps=1,scale=108:192,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-', '-f', 'null', '-'],
+                       capture_output=True, text=True)
+    vals = [float(l.split('=')[1]) for l in (r.stdout + r.stderr).splitlines() if 'YAVG=' in l]
+    return round(sum(vals) / len(vals), 1) if vals else 110.0
+
+
 def _enc(out, dur=10):
     mx = int(max(1800, min(4500, 6 * 8 * 1000 / max(dur, 1) * .92)))  # alvo: arquivo de até ~6 MB
     return ['-c:v', 'libx264', '-preset', 'slow', '-crf', '21', '-maxrate', f'{mx}k', '-bufsize', f'{2 * mx}k', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-level', '4.1',
@@ -49,6 +57,11 @@ async def render(job, out, clipe=None, quadros=(), capa=None):
             pg.on('pageerror', lambda e: errs.append(str(e)))
             await pg.goto(f'http://127.0.0.1:{srv.server_address[1]}/engine.html')
             await pg.wait_for_function('window.TQC_READY===true')
+            f0 = job.get('fundo', {})
+            if f0.get('tipo') in ('clipe', 'clipes') and 'luma' not in f0:
+                arq = clipe or (f0.get('clipes') or [{}])[0].get('arquivo')
+                if arq:
+                    f0['luma'] = _luma(arq, float(f0.get('inicio', 0)))
             info = await pg.evaluate('j=>TQC.setup(j)', job)
             if errs:
                 raise RuntimeError('; '.join(errs))
