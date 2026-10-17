@@ -231,7 +231,10 @@ FMT.marcatexto = {
     this.nz = U.noise1(hash(JSON.stringify(j)) + 3);
     this.off = document.createElement('canvas'); this.off.width = W; this.off.height = H;
     this.msk = document.createElement('canvas'); this.msk.width = W; this.msk.height = H;
-    return { dur: this.dur, fps: 30, alpha: false };
+    // cortes para a trilha: a música muda de acorde quando o marca-texto começa e quando termina
+    const h0 = this.hl.length ? this.hl[0].t0 : null, h1 = this.hl.length ? this.hl[this.hl.length - 1].t0 + this.hl[this.hl.length - 1].d : null;
+    const cortes = [0, ...(h0 != null && h0 > 1.2 ? [h0] : []), ...(h1 != null && this.dur - h1 > 1.2 ? [h1 + .2] : []), this.dur];
+    return { dur: this.dur, fps: 30, alpha: false, cortes };
   },
   marca(c, t) {
     const FS = this.FS, hh = FS * 1.12;
@@ -302,7 +305,8 @@ FMT.grafico = {
     const c = this.papel.getContext('2d'); c.fillStyle = '#FBF8F1'; c.fillRect(0, 0, W, H);
     c.fillStyle = 'rgba(14,42,51,.07)'; for (let y = 60; y < H; y += 48) for (let x = 60; x < W; x += 48) { c.beginPath(); c.arc(x, y, 2, 0, 7); c.fill(); }
     for (let k = 0; k < 3000; k++) { c.fillStyle = `rgba(120,100,70,${(.02 + r() * .04).toFixed(3)})`; c.fillRect(r() * W, r() * H, 1 + r() * 2, 1 + r() * 2); }
-    return { dur: this.dur, fps: 30, alpha: false };
+    const cortes = [0, ...this.pn.slice(1).map(p => p.tt), ...(j.fecho ? [this.tf] : []), this.dur];
+    return { dur: this.dur, fps: 30, alpha: false, cortes };
   },
   curva(pn, b) {
     const X = u => b.x0 + 30 + (b.x1 - b.x0 - 50) * u, Y = v => b.y1 - (b.y1 - b.y0 - 30) * v, pts = [];

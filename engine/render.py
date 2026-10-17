@@ -124,7 +124,53 @@ async def render(job, out, clipe=None, quadros=(), capa=None):
     if capa is not None:
         tc = job.get('capa_t', min(dur * 0.45, dur - 0.5))
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', str(tc), '-i', out, '-frames:v', '1', '-q:v', '2', capa])
-    return {'dur': dur, 'quadros': n, 'capa_t': info.get('capa_t')}
+    return {'dur': dur, 'quadros': n, 'capa_t': info.get('capa_t'), 'cortes': info.get('cortes') or [0, dur]}
+
+
+async def info(job):
+    """Só prepara o job (sem desenhar quadros): devolve duração e cortes. Serve para pôr trilha num vídeo já pronto."""
+    from playwright.async_api import async_playwright
+    srv = _serve()
+    try:
+        async with async_playwright() as p:
+            b = await p.chromium.launch(args=['--force-color-profile=srgb'])
+            pg = await b.new_page(viewport={'width': 1080, 'height': 1920})
+            await pg.goto(f'http://127.0.0.1:{srv.server_address[1]}/engine.html')
+            await pg.wait_for_function('window.TQC_READY===true')
+            f0 = job.get('fundo', {})
+            if f0.get('tipo') in ('clipe', 'clipes'):
+                f0.setdefault('luma', 110.0)
+            r = await pg.evaluate('j=>TQC.setup(j)', job)
+            await b.close()
+    finally:
+        srv.shutdown()
+    return {'dur': float(r['dur']), 'cortes': r.get('cortes') or [0, float(r['dur'])], 'capa_t': r.get('capa_t')}
+
+
+def _pcm(path):
+    import numpy as np
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-i', path, '-vn', '-ac', '2', '-ar', '48000', '-f', 'f32le', '-'], capture_output=True)
+    return np.frombuffer(r.stdout, dtype='<f4').reshape(-1, 2)
+
+
+def musicar(video, audio, out):
+    """Junta a trilha ao vídeo (vídeo copiado sem recodificar; áudio AAC 48 kHz) e confere o áudio codificado:
+    o codificador AAC do ffmpeg às vezes cria estalos; nesse caso tenta outra configuração."""
+    import numpy as np
+    ref = _pcm(audio)
+    tmp = out + '.tmp.mp4'
+    for cfg in (['-b:a', '192k'], ['-b:a', '192k', '-aac_coder', 'fast'], ['-b:a', '160k', '-cutoff', '16000'], ['-b:a', '128k', '-aac_coder', 'fast']):
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', video, '-i', audio, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy',
+                        '-c:a', 'aac'] + cfg + ['-ar', '48000', '-ac', '2', '-movflags', '+faststart', tmp], check=True)
+        dec = _pcm(tmp)
+        n = min(len(dec), len(ref))
+        erro = float(np.max(np.abs(dec[:n] - ref[:n]))) if n else 1.0
+        pico = float(np.max(np.abs(dec))) if len(dec) else 1.0
+        if pico < .95 and erro < .12:
+            break
+    else:
+        raise RuntimeError(f'áudio com estalo depois de codificar (pico {pico:.2f}, desvio {erro:.2f})')
+    os.replace(tmp, out)
 
 
 def main():

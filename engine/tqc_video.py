@@ -6,8 +6,13 @@
       como o ArtifactData list com out_dir grava) e devolve, em JSON: linhas de vídeo, a próxima linha do
       rodízio, pautas (tema, recorte e abordagem) pelo mesmo critério do app, horários livres, ajustes
       pedidos, clipes já usados e se o banco de vídeos (Pexels/Pixabay) está acessível.
-  python3 tqc_video.py render JOB.json SAIDA.mp4 [--clipe CLIPE.mp4]
-      Renderiza, salva a capa (SAIDA.capa.jpg) e uma folha de conferência (SAIDA.folha.jpg).
+  python3 tqc_video.py render JOB.json SAIDA.mp4 [--clipe CLIPE.mp4] [--db DIR]
+      Renderiza, compõe a trilha própria (JOB.trilha.humor) e junta ao vídeo; salva a capa
+      (SAIDA.capa.jpg) e uma folha de conferência (SAIDA.folha.jpg). Com --db, evita repetir trilhas já usadas.
+  python3 tqc_video.py trilha VIDEO.mp4 JOB.json [--db DIR] [--humor H] [--out SAIDA.mp4]
+      Põe (ou troca) a trilha de um vídeo já renderizado, sem refazer a imagem.
+  python3 tqc_video.py humores
+      Lista os humores de trilha e quando usar cada um.
   python3 tqc_video.py baixar URL SAIDA.mp4
       Baixa um clipe de banco de vídeos e confere se é um vídeo válido.
   python3 tqc_video.py doc --job JOB.json --video ID --capa ID --pauta PAUTA.json --legenda LEGENDA.txt
@@ -122,23 +127,87 @@ def estado(d, n=1, linha=None, tema=None):
                 'data_hora': q.get('data_hora'), 'roteiro': q.get('roteiro')} for q in vids if q.get('status') == 'ajuste']
     clipes = sorted({c for q in vids for c in (q.get('clipe_ids') or [])})
     pedidos = [{'id': p['id'], 'linha_id': p.get('linha_id'), 'status': p.get('status'), 'criado_em': p.get('criado_em')} for p in _load(d, 'pedidos') if p.get('status') in ('pendente', 'produzindo')]
+    trilhas = [q['trilha']['assinatura'] for q in sorted(vids, key=lambda q: str(q.get('criado_em', '')), reverse=True) if isinstance(q.get('trilha'), dict) and q['trilha'].get('assinatura')]
     return {'agora': agora.isoformat(timespec='minutes'), 'aguardando': sum(q.get('status') == 'aguardando' for q in vids),
+            'humores_trilha': _humores(), 'trilhas_recentes': [q['trilha'].get('humor') for q in sorted(vids, key=lambda q: str(q.get('criado_em', '')), reverse=True) if isinstance(q.get('trilha'), dict)][:6],
+            'trilhas_usadas': len(trilhas),
             'limite_aguardando': int(cv.get('limite_aguardando', 4)), 'linhas_video': [{'id': l['id'], 'nome': l.get('nome'), 'template': l.get('template'), 'descricao': l.get('descricao', ''), 'instrucoes': l.get('instrucoes', ''), 'tom': l.get('tom', '')} for l in LV],
             'pautas': pautas, 'slots_livres': slots, 'ajustes': ajustes, 'clipes_usados': clipes, 'pedidos_pendentes': pedidos, 'stock': 'ok' if stock_ok() else 'bloqueado'}
 
 
-def render(job_path, out, clipe=None):
+def _humores():
+    sys.path.insert(0, AQUI)
+    import trilha as TR
+    return {k: v['desc'] for k, v in TR.HUMORES.items()}
+
+
+def _usadas(db):
+    if not db:
+        return []
+    return [q['trilha']['assinatura'] for q in _load(db, 'fila') if isinstance(q.get('trilha'), dict) and q['trilha'].get('assinatura')]
+
+
+def _semente(job):
+    import hashlib
+    t = job.get('trilha') or {}
+    if t.get('semente'):
+        return str(t['semente'])
+    base = {k: v for k, v in job.items() if k not in ('fundo', 'trilha')}
+    return hashlib.sha1(json.dumps(base, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:10]
+
+
+def _por_trilha(video, job, cortes, dur, db=None, humor=None, out=None):
+    sys.path.insert(0, AQUI)
+    import trilha as TR, render as R
+    h = humor or (job.get('trilha') or {}).get('humor') or 'reflexivo'
+    wav = os.path.splitext(out or video)[0] + '.trilha.wav'
+    meta = TR.trilha(h, dur, cortes, wav, seed=_semente(job), evitar=_usadas(db))
+    R.musicar(video, wav, out or video)
+    os.remove(wav)
+    meta.pop('compassos', None)
+    meta.pop('notas', None)
+    return meta
+
+
+def tem_audio(path):
+    p = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', path], capture_output=True, text=True)
+    return bool(p.stdout.strip())
+
+
+def trilha_cmd(video, job_path, db=None, humor=None, out=None):
+    sys.path.insert(0, AQUI)
+    import asyncio, render as R
+    job = json.load(open(job_path))
+    inf = asyncio.run(R.info(job))
+    dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', video], capture_output=True, text=True).stdout.strip() or inf['dur'])
+    meta = _por_trilha(video, job, inf['cortes'], min(dur, inf['dur'] + .05), db, humor, out)
+    alvo = out or video
+    if os.path.exists(alvo + '.json'):
+        i = json.load(open(alvo + '.json'))
+    elif os.path.exists(video + '.json'):
+        i = json.load(open(video + '.json'))
+    else:
+        i = {}
+    i.update({'trilha': meta, 'bytes': os.path.getsize(alvo)})
+    json.dump(i, open(alvo + '.json', 'w'))
+    return meta
+
+
+def render(job_path, out, clipe=None, db=None):
     sys.path.insert(0, AQUI)
     import asyncio, render as R
     job = json.load(open(job_path))
     r = asyncio.run(R.render(job, out, clipe))
     dur = r['dur']
+    trilha = _por_trilha(out, job, r.get('cortes') or [0, dur], dur, db)
+    if not tem_audio(out):
+        raise SystemExit('a trilha não entrou no vídeo')
     tc = float(job.get('capa_t') or r.get('capa_t') or {'marcatexto': dur - .3, 'grafico': dur - .4}.get(job.get('formato'), dur * .45))
     tc = max(.2, min(tc, dur - .1))
     base = os.path.splitext(out)[0]
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{tc:.2f}', '-i', out, '-frames:v', '1', '-q:v', '2', base + '.capa.jpg'], check=True)
     subprocess.run([sys.executable, os.path.join(AQUI, 'folha.py'), out, base + '.folha.jpg', '8', '270'], check=True, capture_output=True)
-    info = {'dur': round(dur, 2), 'capa_ms': int(tc * 1000), 'bytes': os.path.getsize(out), 'capa': base + '.capa.jpg', 'folha': base + '.folha.jpg'}
+    info = {'dur': round(dur, 2), 'capa_ms': int(tc * 1000), 'bytes': os.path.getsize(out), 'capa': base + '.capa.jpg', 'folha': base + '.folha.jpg', 'trilha': trilha}
     json.dump(info, open(out + '.json', 'w'))
     return info
 
@@ -169,6 +238,8 @@ def doc(a):
     if base:
         d['refeito_em'] = _agora().isoformat(timespec='seconds')
         d['ajuste_anterior'] = base.get('ajuste', '')
+    if info.get('trilha'):
+        d['trilha'] = info['trilha']
     f = job.get('fundo', {})
     ids = [str(x) for x in (f.get('clipe_ids') or ([f['clipe_id']] if f.get('clipe_id') else []))]
     if ids:
@@ -186,7 +257,11 @@ def main():
     if cmd == 'estado':
         print(json.dumps(estado(a[1], int(opt('--n', 1)), opt('--linha'), opt('--tema')), ensure_ascii=False, indent=1))
     elif cmd == 'render':
-        print(json.dumps(render(a[1], a[2], opt('--clipe')), ensure_ascii=False))
+        print(json.dumps(render(a[1], a[2], opt('--clipe'), opt('--db')), ensure_ascii=False))
+    elif cmd == 'trilha':
+        print(json.dumps(trilha_cmd(a[1], a[2], opt('--db'), opt('--humor'), opt('--out')), ensure_ascii=False))
+    elif cmd == 'humores':
+        print(json.dumps(_humores(), ensure_ascii=False, indent=1))
     elif cmd == 'baixar':
         print(json.dumps(baixar(a[1], a[2]), ensure_ascii=False))
     elif cmd == 'doc':
