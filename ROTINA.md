@@ -18,8 +18,8 @@ A mensagem extra desta execução (o bloco routine-fire-payload, quando houver) 
 
 PASSO 3 — PRODUZIR UM VÍDEO NOVO (uma pauta por vídeo)
 Abordagens da pauta:
-- "dor": DOR E CONFLITO: o objetivo é a pessoa se reconhecer e pensar "sou eu". Mostre a dor com precisão, sem julgamento, e deixe claro de onde ela vem. A ideia de que isso tem explicação e de que ninguém precisa enfrentar sozinho deve nascer do próprio texto, sem frase pronta colada; o convite à terapia, se houver, fica na legenda, sem pressão e sem promessa.
-- "acolhimento": ACOLHIMENTO E ESPERANÇA: bonito, reflexivo e encorajador; valide a dificuldade e ofereça uma perspectiva gentil e possível, sem positividade forçada.
+- "dor": a frase nomeia uma dor que a pessoa reconhece e pensa "sou eu", sem julgar. O convite à terapia, se houver, fica na legenda, sem pressão e sem promessa.
+- "acolhimento": a frase consola, encoraja ou dá uma perspectiva possível, sem positividade forçada.
 
 a) TEXTO (o que mais importa no vídeo). Leia /tmp/motor/engine/criterio_texto.md inteiro: é o padrão de texto da TQC, com os exemplos aprovados pelo Bruno. Leia também "referencias_texto" do estado (notas do Bruno, que valem mais que os exemplos) e "ja_saiu_sobre_o_tema" (não repita frase nem ideia). O vídeo leva UMA frase forte que se sustenta sozinha e passa no teste da conversa (alguém diria isso numa conversa de verdade, com essas palavras). Não é uma história, nem uma lista de cenas.
   1. Escreva 8 frases candidatas sobre o tema e o recorte da pauta, na abordagem da pauta, com ângulos diferentes, no padrão do guia (seções 1 a 4). Salve em /tmp/v/<slug>.candidatas.json como uma lista de textos. No v-marcatexto, as candidatas são a frase marcada; no v-grafico, o fecho; no v-cena, siga molde.instrucoes_texto (cada candidata é o texto inteiro do molde, numa linha só, com " / " entre os blocos).
