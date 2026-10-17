@@ -126,7 +126,7 @@ Duração: a soma das entradas e pausas mais o `fim`, no máximo 60 s. Mire em 1
 2. **Escolha as peças.** Pôster tipográfico, lista e frases empilhadas são blocos em pilha. Composição livre (título, ícone, caixa, seta) são elementos. Telas que se sucedem são quadros.
 3. **Traduza a hierarquia em estilos** com nomes que digam a função ("fino", "destaque", "manuscrito", "faixa", "assinatura"), em 3 a 7 estilos.
 4. **Identidade TQC.** Fundo claro (claro/papel) ou escuro (tinta/gradiente), tinta escura e no máximo UMA cor de destaque da marca (rosa ou ciano), a menos que a referência peça outra coisa. Nada de logos ou nomes de terceiros.
-5. **Texto ORIGINAL**, escrito pelo processo do criterio_texto.md (descoberta, cena, virada), adaptado ao molde. Num lettering, os blocos formam uma sequência que constrói uma ideia: cada bloco curto (até ~40 caracteres), as palavras-chave nas partes grandes e os complementos nas pequenas. Nunca copie a frase da referência nem a atribua a autor real, nunca escreva em primeira pessoa, e não use "X não é Y" em lista.
+5. **Texto ORIGINAL**, no padrão do criterio_texto.md (frases fortes que se sustentam sozinhas e passam no teste da conversa), escolhido pelo leitor cego. Num lettering, os blocos formam poucas frases curtas sobre o mesmo tema: cada bloco tem até ~40 caracteres, as palavras-chave ficam nas partes grandes e os complementos nas pequenas (nunca uma palavra de ligação em letra enorme). Nunca copie a frase da referência nem a atribua a autor real, e nunca escreva em primeira pessoa.
 6. **Renderize e compare.** Abra a capa (o quadro final) ao lado da referência e confira:
    - hierarquia parecida;
    - nada cortado ou sobreposto;
@@ -146,4 +146,4 @@ Duração: a soma das entradas e pausas mais o `fim`, no máximo 60 s. Mire em 1
 
 ## 4. Vídeo novo de um molde que já existe
 
-Copie `molde.cena` inteiro. Troque só os textos (txt dos blocos e dos elementos de texto), seguindo `molde.instrucoes_texto` e o processo de texto (candidatos, verificador e crítico). O número de blocos pode variar dentro do que as instruções permitem. Ponha a trilha (humor) e, se o fundo for clipe, o clipe. Não mude fontes, cores, layout nem animação, a menos que o Bruno peça.
+Copie `molde.cena` inteiro. Troque só os textos (txt dos blocos e dos elementos de texto), seguindo `molde.instrucoes_texto` e o processo de texto (candidatas, leitor cego e revisão). O número de blocos pode variar dentro do que as instruções permitem. Ponha a trilha (humor) e, se o fundo for clipe, o clipe. Não mude fontes, cores, layout nem animação, a menos que o Bruno peça.

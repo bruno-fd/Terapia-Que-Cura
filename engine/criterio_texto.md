@@ -1,77 +1,105 @@
-# Critério de texto dos vídeos TQC
+# Padrão de texto da TQC (vídeo, imagem e legenda)
 
-Este guia vale para quem escreve (a produção) e para quem avalia (o crítico). A meta não é um texto correto: é um texto que a pessoa lê e pensa "sou eu" e, no fim, entende algo sobre si que ainda não tinha visto. Nota de referência do Bruno para os textos de outubro/2026: 4 de 10. Os motivos estão nos exemplos abaixo.
+Este guia vale para quem escreve e para quem revisa. Ele substitui o critério anterior (descoberta, cena-âncora, escada e virada), que produziu textos que o Bruno reprovou em 17/10/2026: histórias soltas, frases que ninguém diria e fechos que dependiam de contexto.
 
-## 1. Antes de escrever
+## 1. A meta
 
-Escreva para você mesmo, em uma frase, a DESCOBERTA: o que a pessoa vai entender sobre si ao fim do vídeo. Não é o tema ("culpa por descansar"), é a revelação ("o descanso dá culpa porque ela aprendeu que só é amada quando é útil"). Se a descoberta for óbvia ou um conselho ("você merece descansar"), ainda não há vídeo.
+Uma frase que uma pessoa comum entende de primeira, reconhece como verdade e manda para alguém.
 
-Depois, escolha a CENA-ÂNCORA: um momento concreto em que a dor aparece (horário, lugar, objeto, gesto, frase dita). O texto nasce dessa cena, não de conceitos.
+**Teste da conversa (o principal):** cada frase precisa ser algo que alguém diria em voz alta, numa conversa de verdade, com essas mesmas palavras. Se precisa de explicação, se é um conceito abstrato ou se ninguém fala assim, reescreva com as palavras do dia a dia.
 
-## 2. O que faz um texto forte
+Teste rápido: diga o que a frase quer dizer em palavras simples. Se não conseguir, ou se a explicação for mais clara que a frase, a frase não serve.
 
-1. **Reconhecimento.** Nomeia o que a pessoa faz ou pensa e nunca disse em voz alta: o comportamento escondido, o pensamento automático, o motivo por trás. Precisão é o que gera o "sou eu", não intensidade.
-2. **Revelação (a virada).** O fecho mostra o mecanismo (o porquê) ou inverte a leitura do que veio antes. Não é conselho, não é consolo genérico, não é pergunta solta. Teste do print: o fecho, sozinho, é uma frase que alguém mandaria para outra pessoa.
-3. **Especificidade.** Cena e detalhe vencem abstração. "faz o rosto queimar no ônibus" vence "causa vergonha". "lembra da louça na pia" vence "sente culpa".
-4. **Escada.** Cada frase sobe um degrau: do visível para o íntimo, do que se faz para o que se teme. A última frase antes do fecho é a mais íntima. Nenhuma frase troca de assunto: tudo serve à mesma descoberta, e o fecho responde à abertura.
-5. **Frescor.** Nada que a pessoa já leu mil vezes. Se a frase cabe numa caneca, numa camiseta ou em qualquer outro perfil, corte.
-6. **Economia e som.** Frases curtas, verbos concretos, sem adjetivo decorativo, sem "muito", "realmente", "simplesmente", "às vezes" repetido. Lida em voz alta, tem ritmo.
+## 2. Como é uma frase forte
 
-Voz: segunda pessoa ("você"), íntima e exata, sem julgar e sem prescrever ("você precisa", "permita-se", "lembre-se"). Nunca primeira pessoa. Psicoeducação sem diagnóstico e sem promessa de cura. Fiel ao tema e ao recorte da pauta.
+- **Sozinha, ela se sustenta.** Não depende de personagem, história, cena ou contexto. Quem lê só a frase entende tudo.
+- **Muitas vezes funciona por contraste:** escolher × escapar das consequências; perguntar se você está bem × querer saber; a terapia orienta × você rema; quem não quer ouvir × quem quer entender.
+- **Quando há situação, ela é do dia a dia e diz exatamente o quê:** "pedir permissão para ver os seus amigos", "o pai dentro de casa". Nunca uma ideia vaga como "diminuir", "se perder", "ocupar o seu espaço" ou "se abandonar".
+- **Pode aconselhar, desejar, consolar ou falar da terapia,** como nos exemplos.
+- **É curta.** Uma frase ou duas, raramente mais de 25 palavras.
 
-## 3. Proibido (clichê, jargão ou fórmula gasta)
+## 3. O que evitar (foi o que gerou textos sem sentido)
 
-- Fórmula "X não é Y" em lista ("descansar não é preguiça / chorar não é fraqueza…"). No máximo UMA construção "não é… é…" por roteiro, e só se for a virada.
-- Frases de caneca: "você é suficiente", "está tudo bem não estar bem", "respeite o seu tempo", "cada um tem o seu tempo", "seja gentil consigo", "você não está sozinho(a)", "faz parte do caminho/da jornada/do processo", "um dia de cada vez", "a vida é feita de…", "o que é seu ninguém tira", "tudo acontece por um motivo", "você merece o melhor", "ame-se", "se priorize".
-- Jargão de autoajuda: jornada, ressignificar, florescer, gratidão, vibração, energia (no sentido místico), permita-se, abrace, acolha-se, cura/curar, "sua melhor versão", "zona de conforto", "virar a chave".
-- Rótulos clínicos aplicados a quem lê ou a terceiros: "você tem ansiedade/depressão/TDAH", "narcisista", "tóxico", "trauma" como explicação pronta.
-- Vários temas no mesmo vídeo; frases que valem para qualquer tema.
+- **Conceito no lugar de gente:** "a falta de escuta", "relações pedem", "a dor que mora em você", "o cuidado que habita".
+- **Expressão que não existe ou que ninguém usa:** "quem cuida de ouvir", "uma clareza que só ganhou depois".
+- **Fórmulas vazias:** "menos X e mais Y", "nem todo X é Y", "às vezes, o maior X é Y".
+- **Palavra genérica no lugar da coisa concreta:** "diminuir" (diminuir o quê?), "lugar", "espaço", "processo".
+- **História em pedaços, que depende de contexto:** "Do seu pai, você herdou… o jeito de calar na mesa… Talvez ele também só esperasse alguém perguntar duas vezes." O fecho se apoia numa pergunta que o texto nunca mostrou.
+- **Vários assuntos no mesmo texto:** "Toda segunda você: fica um minuto no carro / ri da piada que foi sobre você / abre vagas no celular…" São quatro assuntos e nenhuma frase forte.
+- **Português formal demais:** "antes de a nova", "alguém que o segure". Escreva como se fala: "antes da nova", "alguém que segure a sua".
+- **Jargão de autoajuda e de psicologia:** jornada, ressignificar, florescer, potência, gatilho, trauma como explicação pronta.
 
-## 4. Estruturas do molde "frases" (escolha a que serve à descoberta)
+## 4. Exemplos aprovados pelo Bruno (mostram o nível e o tom; nunca copie)
 
-- **Escada** (padrão): abertura (até 6 palavras, termina em "…" ou ":") + 3 a 5 frases curtas no mesmo molde gramatical (até 8 palavras cada), subindo do visível ao íntimo + fecho (até 14 palavras) com a revelação.
-- **Dois tempos**: sem abertura; 1 ou 2 frases de constatação, muito específicas, e o fecho que vira a chave. Ex.: "Você só descansa quando fica doente." → fecho "Porque aí o corpo assina a licença que você não se dá."
-- **Frase partida** (só com clipes): uma única frase forte, cortada em 3 ou 4 trechos, um por cena.
+Exemplos trazidos pelo Bruno:
+- Você é livre para escolher, mas não é livre para escapar das consequências.
+- Existem pessoas que vão perguntar se você está bem, e outras que vão querer saber se você está bem. Aprenda a diferenciá-las.
+- A terapia vai te orientar, mas você precisa remar.
+- Na terapia, tão importante quanto se curar é voltar a aprender a ser feliz.
+- "Se eu soubesse, teria feito diferente." Mas você não sabia.
+- Que você seja tão bom para si quanto é para todo mundo.
+- Quem não quer te ouvir não te ouvirá nem se você gritar. Quem quer te entender vai te entender mesmo que você não diga uma palavra.
 
-Menos frases e mais fortes vence mais frases. Cada frase precisa merecer os 2 a 3 segundos que fica na tela.
+Escritas pelo Claude e aprovadas pelo Bruno em 17/10/2026:
+- Tem gente que cresceu com o pai dentro de casa. E sem pai.
+- Criança que não foi ouvida vira adulto que pede desculpa por falar.
+- A terapia não muda o seu passado. Muda o peso que ele tem hoje.
+- Você não precisa estar no fundo do poço para merecer ajuda.
+- Tem coisa que você só entende quando escuta a própria voz dizendo.
+- Você se culpa por coisas que só aprendeu depois que elas aconteceram.
+- Quem segura a barra de todo mundo também precisa de alguém que segure a sua.
+- Quem gosta de você não te faz duvidar disso toda semana.
+- Se você precisa pedir permissão para ver os seus amigos, isso não é cuidado. É controle.
+- A ansiedade faz você sofrer duas vezes: antes de acontecer e, muitas vezes, por algo que nem acontece.
 
-Marca-texto: a frase marcada passa no teste do print sozinha e é uma revelação, não um resumo; os parágrafos preparam essa frase com uma cena concreta e a desdobram. Gráfico: os rótulos são situações concretas (até 16 caracteres), o contraste entre os dois painéis surpreende, e o fecho tira a culpa com precisão.
+Reprovada pelo Bruno: "Amor que pede para você diminuir não é amor. É controle." Motivo: "diminuir" é abstrato (diminuir o quê?) e ninguém fala assim numa conversa.
 
-## 5. Exemplos (calibragem)
+Se houver notas do Bruno (referencias_texto), elas valem mais que estes exemplos.
 
-Fracos, de vídeos já produzidos:
-- "Descansar também é parte do caminho." (nota 3) Frase de caneca: abstrata, sem cena, sem revelação; qualquer perfil diria.
-- "Ninguém te contou, mas… descansar não é preguiça. / chorar não é fraqueza. / dizer não não é egoísmo. / pedir ajuda não é fracasso…" (nota 3) Fórmula "X não é Y" gasta; cada frase é de um tema diferente; não há escada nem virada; o fecho "É você, finalmente, cuidando de você." é genérico.
-- "Às duas da manhã, a cabeça… revisa a conversa de ontem. / ensaia a discussão que não aconteceu. / lembra do boleto de sexta. / refaz a lista de amanhã…" (nota 5) Concreto e reconhecível, mas é inventário: não sobe de degrau e o fecho não revela por que a cabeça faz isso.
-- "Aquele erro antigo ainda… aparece no meio do banho. / faz o rosto queimar no ônibus. / … fala com uma dureza que ninguém merece. / pesa mais que qualquer acerto." Fecho: "Você julga quem era com o que só sabe hoje." (nota 6) O fecho é bom (mecanismo exato). As duas últimas frases ficaram abstratas e quebraram a escada.
+## 5. Legenda
 
-Fortes (originais, como referência de nível, nunca para copiar):
-- Culpa por descansar (escada): "Até no sofá, você… / deixa o celular virado para cima. / lembra da louça na pia. / conta o que ainda devia ter feito. / sente que precisa merecer o domingo." Fecho: "Descansar dá culpa em quem aprendeu que só é amado quando é útil." (nota 9) Cenas exatas, escada do objeto ao merecimento, fecho que revela a origem.
-- Culpa por descansar (dois tempos): "Você só descansa quando fica doente." Fecho: "Porque aí o corpo assina a licença que você não se dá." (nota 9)
-- Cabeça que não desliga (escada): "Às duas da manhã, a cabeça… / revisa a conversa de ontem. / procura a frase que faltou. / confere se alguém ficou chateado." Fecho: "Ela não desliga porque é a primeira hora do dia em que alguém a escuta." (nota 8)
-- Dificuldade de dizer não (frase marcada): "Você não tem dificuldade de dizer não. Tem medo do silêncio que vem depois dele." (nota 9)
-- Exaustão: "Você responde 'tudo bem' tão rápido que nem dá tempo de perguntar a si mesma." (nota 8)
+- **Uma ou duas frases faladas** que dizem, com palavras comuns, onde aquilo aparece na vida. Ela não repete a frase do post e não inventa uma ideia nova em volta dela.
+- **Depois, numa linha, um convite simples:** mandar para alguém ou salvar. Pergunta só se for uma que alguém faria de verdade numa conversa; nunca uma pergunta genérica só para puxar comentário.
+- **Por fim, uma linha em branco e de 3 a 5 hashtags** em português, do tema.
+- **Sem markdown, no máximo 1 emoji,** sem propaganda e sem citar o site.
 
-Escala: 3 = clichê ou genérico; 5 = concreto, mas sem virada ou sem escada; 7 = bom, com um ponto fraco claro; 8 = reconhecimento e virada, nada sobrando; 9 a 10 = a pessoa manda para alguém e lembra no dia seguinte.
+Exemplos:
 
-## 6. Crítico (avaliação independente)
+> Frase: "Quem não quer te ouvir não te ouvirá nem se você gritar…"
+> Tem conversa que não depende de você explicar melhor. Depende do outro querer escutar.
+> Manda para alguém que vive se explicando.
 
-Quem avalia não escreveu o texto e é exigente: na dúvida, a nota é a menor. Avalie cada candidato com nota de 0 a 10 em:
+> Frase: "Tem gente que cresceu com o pai dentro de casa. E sem pai."
+> Estar em casa não é a mesma coisa que estar presente. Muita gente só percebe isso depois de grande.
+> Se isso te tocou, salva para ler de novo.
 
-| critério | peso | pergunta |
-|---|---|---|
-| reconhecimento | 25% | A pessoa se vê numa situação exata e diz "sou eu"? |
-| virada | 25% | O fecho revela um mecanismo ou inverte a leitura? Passa no teste do print? |
-| especificidade | 15% | Cada frase tem cena, gesto, objeto ou fala, e não conceito? |
-| escada | 15% | Uma descoberta só, degraus do visível ao íntimo, o fecho responde à abertura, fiel ao tema? |
-| frescor | 10% | Livre de clichê, jargão e fórmula gasta (seção 3)? |
-| ritmo | 10% | Curto, sonoro, cada palavra trabalha, legível na tela? |
+Reprovada pelo Bruno: "Nem toda falta de escuta é culpa de quem fala. Algumas relações pedem menos esforço para convencer e mais atenção a quem realmente cuida de ouvir. Você tem gastado sua voz com quem ainda não quer entender?" Motivos: conceito no lugar de gente, a fórmula "menos X e mais Y", uma expressão que não existe ("cuida de ouvir") e uma pergunta só para puxar comentário.
 
-total = média ponderada (uma casa decimal). Dê também "fecho_print" (0 a 10: o fecho sozinho, mandaria para alguém?).
+## 6. Nos moldes de vídeo
 
-Aprovação: total >= 8,0, nenhum critério abaixo de 7 e fecho_print >= 8. Se reprovar, aponte o trecho mais fraco e diga exatamente o que trocar (não reescreva o texto inteiro).
+- **Frases sobre cenas (v-frases):** uma frase forte por vídeo.
+  - Curta (até ~12 palavras): fica inteira e fixa na tela.
+  - Longa (até ~30 palavras, ou duas frases): é cortada em 2 a 4 pedaços nas pausas naturais (vírgula, ponto), e os pedaços entram um depois do outro.
+- **Marca-texto em livro:** a frase marcada é a frase forte. Os 3 parágrafos curtos em volta são escritos como alguém explicaria a um amigo, e cada frase deles também passa no teste da conversa.
+- **Gráfico:** títulos e rótulos com palavras do dia a dia; o fecho é uma frase forte.
+- **Moldes próprios (formato cena):** seguem as instruções de texto do molde. Cada linha na tela continua passando no teste da conversa.
 
-Saída do crítico, só JSON:
-{"candidatos":[{"n":1,"criterios":{"reconhecimento":0,"virada":0,"especificidade":0,"escada":0,"frescor":0,"ritmo":0},"total":0.0,"fecho_print":0,"aprovado":false,"pior_trecho":"…","como_melhorar":"…"}],"melhor":1,"comentario":"1 frase sobre o melhor"}
+## 7. Leitor cego (a revisão)
 
-Se houver notas do Bruno (referencias_texto do estado), elas valem mais que estes exemplos: textos que ele avaliou bem mostram o nível e o tom que ele quer; os que avaliou mal mostram o que evitar, junto com o comentário dele.
+Quem revisa não sabe o tema nem quem escreveu: lê só o que vai na tela, como uma pessoa comum leria no celular. Para cada frase:
+- **entendi:** o que ela diz, em palavras simples, numa frase;
+- **conversa:** alguém diria isso numa conversa de verdade, com essas palavras? (true/false; se false, o trecho);
+- **mandaria:** você mandaria para um amigo? (true/false);
+- **nota:** de 0 a 10, comparando com os exemplos da seção 4. Seja exigente: 8 é uma frase que você repostaria.
+
+Passa: conversa true, mandaria true, nota ≥ 8, e o "entendi" bate com o que se quis dizer.
+
+Na revisão de um texto inteiro (parágrafos, legenda), o leitor aponta cada trecho que ninguém diria, que precise de explicação ou que seja conceito abstrato, e diz como uma pessoa falaria, sem mudar o sentido e sem acrescentar ideia.
+
+## 8. Regras fixas
+
+- Nunca primeira pessoa (eu, me, meu, nós, a gente). A exceção é a fala entre aspas, como em "Se eu soubesse, teria feito diferente."
+- Português do Brasil correto e coloquial.
+- Psicologia sem diagnóstico, sem rótulo clínico e sem promessa de resultado (Código de Ética do CFP).
+- Texto original: nunca copie frases conhecidas nem as atribua a autores reais.
+- Uma ideia por texto.

@@ -310,7 +310,7 @@ def doc(a):
         d['trilha'] = info['trilha']
     if a.get('critica'):
         c = json.load(open(a['critica']))
-        d['nota_texto'] = {k: c[k] for k in ('total', 'criterios', 'fecho_print', 'rodadas', 'comentario', 'abaixo_da_meta', 'autor') if k in c}
+        d['nota_texto'] = {k: c[k] for k in ('autor', 'entendi', 'nota', 'rodadas', 'comentario', 'total', 'criterios', 'fecho_print', 'abaixo_da_meta') if k in c}
     if base:
         d['roteiro_editado'] = ''
         if base.get('roteiro_editado'):

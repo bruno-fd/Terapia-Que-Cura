@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Verificador automático do texto dos vídeos TQC (antes do crítico).
 
-Pega o que dá para pegar sem julgamento: primeira pessoa, clichês e jargão,
-fórmula "X não é Y" em lista, rótulos clínicos, tamanhos fora do molde,
-pontuação e repetição. Devolve erros (precisam ser corrigidos) e avisos
-(o crítico decide). A qualidade de verdade (reconhecimento, virada) fica
-com o crítico, pelo criterio_texto.md.
+Pega o que dá para pegar sem julgamento: primeira pessoa, rótulos clínicos,
+tamanhos fora do molde, emoji e hashtag (erros) e sinais de texto vazio
+(fórmulas como "menos X e mais Y", conceito no lugar de gente, clichês),
+que vão como avisos para o leitor cego. Se a frase se entende e se alguém
+diria aquilo numa conversa, quem decide é o leitor cego, pelo criterio_texto.md.
 
 Uso: python3 texto.py ROTEIRO.json
 """
@@ -25,7 +25,14 @@ CLICHES = [
     'acolha-se', 'vibracao', 'boas energias', 'energia positiva', 'cuidando de voce', 'cuide de voce', 'olhe para dentro',
     'no seu tempo', 'tudo vai passar', 'vai ficar tudo bem', 'voce e mais forte', 'acredite em voce', 'confie no processo',
 ]
-JARGAO_AVISO = [r'\bjornada', r'\bprocesso\b', r'\bautocuidado', r'\bgatilho', r'\btrauma', r'\bmerec\w*', r'\bcura(r|do|da)?\b', r'\btoxic', r'\bempoder\w*', r'\bautoestima']
+JARGAO_AVISO = [r'\bjornada', r'\bautocuidado', r'\bgatilho', r'\btrauma', r'\btoxic', r'\bempoder\w*', r'\bressignific\w*', r'\bpotencia\b', r'\bflorescer']
+# sinais de "lero-lero": viram aviso para o leitor cego
+VAZIO_AVISO = [
+    (r'\bmenos\b[^.!?]{1,50}\be mais\b', 'fórmula "menos X e mais Y"'),
+    (r'(^|[.!?]\s+)nem tod[oa]s?\b', 'fórmula "nem todo X é Y"'),
+    (r'\b(a falta|a ausencia|a presenca|a escuta|as relacoes|a relacao|o cuidado|a dor|o amor)\s+(de \w+\s+)?(pede|pedem|exige|exigem|ensina|ensinam|mora|habita|grita|fala)\b', 'conceito fazendo papel de gente'),
+    (r'\bcuida de ouvir\b', 'expressão que não existe'),
+]
 CLINICO = [r'\bvoce (tem|sofre de|esta com) (ansiedade|depressao|tdah|bipolar|toc|borderline|transtorno|panico)', r'\bnarcisist', r'\bpsicopat', r'\bbipolar\b']
 PRIMEIRA = r"\b(eu|me|meu|minha|meus|minhas|comigo|mim|nos|nosso|nossa|nossos|nossas|conosco|a gente)\b"
 ABSTRATAS = re.compile(r'\b\w+(cao|coes|dade|dades|mento|mentos|encia|ancia|ismo)\b')
@@ -85,7 +92,11 @@ def checar(job):
             E.append(f'{rot}: primeira pessoa ("{m.group(1)}"): fale com quem assiste ("você") ou em 3ª pessoa')
     for c in CLICHES:
         if c in base:
-            E.append(f'clichê ou jargão proibido: "{c}" (criterio_texto.md, seção 3)')
+            A.append(f'frase muito usada: "{c}" (só se a frase inteira for realmente forte)')
+    for rx, nome in VAZIO_AVISO:
+        m = re.search(rx, base)
+        if m:
+            A.append(f'{nome}: "{m.group(0).strip()}" (criterio_texto.md, seção 3)')
     for rx in JARGAO_AVISO:
         m = re.search(rx, base)
         if m:
@@ -110,29 +121,27 @@ def checar(job):
     if f == 'frases':
         fr, ab, fe = job.get('frases') or [], job.get('abertura') or '', job.get('fecho') or ''
         if not fe:
-            E.append('falta o fecho (a virada)')
-        if fe.strip().endswith('?'):
-            E.append('o fecho não pode ser pergunta: ele é a revelação')
+            E.append('falta o fecho (a frase, ou o último pedaço dela)')
+        if ab:
+            A.append('abertura preenchida: no molde atual a frase vem sozinha, sem abertura')
         if ab and len(_palavras(ab)) > 6:
             E.append(f'abertura com {len(_palavras(ab))} palavras (máximo 6)')
-        if ab and not ab.rstrip().endswith(('…', '...', ':')):
-            A.append('abertura costuma terminar em "…" ou ":"')
         n = len(fr)
-        if n > 5:
-            E.append(f'{n} frases: no máximo 5 (menos e mais fortes)')
-        if ab and n and n < 3:
-            A.append('escada com menos de 3 frases: confira se não é "dois tempos" (sem abertura)')
+        if n > 3:
+            E.append(f'{n + 1} pedaços: no máximo 4 (3 em "frases" + o fecho)')
         for i, x in enumerate(fr):
             w = len(_palavras(x))
-            if w > 8:
-                E.append(f'frase {i + 1} com {w} palavras (máximo 8)')
-            if not x.rstrip().endswith(('.', '…', '...')) and n > 1:
-                A.append(f'frase {i + 1} sem ponto final')
-        if fe and len(_palavras(fe)) > 14:
-            E.append(f'fecho com {len(_palavras(fe))} palavras (máximo 14)')
-        if fr and ab and ab.rstrip().endswith('…') and any(x[:1].isupper() for x in fr):
-            A.append('frases que continuam a abertura começam com minúscula')
-        est = {'frases': n, 'palavras_fecho': len(_palavras(fe))}
+            if w > 14:
+                E.append(f'pedaço {i + 1} com {w} palavras (máximo ~12; corte numa pausa natural)')
+        wf = len(_palavras(fe))
+        if not fr and wf > 20:
+            E.append(f'frase inteira com {wf} palavras: acima de ~12, corte em 2 a 4 pedaços (frases + fecho)')
+        if fr and wf > 14:
+            E.append(f'último pedaço com {wf} palavras (máximo ~12)')
+        total = sum(len(_palavras(x)) for x in fr) + wf
+        if total > 32:
+            E.append(f'{total} palavras no total: a frase forte tem até ~30')
+        est = {'pedacos': n + 1, 'palavras': total}
     elif f == 'marcatexto':
         ps = job.get('paragrafos') or []
         marc = re.findall(r'\[\[(.+?)\]\]', ' '.join(ps))
@@ -140,15 +149,15 @@ def checar(job):
             E.append(f'{len(marc)} trechos marcados com [[ ]]: precisa de exatamente 1')
         else:
             w = len(_palavras(marc[0]))
-            if not 10 <= w <= 24:
-                E.append(f'frase marcada com {w} palavras (entre 12 e 24)')
+            if not 5 <= w <= 26:
+                E.append(f'frase marcada com {w} palavras (até 24)')
             est['frase_marcada'] = marc[0]
         if not 3 <= len(ps) <= 4:
             E.append(f'{len(ps)} parágrafos (3 ou 4)')
         for i, p in enumerate(ps):
             w = len(_palavras(p.replace('[[', '').replace(']]', '')))
-            if not 30 <= w <= 65:
-                A.append(f'parágrafo {i + 1} com {w} palavras (35 a 60)')
+            if not 20 <= w <= 60:
+                A.append(f'parágrafo {i + 1} com {w} palavras (25 a 50)')
     elif f == 'cena':
         qs = job.get('quadros') or [job]
         blocos = [t for r, t in tr if 'bloco' in r]
@@ -174,8 +183,8 @@ def checar(job):
     pal = [_sem_acento(p) for p in _palavras(tudo)]
     abst = [p for p in pal if ABSTRATAS.fullmatch(p) and len(p) > 5]
     est['abstratas'] = round(len(abst) / max(len(pal), 1), 2)
-    if f == 'frases' and est['abstratas'] > .12:
-        A.append(f'texto abstrato demais ({", ".join(sorted(set(abst))[:6])}): troque conceito por cena, gesto ou objeto')
+    if est['abstratas'] > .12:
+        A.append(f'muitas palavras abstratas ({", ".join(sorted(set(abst))[:6])}): diga com as palavras do dia a dia')
     cont = {}
     for p in pal:
         if len(p) > 4:
