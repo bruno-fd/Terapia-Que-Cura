@@ -10,6 +10,7 @@ const U = {
   ss: (a, b, x) => { const t = U.clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); },
   eio: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
   eo: t => 1 - Math.pow(1 - t, 3),
+  es: t => .5 - .5 * Math.cos(Math.PI * U.clamp(t)), // entrada e saída senoidais, sem tranco
   rng: seed => { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; },
   noise1: seed => { const r = U.rng(seed), v = Array.from({ length: 256 }, () => r() * 2 - 1); return x => { const i = Math.floor(x), f = x - i, a = v[i & 255], b = v[(i + 1) & 255], u = f * f * (3 - 2 * f); return a + (b - a) * u; }; }
 };
@@ -89,6 +90,17 @@ function assinatura(c, y, { light = true, alpha = 1 } = {}) {
 }
 
 const FMT = {};
+// texto que entra linha a linha (cada linha começa um pouco depois da anterior) e sai inteiro, sem tranco
+function textoSuave(c, o, t, t0, t1, din = .9, dout = .7, passo = .16) {
+  const n = o.lines.length;
+  for (let i = 0; i < n; i++) {
+    const ai = U.es((t - t0 - i * passo) / din), ao = t1 == null ? 0 : U.es((t - t1) / dout), a = ai * (1 - ao);
+    if (a <= .003) continue;
+    const top = o.y - (n - 1) * o.lh / 2;
+    texto(c, { ...o, lines: [o.lines[i]], y: top + i * o.lh, alpha: a * (o.alpha ?? 1), dy: (1 - ai) * 12 - ao * 8, blur: (1 - ai) * 4 + ao * 3 });
+  }
+}
+
 function veu(c, centro, k, rgb) { // faixa escura que dá leitura ao texto (embaixo ou no centro)
   const g = centro ? c.createLinearGradient(0, H * .22, 0, H * .78) : c.createLinearGradient(0, H * .42, 0, H);
   if (centro) { g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.5, `rgba(${rgb},${(.55 * k).toFixed(3)})`); g.addColorStop(1, `rgba(${rgb},0)`); }
@@ -108,10 +120,12 @@ FMT.frases = {
     const K = U.clamp(+j.tamanho || 1, .75, 1.35), R = U.clamp(+j.ritmo || 1, .6, 1.6), z = v => Math.round(v * K / 2) * 2;
     this.centro = j.posicao === 'centro';
     this.Y = this.centro ? { ab: .40, fr: .52, fe: .50 } : { ab: .615, fr: .745, fe: .70 };
-    this.ab = j.abertura ? { t0: t, ...caber(c, j.abertura, FI, z(76), 880, 3, z(50)) } : null; if (this.ab) t += 1.6 * R;
-    this.tl = (j.frases || []).map(f => { const d = U.clamp(.35 + f.length / 24, 1.05, 2.1) * R; const it = { t0: t, t1: t + d, ...caber(c, f, F1, z(100), 900, 3, z(60)) }; t += d; return it; });
-    this.fe = j.fecho ? { t0: t, ...caber(c, j.fecho, F1, z(108), 900, 4, z(64)) } : null; if (this.fe) t += this.tl.length ? Math.max(2.6, 3.2 * R) : Math.max(4.5, 5.2 * R); // frase única fica mais tempo
-    this.dur = t + .3;
+    // ritmo suave: cada frase entra em ~0,9 s (linha a linha), fica o tempo de ler com calma e sai em ~0,7 s antes da próxima
+    this.SAI = .7; const PAUSA = .12;
+    this.ab = j.abertura ? { t0: t, ...caber(c, j.abertura, FI, z(76), 880, 3, z(50)) } : null; if (this.ab) t += 2.0 * R;
+    this.tl = (j.frases || []).map(f => { const d = U.clamp(1.25 + f.length * .042, 2.2, 3.6) * R; const it = { t0: t, t1: t + d, ...caber(c, f, F1, z(100), 900, 3, z(60)) }; t += d + this.SAI + PAUSA; return it; });
+    this.fe = j.fecho ? { t0: t, ...caber(c, j.fecho, F1, z(108), 900, 4, z(64)) } : null; if (this.fe) t += this.tl.length ? Math.max(3.6, 4.0 * R) : Math.max(5.2, 5.8 * R); // frase única fica mais tempo
+    this.dur = t + .5;
     this.alpha = !!(j.fundo && (j.fundo.tipo === 'clipe' || j.fundo.tipo === 'clipes'));
     if (!this.alpha) {
       const f = j.fundo || {}, sd = +f.semente || 1, CV = ['perfil olhando o céu', 'à janela', 'recolhimento'], cena = CV.includes(f.cena) ? f.cena : CV[sd % 3];
@@ -121,7 +135,7 @@ FMT.frases = {
     }
     this.nz = U.noise1(hash(JSON.stringify(j)));
     const cortes = [0, ...this.tl.slice(1).map(x => x.t0), ...(this.fe ? [this.fe.t0] : []), this.dur];
-    const f1 = this.tl[0], capa_t = f1 ? f1.t0 + (f1.t1 - f1.t0) * .55 : this.dur * .5;
+    const f1 = this.tl[0], capa_t = f1 ? Math.min(f1.t1, f1.t0 + 1.25 + .16 * f1.lines.length) : (this.fe ? Math.min(this.dur - .3, this.fe.t0 + 1.6) : this.dur * .5);
     return { dur: this.dur, fps: 30, alpha: this.alpha, cortes, capa_t };
   },
   frame(t) {
@@ -140,17 +154,13 @@ FMT.frases = {
       const kk = U.clamp(((+(j.fundo.luma ?? 110)) - 35) / 90, .3, 1); // clipe escuro pede menos véu
       veu(c, this.centro, .85 * kk, '0,0,0');
     }
-    const CR = j.cor || COR.creme, fe = this.fe, feIn = fe ? U.ss(fe.t0 - .15, fe.t0 + .45, t) : 0;
-    if (this.ab) {
-      const q = U.clamp((t - this.ab.t0) / .7);
-      texto(c, { ...this.ab, x: W / 2, y: H * this.Y.ab, lh: this.ab.size * 1.18, cor: CR, alpha: U.eo(q) * (1 - feIn), dy: (1 - U.eo(q)) * 16, blur: (1 - q) * 8 });
-    }
+    const CR = j.cor || COR.creme, fe = this.fe;
+    if (this.ab) textoSuave(c, { ...this.ab, x: W / 2, y: H * this.Y.ab, lh: this.ab.size * 1.18, cor: CR }, t, this.ab.t0, fe ? fe.t0 - .9 : null, 1.1, .9, .2);
     for (const it of this.tl) {
-      if (t < it.t0 - .05 || t > it.t1 + .45) continue;
-      const ai = U.clamp((t - it.t0) / .38), ao = U.clamp((t - (it.t1 - .22)) / .3);
-      texto(c, { ...it, x: W / 2, y: H * this.Y.fr, lh: it.size * 1.1, cor: CR, alpha: U.eo(ai) * (1 - ao), dy: (1 - U.eo(ai)) * 18 - ao * 10, blur: (1 - ai) * 9 + ao * 6 });
+      if (t < it.t0 - .05 || t > it.t1 + this.SAI + .05) continue;
+      textoSuave(c, { ...it, x: W / 2, y: H * this.Y.fr, lh: it.size * 1.1, cor: CR }, t, it.t0, it.t1, .9, this.SAI, .16);
     }
-    if (fe) { const ai = U.clamp((t - fe.t0) / .6); if (ai > 0) texto(c, { ...fe, x: W / 2, y: H * this.Y.fe, lh: fe.size * 1.1, cor: CR, alpha: U.eo(ai), dy: (1 - U.eo(ai)) * 18, blur: (1 - ai) * 9 }); }
+    if (fe && t > fe.t0 - .05) textoSuave(c, { ...fe, x: W / 2, y: H * this.Y.fe, lh: fe.size * 1.1, cor: CR }, t, fe.t0, null, 1.2, .8, .22);
     assinatura(c, H - 120, { light: true, alpha: U.ss(this.dur - 2.7, this.dur - 2.0, t) * .95 });
     if (!this.alpha) grao(c, Math.floor(t * 10), .07);
   }
@@ -215,13 +225,13 @@ FMT.marcatexto = {
     this.pg = pg;
     // trechos marcados por linha
     const byY = new Map(); for (const w of words) if (w.hl) { const L = byY.get(w.y) || []; L.push(w); byY.set(w.y, L); }
-    let t = 1.7; this.hl = [];
+    let t = 2.2; this.hl = []; // a câmera assenta na página antes de o marcador começar
     for (const [yy, L] of [...byY.entries()].sort((a, b) => a[0] - b[0])) {
-      const x0 = L[0].x - 12, x1 = L[L.length - 1].x + L[L.length - 1].wd + 14, d = .42 + (x1 - x0) / 1050;
+      const x0 = L[0].x - 12, x1 = L[L.length - 1].x + L[L.length - 1].wd + 14, d = .62 + (x1 - x0) / 820; // marcador mais lento: dá tempo de ler junto
       const nz = U.noise1(hash('m' + yy));
-      this.hl.push({ x0, x1, y: yy, t0: t, d, nz }); t += d + .2;
+      this.hl.push({ x0, x1, y: yy, t0: t, d, nz }); t += d + .28;
     }
-    this.dur = t + 2.8;
+    this.dur = t + 3.4;
     const hx = this.hl.length ? (this.hl[0].x0 + this.hl[this.hl.length - 1].x1) / 2 : (X0 + X1) / 2;
     const hy = this.hl.length ? (this.hl[0].y + this.hl[this.hl.length - 1].y) / 2 : PH / 2;
     const hx0 = this.hl.length ? Math.min(...this.hl.map(h => h.x0)) : X0, hx1 = this.hl.length ? Math.max(...this.hl.map(h => h.x1)) : X1;
@@ -338,11 +348,11 @@ FMT.grafico = {
   frame(t) {
     const c = ctx; c.drawImage(this.papel, 0, 0);
     for (const pn of this.pn) {
-      const b = pn.b, at = U.clamp((t - pn.tt) / .5);
+      const b = pn.b, at = U.clamp((t - pn.tt) / .9);
       // título com sublinhado
       if (at > 0) {
-        texto(c, { lines: [pn.titulo], size: 62, font: '700 #px Caveat', x: W / 2, y: b.ty, lh: 70, cor: COR.tinta, alpha: U.eo(at), dy: (1 - U.eo(at)) * 12, sombra: false });
-        c.font = '700 62px Caveat'; const tw = c.measureText(pn.titulo).width, us = U.clamp((t - pn.tt - .3) / .5);
+        texto(c, { lines: [pn.titulo], size: 62, font: '700 #px Caveat', x: W / 2, y: b.ty, lh: 70, cor: COR.tinta, alpha: U.es(at), dy: (1 - U.es(at)) * 10, sombra: false });
+        c.font = '700 62px Caveat'; const tw = c.measureText(pn.titulo).width, us = U.clamp((t - pn.tt - .45) / .7);
         if (us > 0) { c.save(); c.strokeStyle = pn.cor; c.globalAlpha = .85; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); const ux0 = W / 2 - tw / 2, ux1 = ux0 + tw * U.eo(us); c.moveTo(ux0, b.ty + 38); for (let x = ux0; x <= ux1; x += 10) c.lineTo(x, b.ty + 38 + pn.eixoNz(x * .02) * 3); c.stroke(); c.restore(); }
       }
       // eixos
@@ -365,15 +375,14 @@ FMT.grafico = {
       this.linhaMao(c, pn.pts, k, pn.cor, 8);
       if (lp < 1 && k > 0) { const q = pn.pts[Math.min(k, pn.pts.length - 1)]; c.save(); c.fillStyle = COR.tinta; c.beginPath(); c.arc(q.x, q.y, 6, 0, 7); c.fill(); c.restore(); }
       for (const rt of pn.rot) {
-        if (k < rt.k) continue; const q = pn.pts[rt.k], since = U.clamp((t - pn.tl - rt.p * pn.dl) / .35);
+        if (k < rt.k) continue; const q = pn.pts[rt.k], since = U.clamp((t - pn.tl - rt.p * pn.dl) / .7);
         const up = rt.lado ? rt.lado === 'cima' : (pn.tipo === 'escada' ? true : rt.tipo !== 'vale');
-        c.save(); c.globalAlpha = U.eo(since); c.translate(q.x + (rt.dx || 0), q.y + (up ? -50 : 56)); c.rotate(rt.ang); c.scale(.8 + .2 * U.eo(since), .8 + .2 * U.eo(since));
+        c.save(); c.globalAlpha = U.es(since); c.translate(q.x + (rt.dx || 0), q.y + (up ? -50 : 56) + (1 - U.es(since)) * (up ? 8 : -8)); c.rotate(rt.ang); c.scale(.92 + .08 * U.es(since), .92 + .08 * U.es(since));
         c.fillStyle = COR.tinta; c.font = '600 44px Caveat'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(rt.txt, 0, 0); c.restore();
       }
     }
     if (this.fe) {
-      const a = U.clamp((t - this.tf) / .7);
-      texto(c, { ...this.fe, x: W / 2, y: 1690, lh: this.fe.size * 1.05, cor: COR.tinta, alpha: U.eo(a), dy: (1 - U.eo(a)) * 14, sombra: false });
+      textoSuave(c, { ...this.fe, x: W / 2, y: 1690, lh: this.fe.size * 1.05, cor: COR.tinta, sombra: false }, t, this.tf, null, 1.1, .8, .22);
     }
     assinatura(c, H - 105, { light: false, alpha: U.ss(this.dur - 2.6, this.dur - 1.9, t) });
     grao(c, 0, .04, 'multiply');

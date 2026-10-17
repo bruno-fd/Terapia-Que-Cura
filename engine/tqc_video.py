@@ -15,8 +15,10 @@
       Lista os humores de trilha e quando usar cada um.
   python3 tqc_video.py baixar URL SAIDA.mp4
       Baixa um clipe de banco de vídeos e confere se é um vídeo válido.
+  python3 tqc_video.py checar ROTEIRO.json
+      Verificador automático do texto (primeira pessoa, clichês, fórmula "X não é Y", tamanhos). Ver criterio_texto.md.
   python3 tqc_video.py doc --job JOB.json --video ID --capa ID --pauta PAUTA.json --legenda LEGENDA.txt
-                           --slot AAAA-MM-DDTHH:MM --info SAIDA.mp4.json [--base FILA_EXISTENTE.json] > DOC.json
+                           --slot AAAA-MM-DDTHH:MM --info SAIDA.mp4.json [--base FILA_EXISTENTE.json] [--critica CRITICA.json] > DOC.json
       Monta o documento da fila (para ArtifactData set/update com file_path).
 """
 import datetime as dt, glob, json, os, random, subprocess, sys
@@ -124,15 +126,55 @@ def estado(d, n=1, linha=None, tema=None):
         dia += dt.timedelta(days=1)
     ajustes = [{'id': q['id'], 'ajuste': q.get('ajuste', ''), 'linha_id': q.get('linha_id'), 'formato_video': q.get('formato_video'), 'versao': q.get('versao', 1),
                 'tema_id': q.get('tema_id'), 'tema': q.get('tema'), 'subtema': q.get('subtema', ''), 'abordagem': q.get('abordagem'), 'legenda': q.get('legenda', ''),
-                'data_hora': q.get('data_hora'), 'roteiro': q.get('roteiro')} for q in vids if q.get('status') == 'ajuste']
+                'data_hora': q.get('data_hora'), 'roteiro': q.get('roteiro'), 'roteiro_editado': q.get('roteiro_editado') or None} for q in vids if q.get('status') == 'ajuste']
     clipes = sorted({c for q in vids for c in (q.get('clipe_ids') or [])})
     pedidos = [{'id': p['id'], 'linha_id': p.get('linha_id'), 'status': p.get('status'), 'criado_em': p.get('criado_em')} for p in _load(d, 'pedidos') if p.get('status') in ('pendente', 'produzindo')]
     trilhas = [q['trilha']['assinatura'] for q in sorted(vids, key=lambda q: str(q.get('criado_em', '')), reverse=True) if isinstance(q.get('trilha'), dict) and q['trilha'].get('assinatura')]
     return {'agora': agora.isoformat(timespec='minutes'), 'aguardando': sum(q.get('status') == 'aguardando' for q in vids),
+            'referencias_texto': referencias(vids),
             'humores_trilha': _humores(), 'trilhas_recentes': [q['trilha'].get('humor') for q in sorted(vids, key=lambda q: str(q.get('criado_em', '')), reverse=True) if isinstance(q.get('trilha'), dict)][:6],
             'trilhas_usadas': len(trilhas),
             'limite_aguardando': int(cv.get('limite_aguardando', 4)), 'linhas_video': [{'id': l['id'], 'nome': l.get('nome'), 'template': l.get('template'), 'descricao': l.get('descricao', ''), 'instrucoes': l.get('instrucoes', ''), 'tom': l.get('tom', '')} for l in LV],
             'pautas': pautas, 'slots_livres': slots, 'ajustes': ajustes, 'clipes_usados': clipes, 'pedidos_pendentes': pedidos, 'stock': 'ok' if stock_ok() else 'bloqueado'}
+
+
+def _texto_de(r):
+    if not isinstance(r, dict):
+        return ''
+    f = r.get('formato')
+    if f == 'frases':
+        return ' / '.join([x for x in [r.get('abertura')] + list(r.get('frases') or []) + [('FECHO: ' + r['fecho']) if r.get('fecho') else None] if x])
+    if f == 'marcatexto':
+        import re
+        m = re.findall(r'\[\[(.+?)\]\]', ' '.join(r.get('paragrafos') or []))
+        return f"{r.get('cabecalho', '')}: frase marcada: {m[0] if m else ''}"
+    if f == 'grafico':
+        ps = r.get('paineis') or []
+        return ' | '.join(f"{p.get('titulo', '')}: {', '.join(x.get('txt', '') for x in p.get('rotulos') or [])}" for p in ps) + (f" | FECHO: {r['fecho']}" if r.get('fecho') else '')
+    return ''
+
+
+def referencias(vids):
+    """Textos que o Bruno avaliou (nota_bruno de 0 a 10): os bons mostram o nível; os fracos, o que evitar."""
+    av = []
+    for q in vids:
+        for v in q.get('notas_anteriores') or []:
+            try:
+                av.append({'nota': float(v.get('nota')), 'tema': q.get('tema', ''), 'formato': (q.get('roteiro') or {}).get('formato'), 'texto': str(v.get('texto', ''))[:400],
+                           'comentario': str(v.get('comentario') or '')[:300], 'quando': str(v.get('quando') or '')})
+            except (TypeError, ValueError):
+                pass
+        try:
+            n = float(q.get('nota_bruno'))
+        except (TypeError, ValueError):
+            continue
+        t = _texto_de(q.get('roteiro'))
+        if t:
+            av.append({'nota': n, 'tema': q.get('tema', ''), 'formato': (q.get('roteiro') or {}).get('formato'), 'texto': t[:400],
+                       'comentario': str(q.get('comentario_texto') or '')[:300], 'quando': str(q.get('nota_em') or q.get('criado_em') or '')})
+    av.sort(key=lambda x: x['quando'], reverse=True)
+    return {'bons': [x for x in av if x['nota'] >= 8][:6], 'fracos': [x for x in av if x['nota'] <= 5][:6],
+            'media_bruno': round(sum(x['nota'] for x in av) / len(av), 1) if av else None, 'avaliados': len(av)}
 
 
 def _humores():
@@ -240,6 +282,19 @@ def doc(a):
         d['ajuste_anterior'] = base.get('ajuste', '')
     if info.get('trilha'):
         d['trilha'] = info['trilha']
+    if a.get('critica'):
+        c = json.load(open(a['critica']))
+        d['nota_texto'] = {k: c[k] for k in ('total', 'criterios', 'fecho_print', 'rodadas', 'comentario', 'abaixo_da_meta', 'autor') if k in c}
+    if base:
+        d['roteiro_editado'] = ''
+        if base.get('roteiro_editado'):
+            d['nota_texto'] = {'autor': 'Bruno', 'comentario': 'Texto escrito pelo Bruno no Calendário'}
+        # a nota do Bruno era para o texto anterior; a nova versão começa sem nota
+        if base.get('nota_bruno') not in (None, '') and json.dumps(base.get('roteiro'), sort_keys=True) != json.dumps(job, sort_keys=True):
+            d['notas_anteriores'] = (base.get('notas_anteriores') or [])[-5:] + [{'nota': base.get('nota_bruno'), 'comentario': base.get('comentario_texto', ''),
+                                                                                  'texto': _texto_de(base.get('roteiro'))[:400], 'quando': base.get('nota_em', '')}]
+            d['nota_bruno'] = ''
+            d['comentario_texto'] = ''
     f = job.get('fundo', {})
     ids = [str(x) for x in (f.get('clipe_ids') or ([f['clipe_id']] if f.get('clipe_id') else []))]
     if ids:
@@ -260,12 +315,18 @@ def main():
         print(json.dumps(render(a[1], a[2], opt('--clipe'), opt('--db')), ensure_ascii=False))
     elif cmd == 'trilha':
         print(json.dumps(trilha_cmd(a[1], a[2], opt('--db'), opt('--humor'), opt('--out')), ensure_ascii=False))
+    elif cmd == 'checar':
+        sys.path.insert(0, AQUI)
+        import texto
+        r = texto.checar(json.load(open(a[1])))
+        print(json.dumps(r, ensure_ascii=False, indent=1))
+        sys.exit(0 if r['ok'] else 2)
     elif cmd == 'humores':
         print(json.dumps(_humores(), ensure_ascii=False, indent=1))
     elif cmd == 'baixar':
         print(json.dumps(baixar(a[1], a[2]), ensure_ascii=False))
     elif cmd == 'doc':
-        keys = ['--job', '--video', '--capa', '--pauta', '--legenda', '--slot', '--info', '--base']
+        keys = ['--job', '--video', '--capa', '--pauta', '--legenda', '--slot', '--info', '--base', '--critica']
         print(json.dumps(doc({k[2:]: opt(k) for k in keys}), ensure_ascii=False, indent=1))
     else:
         print(__doc__); sys.exit(1)

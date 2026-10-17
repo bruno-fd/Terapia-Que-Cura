@@ -41,7 +41,7 @@ def _luma(path, ini=0.0):
 
 
 def _enc(out, dur=10):
-    mx = int(max(1800, min(4500, 6 * 8 * 1000 / max(dur, 1) * .92)))  # alvo: arquivo de até ~6 MB
+    mx = int(max(2500, min(6000, 11 * 8 * 1000 / max(dur, 1) * .9)))  # alvo: arquivo de até ~11 MB (o envio ao Drive aceita até 16 MB)
     return ['-c:v', 'libx264', '-preset', 'slow', '-crf', '21', '-maxrate', f'{mx}k', '-bufsize', f'{2 * mx}k', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-level', '4.1',
             '-r', '30', '-movflags', '+faststart', out]
 

@@ -7,6 +7,8 @@ Não contém código do site e não deve ser juntado ao `main`.
 - `engine/render.py`: captura os quadros com Playwright/Chromium e codifica com ffmpeg (H.264, 30 fps, até ~6 MB).
 - `engine/tqc_video.py`: estado do banco (pautas, horários, ajustes), render com capa e folha de conferência, download de clipes e documento da fila.
 - `engine/trilha.py`: compõe a música de cada vídeo (humor escolhido pelo texto; acordes trocam nos cortes do texto; nunca repete uma composição) e mixa em -16 LUFS. Timbres em `engine/sons/`, gerados por `gerar_sons.py` a partir do soundfont FluidR3_GM (Frank Wen, licença MIT). Sem faixa de terceiros: sem licença, crédito ou Content ID.
+- `engine/criterio_texto.md`: o guia de escrita e a rubrica do crítico (reconhecimento, virada, especificidade, escada, frescor, ritmo; aprovação com total >= 8). A tarefa agendada escreve 3 candidatos, passa pelo verificador e por um crítico independente antes de renderizar.
+- `engine/texto.py` (`tqc_video.py checar`): verificador automático do texto (primeira pessoa, clichês, fórmula "X não é Y", rótulos clínicos, tamanhos do molde).
 - Fontes: EB Garamond, Caveat, Fredoka e outras da marca (fontsource, licença OFL).
 
 A tarefa agendada "Vídeos TQC" clona este ramo, produz os vídeos e os deixa no Calendário do app aguardando aprovação. Nada é publicado sem aprovação humana.
