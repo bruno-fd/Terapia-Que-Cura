@@ -1,0 +1,27 @@
+{"formato":"cena","molde":"lettering-teste",
+ "fundo":{"tipo":"papel","cor":"claro"},
+ "estilos":{
+  "fino":{"fonte":"Roboto Condensed","peso":400},
+  "forte":{"fonte":"Roboto Condensed","peso":800},
+  "destaque":{"fonte":"Anton","caixa":"alta"},
+  "manuscrito":{"fonte":"Dancing Script","peso":700},
+  "faixa":{"fonte":"Roboto Condensed","peso":400,"cor":"claro"},
+  "marcador":{"fonte":"Permanent Marker","caixa":"alta"},
+  "serifa":{"fonte":"Playfair Display","peso":600,"italico":true},
+  "rosa":{"fonte":"Anton","caixa":"alta","cor":"rosa"}
+ },
+ "layout":{"x":110,"y":150,"largura":860,"altura":1560,"gap":20,"max":210},
+ "blocos":[
+  {"partes":[{"txt":"Não se acostume","estilo":"fino"}]},
+  {"partes":[{"txt":"com o que te diminui","estilo":"fino"},{"txt":"aos poucos,","estilo":"forte"}]},
+  {"partes":[{"txt":"descanse","estilo":"destaque"},{"txt":"quando o corpo | pedir trégua.","estilo":"fino"}]},
+  {"partes":[{"txt":"Encha a agenda de quem te faz bem,","estilo":"manuscrito"}]},
+  {"partes":[{"txt":"mas guarde um espaço para você.","estilo":"manuscrito"}]},
+  {"partes":[{"txt":"Se precisar recomeçar,","estilo":"faixa"}],"faixa":{"cor":"tinta"}},
+  {"partes":[{"txt":"recomece!","estilo":"destaque"},{"txt":"Se precisar | ficar, fique.","estilo":"forte"}]},
+  {"partes":[{"txt":"Diga não","estilo":"serifa"},{"txt":"sem pedir | desculpas.","estilo":"fino"}]},
+  {"partes":[{"txt":"Se doer,","estilo":"forte"},{"txt":"peça ajuda.","estilo":"rosa"}]},
+  {"partes":[{"txt":"você não precisa dar conta","estilo":"marcador"}]},
+  {"partes":[{"txt":"de tudo sozinho.","estilo":"serifa"}]}
+ ],
+ "entrada":"digitar","camera":"zoom_lento","trilha":{"humor":"esperancoso"}}

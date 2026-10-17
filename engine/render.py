@@ -124,7 +124,7 @@ async def render(job, out, clipe=None, quadros=(), capa=None):
     if capa is not None:
         tc = job.get('capa_t', min(dur * 0.45, dur - 0.5))
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', str(tc), '-i', out, '-frames:v', '1', '-q:v', '2', capa])
-    return {'dur': dur, 'quadros': n, 'capa_t': info.get('capa_t'), 'cortes': info.get('cortes') or [0, dur]}
+    return {'dur': dur, 'quadros': n, 'capa_t': info.get('capa_t'), 'cortes': info.get('cortes') or [0, dur], 'avisos': info.get('avisos') or []}
 
 
 async def info(job):

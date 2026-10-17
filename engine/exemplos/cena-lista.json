@@ -1,0 +1,11 @@
+{"formato":"cena","fundo":{"tipo":"gradiente","de":"#0E2A33","para":"#1C4A57","angulo":90},
+ "estilos":{"titulo":{"fonte":"Montserrat","peso":800,"cor":"branco"},"corpo":{"fonte":"Nunito Sans","peso":600,"cor":"claro"},"mao":{"fonte":"Caveat","peso":700,"cor":"amarelo"}},
+ "quadros":[
+  {"layout":{"x":90,"y":300,"largura":900,"altura":700},"blocos":[{"txt":"3 sinais de que","estilo":"corpo","entrada":"subir"},{"txt":"você está no limite","estilo":"titulo","entrada":"carimbo"}],
+   "elementos":[{"tipo":"forma","forma":"linha","x":200,"y":1100,"x2":880,"y2":1100,"cor":"rosa","espessura":10,"entrada":"desenhar"},
+                {"tipo":"desenho","path":"M0 60 C 40 0, 80 0, 120 60 S 200 120, 240 60","x":420,"y":1200,"escala":1,"cor":"ciano","espessura":8,"entrada":"desenhar"}]},
+  {"layout":{"x":90,"y":350,"largura":900,"altura":1100,"alinhar":"esquerda"},"marcas":[{"bloco":1,"cor":"rosa","opacidade":0.5}],
+   "blocos":[{"txt":"1. Dorme e acorda cansado.","estilo":"corpo","entrada":"fade","ajuste":false,"tamanho":64},{"txt":"2. Irrita com coisas pequenas.","estilo":"corpo","entrada":"fade","ajuste":false,"tamanho":64},{"partes":[{"txt":"3. Não lembra","estilo":"corpo"},{"txt":"a última vez que riu.","estilo":"mao"}],"entrada":"escrever","faixa":{"cor":"rosa","largura":"texto"}}],
+   "elementos":[{"tipo":"texto","txt":"Cansaço que o sono não resolve tem outra origem.","estilo":"titulo","x":540,"y":1500,"largura":860,"tamanho":58,"entrada":"digitar","fundo":"rosa","arredondar":true},
+                {"tipo":"forma","forma":"circulo","x":900,"y":250,"raio":60,"cor":"amarelo","entrada":"desenhar","t":0.5}]}
+ ],"trilha":{"humor":"reflexivo"}}

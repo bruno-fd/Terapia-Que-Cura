@@ -49,6 +49,16 @@ def _trechos(job):
         if job.get('cabecalho'):
             out.append(('cabeçalho', job['cabecalho']))
         out += [(f'parágrafo {i + 1}', x) for i, x in enumerate(job.get('paragrafos') or [])]
+    elif f == 'cena':
+        qs = job.get('quadros') or [job]
+        for qi, q in enumerate(qs):
+            pre = f'quadro {qi + 1}, ' if len(qs) > 1 else ''
+            for bi, b in enumerate(q.get('blocos') or []):
+                partes = b.get('partes') or ([{'txt': b.get('txt')}] if b.get('txt') else [])
+                out.append((f'{pre}bloco {bi + 1}', ' '.join(str(p.get('txt') or '').replace('|', ' ') for p in partes)))
+            for ei, el in enumerate(q.get('elementos') or []):
+                if el.get('tipo') == 'texto' and el.get('txt'):
+                    out.append((f'{pre}texto solto {ei + 1}', str(el['txt'])))
     elif f == 'grafico':
         for k, p in enumerate(job.get('paineis') or []):
             out.append((f'título {k + 1}', p.get('titulo', '')))
@@ -139,6 +149,17 @@ def checar(job):
             w = len(_palavras(p.replace('[[', '').replace(']]', '')))
             if not 30 <= w <= 65:
                 A.append(f'parágrafo {i + 1} com {w} palavras (35 a 60)')
+    elif f == 'cena':
+        qs = job.get('quadros') or [job]
+        blocos = [t for r, t in tr if 'bloco' in r]
+        longos = [t for t in blocos if len(t) > 64]
+        if longos:
+            A.append(f'{len(longos)} bloco(s) com mais de 64 caracteres: no lettering cada bloco é curto, senão a letra fica pequena')
+        for qi, q in enumerate(qs):
+            n = len(q.get('blocos') or [])
+            if n > 16:
+                E.append(f'{n} blocos num quadro só: no máximo 16 (divida em quadros)')
+        est['blocos'] = len(blocos)
     elif f == 'grafico':
         for k, p in enumerate(job.get('paineis') or []):
             if len(p.get('titulo', '')) > 34:
