@@ -305,7 +305,7 @@ FMT.grafico = {
       const jit = pts.map((q, k) => ({ x: q.x + nz(k * .05) * 2.2, y: q.y + nz(k * .05 + 70) * 2.2 }));
       let L = 0; const acc = [0]; for (let k = 1; k < jit.length; k++) { L += Math.hypot(jit[k].x - jit[k - 1].x, jit[k].y - jit[k - 1].y); acc.push(L); }
       const tt = t, ta = t + .35, tl = ta + .9, dl = U.clamp(L / 900, 2.4, 3.6);
-      const rot = (pn.rotulos || []).map(rt => { const xx = b.x0 + (b.x1 - b.x0) * rt.x; let k = jit.findIndex(q => q.x >= xx); if (k < 0) k = jit.length - 1; return { ...rt, k, ang: (r() - .5) * .08, p: acc[k] / L }; });
+      const rot = (pn.rotulos || []).map(rt => { const xx = b.x0 + 30 + (b.x1 - b.x0 - 50) * rt.x; /* mesma escala da curva (X em curva()), senão o rótulo cai na encosta */ let k = jit.findIndex(q => q.x >= xx); if (k < 0) k = jit.length - 1; return { ...rt, k, ang: (r() - .5) * .08, p: acc[k] / L }; });
       this.pn.push({ ...pn, b, cor: cores[i], pts: jit, acc, L, tt, ta, tl, dl, rot, eixoNz: U.noise1(hash('e' + i)) });
       t = tl + dl + .6;
     });

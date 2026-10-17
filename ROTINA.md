@@ -12,7 +12,7 @@ PASSO 2 — O QUE FAZER NESTA EXECUÇÃO
 A mensagem extra desta execução (o bloco routine-fire-payload, quando houver) vem do app do Bruno, pelos botões "Produzir agora", "Pedir nova versão" e "Produzir este vídeo" (conversa do Estúdio): siga-a.
 - Mensagem extra "Pedido do chat pelo app: produza o vídeo pedidos/<id>…" → produza esse pedido (PASSO 3B).
 - Mensagem extra "Pedido de nova versão pelo app: refaça o vídeo fila/<id> com este ajuste: …" → refaça só esse vídeo (PASSO 4).
-- Mensagem extra "Pedido manual pelo app: produza N vídeo(s) agora…" → produza N vídeos novos, na linha e no tema indicados quando houver (passe --linha e --tema ao estado); depois refaça os ajustes pendentes.
+- Mensagem extra "Pedido manual pelo app: produza N vídeo(s) agora…" → produza N vídeos novos, na linha e no tema indicados quando houver (passe --linha e --tema ao estado e use exatamente essa linha e esse tema: não troque por outra linha); depois refaça os ajustes pendentes.
 - Execução agendada (sem mensagem extra) → produza os pedidos da conversa pendentes ("pedidos_pendentes", PASSO 3B); refaça todos os ajustes pendentes; depois, se "aguardando" for menor que "limite_aguardando", produza 1 vídeo novo. Se já houver vídeos demais aguardando, não produza (diga isso na mensagem final).
 
 PASSO 3 — PRODUZIR UM VÍDEO NOVO (uma pauta por vídeo)
