@@ -135,12 +135,14 @@ def estado(d, n=1, linha=None, tema=None):
         dia += dt.timedelta(days=1)
     ajustes = [{'id': q['id'], 'ajuste': q.get('ajuste', ''), 'linha_id': q.get('linha_id'), 'formato_video': q.get('formato_video'), 'versao': q.get('versao', 1),
                 'tema_id': q.get('tema_id'), 'tema': q.get('tema'), 'subtema': q.get('subtema', ''), 'abordagem': q.get('abordagem'), 'legenda': q.get('legenda', ''),
-                'data_hora': q.get('data_hora'), 'roteiro': q.get('roteiro'), 'roteiro_editado': q.get('roteiro_editado') or None} for q in vids if q.get('status') == 'ajuste']
+                'data_hora': q.get('data_hora'), 'roteiro': q.get('roteiro'), 'roteiro_editado': q.get('roteiro_editado') or None,
+                'molde_novo': bool(q.get('molde_novo')), 'molde_id': q.get('molde_id', '')} for q in vids if q.get('status') == 'ajuste']
     clipes = sorted({c for q in vids for c in (q.get('clipe_ids') or [])})
     PED = _load(d, 'pedidos')
     pedidos = [{'id': p['id'], 'linha_id': p.get('linha_id'), 'status': p.get('status'), 'criado_em': p.get('criado_em')} for p in PED if p.get('status') in ('pendente', 'produzindo')]
     a_criar = [{'id': p['id'], 'status': p.get('status'), 'pedido_txt': p.get('pedido_txt', ''), 'observacao_layout': p.get('observacao_layout', ''), 'imagens': p.get('imagens') or [],
-                'tema': p.get('tema', ''), 'abordagem': p.get('abordagem', ''), 'legenda': p.get('legenda', ''), 'criado_em': p.get('criado_em')} for p in PED if p.get('status') in ('criar_molde', 'criando_molde')]
+                'tema': p.get('tema', ''), 'abordagem': p.get('abordagem', ''), 'legenda': p.get('legenda', ''), 'molde_sugerido': p.get('molde_sugerido') or None,
+                'molde_inicio': p.get('molde_inicio', ''), 'criado_em': p.get('criado_em')} for p in PED if p.get('status') in ('criar_molde', 'criando_molde')]
     trilhas = [q['trilha']['assinatura'] for q in sorted(vids, key=lambda q: str(q.get('criado_em', '')), reverse=True) if isinstance(q.get('trilha'), dict) and q['trilha'].get('assinatura')]
     return {'agora': agora.isoformat(timespec='minutes'), 'aguardando': sum(q.get('status') == 'aguardando' for q in vids),
             'referencias_texto': referencias(vids),
@@ -167,6 +169,14 @@ def _texto_de(r):
     if f == 'grafico':
         ps = r.get('paineis') or []
         return ' | '.join(f"{p.get('titulo', '')}: {', '.join(x.get('txt', '') for x in p.get('rotulos') or [])}" for p in ps) + (f" | FECHO: {r['fecho']}" if r.get('fecho') else '')
+    if f == 'cena':
+        linhas = []
+        for q in (r.get('quadros') or [r]):
+            for b in q.get('blocos') or []:
+                partes = b.get('partes') if isinstance(b.get('partes'), list) else [b]
+                linhas.append(' '.join(str(x.get('txt', '')).replace(' | ', ' ').replace('|', ' ') for x in partes if isinstance(x, dict)))
+            linhas += [str(e.get('txt', '')) for e in q.get('elementos') or [] if isinstance(e, dict) and e.get('tipo') == 'texto']
+        return ' / '.join(x for x in linhas if x.strip())
     return ''
 
 
@@ -336,6 +346,8 @@ def novo_molde(a):
     if cena.get('formato') != 'cena':
         raise SystemExit('o molde precisa ser do formato "cena"')
     ped = json.load(open(a['pedido'])) if a.get('pedido') else {}
+    if a.get('pedido') and not ped.get('id'):
+        ped['id'] = os.path.basename(a['pedido'])[:-5]
     agora = _agora().isoformat(timespec='seconds')
     instr = open(a['instrucoes']).read().strip()
     nome, desc = a['nome'].strip(), a['descricao'].strip()
