@@ -266,7 +266,7 @@ def trilha_cmd(video, job_path, db=None, humor=None, out=None):
     if ev:
         i.update({'envio': ev, 'envio_bytes': os.path.getsize(ev)})
     json.dump(i, open(alvo + '.json', 'w'))
-    return {**meta, **({'envio': ev} if ev else {})}
+    return meta
 
 
 def render(job_path, out, clipe=None, db=None):
