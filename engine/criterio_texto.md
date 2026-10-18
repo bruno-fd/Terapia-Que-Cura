@@ -58,7 +58,7 @@ Se houver notas do Bruno (referencias_texto), elas valem mais que estes exemplos
 
 ## 5. Legenda
 
-- **Uma ou duas frases faladas** que dizem, com palavras comuns, onde aquilo aparece na vida. Ela não repete a frase do post e não inventa uma ideia nova em volta dela.
+- **Uma ou duas frases faladas** que dizem a mesma ideia da frase do post com outras palavras simples, ou mostram uma situação comum em que ela acontece. Não copia a frase do post e não acrescenta uma ideia nova.
 - **Depois, numa linha, um convite simples:** mandar para alguém ou salvar. Pergunta só se for uma que alguém faria de verdade numa conversa; nunca uma pergunta genérica só para puxar comentário.
 - **Por fim, uma linha em branco e de 3 a 5 hashtags** em português, do tema.
 - **Sem markdown, no máximo 1 emoji,** sem propaganda e sem citar o site.
@@ -78,8 +78,9 @@ Reprovada pelo Bruno: "Nem toda falta de escuta é culpa de quem fala. Algumas r
 ## 6. Nos moldes de vídeo
 
 - **Frases sobre cenas (v-frases):** uma frase forte por vídeo.
-  - Curta (até ~12 palavras): fica inteira e fixa na tela.
-  - Longa (até ~30 palavras, ou duas frases): é cortada em 2 a 4 pedaços nas pausas naturais (vírgula, ponto), e os pedaços entram um depois do outro.
+  - Até ~16 palavras: fica inteira e fixa na tela.
+  - De 17 a 30 palavras: é cortada em 2 a 4 pedaços nas pausas naturais (vírgula, ponto), cada um com até ~14 palavras. Os pedaços entram um depois do outro; cada um sai quando o próximo entra, e o último fica na tela até o fim.
+  - Duas frases curtas que se respondem ("A terapia não muda o seu passado. / Muda o peso que ele tem hoje.") podem entrar como 2 pedaços, mesmo com menos de 16 palavras.
 - **Marca-texto em livro:** a frase marcada é a frase forte. Os 3 parágrafos curtos em volta são escritos como alguém explicaria a um amigo, e cada frase deles também passa no teste da conversa.
 - **Gráfico:** títulos e rótulos com palavras do dia a dia; o fecho é uma frase forte.
 - **Moldes próprios (formato cena):** seguem as instruções de texto do molde. Cada linha na tela continua passando no teste da conversa.

@@ -30,8 +30,8 @@ a) TEXTO (o que mais importa no vídeo). Leia /tmp/motor/engine/criterio_texto.m
 
 b) Roteiro em /tmp/v/<slug>.json, conforme o molde (template) da linha:
 - v-frases → {"formato":"frases","fundo":{…},"abertura":"","frases":[…],"fecho":"…"}: a frase escolhida no passo a.
-  · Curta (até ~12 palavras): fica inteira e fixa na tela: "frases": [] e "fecho" = a frase.
-  · Longa (13 a 30 palavras, ou duas frases): corte em 2 a 4 pedaços nas pausas naturais (vírgula, ponto), cada um com até ~12 palavras, que entram um depois do outro: "frases" = os pedaços menos o último, "fecho" = o último. Com clipes do Pexels, pode ser um clipe por pedaço (fundo "clipes").
+  · Até ~16 palavras: fica inteira e fixa na tela: "frases": [] e "fecho" = a frase.
+  · De 17 a 30 palavras: corte em 2 a 4 pedaços nas pausas naturais (vírgula, ponto), cada um com até ~14 palavras; cada pedaço sai quando o próximo entra e o último fica na tela: "frases" = os pedaços menos o último, "fecho" = o último. Duas frases curtas que se respondem também podem ir em 2 pedaços. Com clipes do Pexels, pode ser um clipe por pedaço (fundo "clipes").
   · "abertura" fica vazia.
 - v-marcatexto → {"formato":"marcatexto","cabecalho":"…","pagina":"…","paragrafos":["…"]}
   · cabecalho: título de capítulo inventado (2 a 4 palavras); pagina: número entre 20 e 240, como texto.
@@ -55,7 +55,7 @@ e) Render: python3 /tmp/motor/engine/tqc_video.py render /tmp/v/<slug>.json /tmp
 
 f) Conferência obrigatória: abra a folha e a capa com Read. Confira: texto inteiro dentro da tela, legível, nenhuma palavra cortada ou sobreposta, sem erro de português, ritmo bom, fundo adequado, e que o vídeo tem áudio (ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 /tmp/v/<slug>.mp4 deve mostrar "aac") com o humor certo em <slug>.mp4.json. Se algo estiver ruim, corrija o roteiro e renderize de novo (até 3 tentativas). Só suba um vídeo que você publicaria.
 
-g) Legenda em /tmp/v/<slug>.legenda.txt, no padrão da seção 5 do guia: uma ou duas frases faladas que dizem, com palavras comuns, onde aquilo aparece na vida (sem repetir a frase do vídeo e sem inventar uma ideia nova em volta dela); depois, numa linha, um convite simples (mandar para alguém ou salvar); pergunta só se for uma que alguém faria de verdade numa conversa. Nunca em primeira pessoa; sem markdown, no máximo 1 emoji, sem propaganda e sem citar o site. Depois, uma linha em branco e de 3 a 5 hashtags em português, do tema. A legenda passa pela revisão do passo a5.
+g) Legenda em /tmp/v/<slug>.legenda.txt, no padrão da seção 5 do guia: uma ou duas frases faladas que dizem a mesma ideia da frase do vídeo com outras palavras simples, ou mostram uma situação comum em que ela acontece (sem copiar a frase e sem acrescentar ideia nova); depois, numa linha, um convite simples (mandar para alguém ou salvar); pergunta só se for uma que alguém faria de verdade numa conversa. Nunca em primeira pessoa; sem markdown, no máximo 1 emoji, sem propaganda e sem citar o site. Depois, uma linha em branco e de 3 a 5 hashtags em português, do tema. A legenda passa pela revisão do passo a5.
 
 h) Pauta em /tmp/v/<slug>.pauta.json (o objeto da pauta, como veio do estado).
 

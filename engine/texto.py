@@ -32,6 +32,7 @@ VAZIO_AVISO = [
     (r'(^|[.!?]\s+)nem tod[oa]s?\b', 'fórmula "nem todo X é Y"'),
     (r'\b(a falta|a ausencia|a presenca|a escuta|as relacoes|a relacao|o cuidado|a dor|o amor)\s+(de \w+\s+)?(pede|pedem|exige|exigem|ensina|ensinam|mora|habita|grita|fala)\b', 'conceito fazendo papel de gente'),
     (r'\bcuida de ouvir\b', 'expressão que não existe'),
+    (r'\b(relacoes|relacao|feridas|ferida|silencios|silencio)\s+(pede|pedem|exige|exigem|ensina|ensinam|grita|gritam)\b', 'conceito fazendo papel de gente'),
 ]
 CLINICO = [r'\bvoce (tem|sofre de|esta com) (ansiedade|depressao|tdah|bipolar|toc|borderline|transtorno|panico)', r'\bnarcisist', r'\bpsicopat', r'\bbipolar\b']
 PRIMEIRA = r"\b(eu|me|meu|minha|meus|minhas|comigo|mim|nos|nosso|nossa|nossos|nossas|conosco|a gente)\b"
@@ -132,12 +133,12 @@ def checar(job):
         for i, x in enumerate(fr):
             w = len(_palavras(x))
             if w > 14:
-                E.append(f'pedaço {i + 1} com {w} palavras (máximo ~12; corte numa pausa natural)')
+                E.append(f'pedaço {i + 1} com {w} palavras (máximo ~14; corte numa pausa natural)')
         wf = len(_palavras(fe))
-        if not fr and wf > 20:
-            E.append(f'frase inteira com {wf} palavras: acima de ~12, corte em 2 a 4 pedaços (frases + fecho)')
+        if not fr and wf > 16:
+            E.append(f'frase inteira com {wf} palavras: acima de ~16, corte em 2 a 4 pedaços nas pausas naturais (frases + fecho)')
         if fr and wf > 14:
-            E.append(f'último pedaço com {wf} palavras (máximo ~12)')
+            E.append(f'último pedaço com {wf} palavras (máximo ~14)')
         total = sum(len(_palavras(x)) for x in fr) + wf
         if total > 32:
             E.append(f'{total} palavras no total: a frase forte tem até ~30')
