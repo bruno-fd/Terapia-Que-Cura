@@ -9,6 +9,10 @@
   python3 tqc_video.py render JOB.json SAIDA.mp4 [--clipe CLIPE.mp4] [--db DIR]
       Renderiza, compõe a trilha própria (JOB.trilha.humor) e junta ao vídeo; salva a capa
       (SAIDA.capa.jpg) e uma folha de conferência (SAIDA.folha.jpg). Com --db, evita repetir trilhas já usadas.
+      Se o vídeo passar de ~1,9 MB, gera também SAIDA.envio.mp4: cópia menor só para o envio ao Drive
+      (o conector do Drive falha com arquivos maiores). O caminho sai em "envio" no SAIDA.mp4.json.
+  python3 tqc_video.py envio VIDEO.mp4 [--out SAIDA.envio.mp4]
+      Gera só a cópia de envio de um vídeo pronto.
   python3 tqc_video.py trilha VIDEO.mp4 JOB.json [--db DIR] [--humor H] [--out SAIDA.mp4]
       Põe (ou troca) a trilha de um vídeo já renderizado, sem refazer a imagem.
   python3 tqc_video.py humores
@@ -22,7 +26,7 @@
   python3 tqc_video.py checar ROTEIRO.json
       Verificador automático do texto (primeira pessoa, clichês, fórmula "X não é Y", tamanhos). Ver criterio_texto.md.
   python3 tqc_video.py doc --job JOB.json --video ID --capa ID --pauta PAUTA.json --legenda LEGENDA.txt
-                           --slot AAAA-MM-DDTHH:MM --info SAIDA.mp4.json [--base FILA_EXISTENTE.json] [--critica CRITICA.json] > DOC.json
+                           --slot AAAA-MM-DDTHH:MM --info SAIDA.mp4.json [--base FILA_EXISTENTE.json] [--critica CRITICA.json] [--envio ID] > DOC.json
       Monta o documento da fila (para ArtifactData set/update com file_path).
 """
 import datetime as dt, glob, json, os, random, subprocess, sys
@@ -257,8 +261,12 @@ def trilha_cmd(video, job_path, db=None, humor=None, out=None):
     else:
         i = {}
     i.update({'trilha': meta, 'bytes': os.path.getsize(alvo)})
+    i.pop('envio', None); i.pop('envio_bytes', None)
+    ev = envio(alvo)
+    if ev:
+        i.update({'envio': ev, 'envio_bytes': os.path.getsize(ev)})
     json.dump(i, open(alvo + '.json', 'w'))
-    return meta
+    return {**meta, **({'envio': ev} if ev else {})}
 
 
 def render(job_path, out, clipe=None, db=None):
@@ -275,9 +283,37 @@ def render(job_path, out, clipe=None, db=None):
     base = os.path.splitext(out)[0]
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{tc:.2f}', '-i', out, '-frames:v', '1', '-q:v', '2', base + '.capa.jpg'], check=True)
     subprocess.run([sys.executable, os.path.join(AQUI, 'folha.py'), out, base + '.folha.jpg', '8', '270'], check=True, capture_output=True)
-    info = {'dur': round(dur, 2), 'capa_ms': int(tc * 1000), 'bytes': os.path.getsize(out), 'capa': base + '.capa.jpg', 'folha': base + '.folha.jpg', 'trilha': trilha, 'avisos': r.get('avisos') or []}
+    ev = envio(out)
+    info = {'dur': round(dur, 2), 'capa_ms': int(tc * 1000), 'bytes': os.path.getsize(out), 'capa': base + '.capa.jpg', 'folha': base + '.folha.jpg', 'trilha': trilha, 'avisos': r.get('avisos') or [],
+            **({'envio': ev, 'envio_bytes': os.path.getsize(ev)} if ev else {})}
     json.dump(info, open(out + '.json', 'w'))
     return info
+
+
+ENVIO_MAX = 1_900_000  # o conector do Google Drive falha com vídeos de ~3,4 MB (base64 de ~4,5 MB); a cópia de envio fica abaixo de ~1,9 MB
+
+
+def envio(src, out=None, alvo=ENVIO_MAX):
+    """Cópia menor do vídeo, só para o envio ao Drive (que o Metricool publica). Mesma imagem 1080x1920 e o mesmo som,
+    com bitrate calculado para caber em `alvo` bytes (duas passadas). Devolve o caminho, ou None se o original já cabe."""
+    if os.path.getsize(src) <= alvo:
+        return None
+    out = out or os.path.splitext(src)[0] + '.envio.mp4'
+    dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', src], capture_output=True, text=True).stdout.strip() or 10)
+    fator = 0.93
+    import tempfile
+    for _ in range(4):
+        vk = max(350, int(alvo * 8 / dur / 1000 * fator) - 96)
+        with tempfile.TemporaryDirectory() as td:
+            lg = os.path.join(td, 'p')
+            base = ['ffmpeg', '-y', '-loglevel', 'error', '-i', src, '-c:v', 'libx264', '-preset', 'slow', '-b:v', f'{vk}k', '-maxrate', f'{int(vk * 1.6)}k',
+                    '-bufsize', f'{vk * 2}k', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', '30', '-passlogfile', lg]
+            subprocess.run(base + ['-pass', '1', '-an', '-f', 'mp4', os.devnull], check=True)
+            subprocess.run(base + ['-pass', '2', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', out], check=True)
+        if os.path.getsize(out) <= alvo:
+            return out
+        fator *= 0.85
+    return out
 
 
 def baixar(url, out):
@@ -303,6 +339,7 @@ def doc(a):
          'abordagem': pauta.get('abordagem'), 'legenda': leg, 'data_hora': base.get('data_hora') or a['slot'], 'redes': base.get('redes') or ['instagram', 'tiktok'],
          'status': 'aguardando', 'erro': '', 'ajuste': '', 'versao': int(base.get('versao', 0) or 0) + 1, 'roteiro': job, 'origem': 'produção automática',
          'criado_em': base.get('criado_em') or _agora().isoformat(timespec='seconds')}
+    d['video_envio_id'] = a.get('envio') or ''  # cópia menor para o Drive; vazio apaga a de uma versão anterior
     if base:
         d['refeito_em'] = _agora().isoformat(timespec='seconds')
         d['ajuste_anterior'] = base.get('ajuste', '')
@@ -403,10 +440,13 @@ def main():
         sys.exit(0 if r['ok'] else 2)
     elif cmd == 'humores':
         print(json.dumps(_humores(), ensure_ascii=False, indent=1))
+    elif cmd == 'envio':
+        ev = envio(a[1], opt('--out'))
+        print(json.dumps({'envio': ev, 'bytes': os.path.getsize(ev) if ev else os.path.getsize(a[1])}, ensure_ascii=False))
     elif cmd == 'baixar':
         print(json.dumps(baixar(a[1], a[2]), ensure_ascii=False))
     elif cmd == 'doc':
-        keys = ['--job', '--video', '--capa', '--pauta', '--legenda', '--slot', '--info', '--base', '--critica']
+        keys = ['--job', '--video', '--capa', '--pauta', '--legenda', '--slot', '--info', '--base', '--critica', '--envio']
         print(json.dumps(doc({k[2:]: opt(k) for k in keys}), ensure_ascii=False, indent=1))
     else:
         print(__doc__); sys.exit(1)
