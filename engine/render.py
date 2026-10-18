@@ -10,7 +10,7 @@ Uso:
   transparente) e o ffmpeg sobrepõe ao clipe já recortado, escurecido e no tempo certo.
 - --quadros salva JPEGs de conferência nesses instantes (saida.qN.jpg).
 """
-import asyncio, base64, functools, http.server, json, os, socketserver, subprocess, sys, threading
+import asyncio, base64, functools, http.server, json, os, re, socketserver, subprocess, sys, threading
 
 ENG = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,9 +32,37 @@ def _dur(path):
     return float(out.strip() or 0)
 
 
-def _luma(path, ini=0.0):
+def _tarja(path, ini=0.0):
+    """Clipe com tarjas pretas embutidas (vídeo deitado dentro de um quadro em pé, por exemplo): devolve o filtro
+    de recorte da área com imagem ("crop=w:h:x:y,") e a fração do quadro que ela ocupa. Sem tarja: ("", 1.0)."""
+    try:
+        wh = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', path],
+                            capture_output=True, text=True).stdout.strip().split(',')
+        W, H = int(wh[0]), int(wh[1])
+        r = subprocess.run(['ffmpeg', '-v', 'info', '-ss', str(ini), '-i', path, '-t', '5', '-vf', 'fps=2,cropdetect=limit=0.09:round=2:reset=0', '-f', 'null', '-'],
+                           capture_output=True, text=True)
+        cs = re.findall(r'crop=(\d+):(\d+):(\d+):(\d+)', r.stderr)
+        if not cs:
+            return '', 1.0
+        w, h, x, y = map(int, cs[-1])
+        fr = (w * h) / float(W * H)
+        if w < 64 or h < 64 or fr > 0.92:
+            return '', 1.0
+        # só tarja de verdade: faixas pretas iguais em cima e embaixo (ou dos dois lados);
+        # cena escura num canto não conta
+        cima, baixo, esq, dir_ = y, H - y - h, x, W - x - w
+        horiz = w >= 0.97 * W and abs(cima - baixo) <= 0.06 * H and min(cima, baixo) >= 0.05 * H
+        vert = h >= 0.97 * H and abs(esq - dir_) <= 0.06 * W and min(esq, dir_) >= 0.05 * W
+        if not (horiz or vert):
+            return '', 1.0
+        return f'crop={w}:{h}:{x}:{y},', round(fr, 2)
+    except Exception:
+        return '', 1.0
+
+
+def _luma(path, ini=0.0, crop=''):
     """Brilho médio (0-255) de alguns quadros do clipe, para dosar o véu escuro sob o texto."""
-    r = subprocess.run(['ffmpeg', '-v', 'error', '-ss', str(ini), '-i', path, '-t', '6', '-vf', 'fps=1,scale=108:192,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-', '-f', 'null', '-'],
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-ss', str(ini), '-i', path, '-t', '6', '-vf', crop + 'fps=1,scale=108:192,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-', '-f', 'null', '-'],
                        capture_output=True, text=True)
     vals = [float(l.split('=')[1]) for l in (r.stdout + r.stderr).splitlines() if 'YAVG=' in l]
     return round(sum(vals) / len(vals), 1) if vals else 110.0
@@ -58,10 +86,18 @@ async def render(job, out, clipe=None, quadros=(), capa=None):
             await pg.goto(f'http://127.0.0.1:{srv.server_address[1]}/engine.html')
             await pg.wait_for_function('window.TQC_READY===true')
             f0 = job.get('fundo', {})
+            avisos, recortes = [], {}
+            if f0.get('tipo') in ('clipe', 'clipes'):
+                for arq, ini0 in ([(clipe, float(f0.get('inicio', 0)))] if clipe else []) + [(c.get('arquivo'), float(c.get('inicio', 0))) for c in (f0.get('clipes') or []) if c.get('arquivo')]:
+                    cr, fr = _tarja(arq, ini0)
+                    recortes[arq] = cr
+                    if cr:
+                        avisos.append(f'clipe {os.path.basename(arq)} tem tarja preta: a imagem ocupa {round(fr * 100)}% do quadro. Ela foi recortada e ampliada'
+                                      + (' e pode ficar sem nitidez: troque o clipe' if fr < 0.6 else ''))
             if f0.get('tipo') in ('clipe', 'clipes') and 'luma' not in f0:
                 arq = clipe or (f0.get('clipes') or [{}])[0].get('arquivo')
                 if arq:
-                    f0['luma'] = _luma(arq, float(f0.get('inicio', 0)))
+                    f0['luma'] = _luma(arq, float(f0.get('inicio', 0)), recortes.get(arq, ''))
             info = await pg.evaluate('j=>TQC.setup(j)', job)
             if errs:
                 raise RuntimeError('; '.join(errs))
@@ -79,7 +115,7 @@ async def render(job, out, clipe=None, quadros=(), capa=None):
                     c = f['clipes'][k % len(f['clipes'])]
                     ins += ['-stream_loop', '-1', '-i', c['arquivo']]
                     L = sg + (X if k < len(segs) - 1 else 0)
-                    fl.append(f"[{k}:v]trim=start={float(c.get('inicio', 0))},setpts=PTS-STARTPTS,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,"
+                    fl.append(f"[{k}:v]trim=start={float(c.get('inicio', 0))},setpts=PTS-STARTPTS,{recortes.get(c['arquivo'], '')}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,"
                               f"eq=brightness={f.get('brilho', -0.06)}:saturation={f.get('saturacao', 0.9)}:contrast=1.03,trim=duration={L:.3f},setpts=PTS-STARTPTS,format=yuv420p[c{k}]")
                 cur, off = 'c0', 0.0
                 for k in range(1, len(segs)):
@@ -98,7 +134,7 @@ async def render(job, out, clipe=None, quadros=(), capa=None):
                 # cobre a duração toda: se o clipe for curto, desacelera um pouco e depois faz vaivém
                 fonte = (total - ini) / vel
                 loop = fonte < dur
-                vf = (f"[0:v]trim=start={ini},setpts=(PTS-STARTPTS)/{vel},scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
+                vf = (f"[0:v]trim=start={ini},setpts=(PTS-STARTPTS)/{vel},{recortes.get(clipe, '')}scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
                       f"fps=30,eq=brightness={f.get('brilho', -0.06)}:saturation={f.get('saturacao', 0.9)}:contrast=1.03,"
                       f"vignette=PI/5")
                 if loop:
@@ -124,7 +160,7 @@ async def render(job, out, clipe=None, quadros=(), capa=None):
     if capa is not None:
         tc = job.get('capa_t', min(dur * 0.45, dur - 0.5))
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', str(tc), '-i', out, '-frames:v', '1', '-q:v', '2', capa])
-    return {'dur': dur, 'quadros': n, 'capa_t': info.get('capa_t'), 'cortes': info.get('cortes') or [0, dur], 'avisos': info.get('avisos') or []}
+    return {'dur': dur, 'quadros': n, 'capa_t': info.get('capa_t'), 'cortes': info.get('cortes') or [0, dur], 'avisos': (info.get('avisos') or []) + avisos}
 
 
 async def info(job):
