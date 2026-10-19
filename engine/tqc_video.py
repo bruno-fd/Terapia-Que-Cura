@@ -9,8 +9,8 @@
   python3 tqc_video.py render JOB.json SAIDA.mp4 [--clipe CLIPE.mp4] [--db DIR]
       Renderiza, compõe a trilha própria (JOB.trilha.humor) e junta ao vídeo; salva a capa
       (SAIDA.capa.jpg) e uma folha de conferência (SAIDA.folha.jpg). Com --db, evita repetir trilhas já usadas.
-      Se o vídeo passar de ~1,9 MB, gera também SAIDA.envio.mp4: cópia menor só para o envio ao Drive
-      (o conector do Drive falha com arquivos maiores). O caminho sai em "envio" no SAIDA.mp4.json.
+      Gera também SAIDA.envio.mp4: cópia pequena (até ~680 KB, 720x1280) só para o envio ao Drive
+      (o app só manda ao Drive arquivos embutidos na chamada, até ~700 KB). O caminho sai em "envio" no SAIDA.mp4.json.
   python3 tqc_video.py envio VIDEO.mp4 [--out SAIDA.envio.mp4]
       Gera só a cópia de envio de um vídeo pronto.
   python3 tqc_video.py trilha VIDEO.mp4 JOB.json [--db DIR] [--humor H] [--out SAIDA.mp4]
@@ -285,35 +285,36 @@ def render(job_path, out, clipe=None, db=None):
     subprocess.run([sys.executable, os.path.join(AQUI, 'folha.py'), out, base + '.folha.jpg', '8', '270'], check=True, capture_output=True)
     ev = envio(out)
     info = {'dur': round(dur, 2), 'capa_ms': int(tc * 1000), 'bytes': os.path.getsize(out), 'capa': base + '.capa.jpg', 'folha': base + '.folha.jpg', 'trilha': trilha, 'avisos': r.get('avisos') or [],
-            **({'envio': ev, 'envio_bytes': os.path.getsize(ev)} if ev else {})}
+            'envio': ev, 'envio_bytes': os.path.getsize(ev)}
     json.dump(info, open(out + '.json', 'w'))
     return info
 
 
-ENVIO_MAX = 1_900_000  # o conector do Google Drive falha com vídeos de ~3,4 MB (base64 de ~4,5 MB); a cópia de envio fica abaixo de ~1,9 MB
+ENVIO_MAX = 680_000  # o app só consegue mandar ao Drive um arquivo embutido na chamada (limite de 1 MB com base64); anexo ($file) é recusado (415)
 
 
 def envio(src, out=None, alvo=ENVIO_MAX):
-    """Cópia menor do vídeo, só para o envio ao Drive (que o Metricool publica). Mesma imagem 1080x1920 e o mesmo som,
-    com bitrate calculado para caber em `alvo` bytes (duas passadas). Devolve o caminho, ou None se o original já cabe."""
-    if os.path.getsize(src) <= alvo:
-        return None
+    """Cópia pequena do vídeo, só para o envio ao Drive (que o Metricool publica): 720x1280, AAC 64k, sem edit list
+    (exigência do Instagram para Reels), moov no início, com bitrate calculado para caber em `alvo` bytes (duas passadas).
+    Sempre gera a cópia e devolve o caminho."""
     out = out or os.path.splitext(src)[0] + '.envio.mp4'
     dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', src], capture_output=True, text=True).stdout.strip() or 10)
-    fator = 0.93
+    fator, ab = 0.93, 64
     import tempfile
-    for _ in range(4):
-        vk = max(350, int(alvo * 8 / dur / 1000 * fator) - 96)
+    for _ in range(5):
+        vk = max(90, int(alvo * 8 / dur / 1000 * fator) - ab)
         with tempfile.TemporaryDirectory() as td:
             lg = os.path.join(td, 'p')
-            base = ['ffmpeg', '-y', '-loglevel', 'error', '-i', src, '-c:v', 'libx264', '-preset', 'slow', '-b:v', f'{vk}k', '-maxrate', f'{int(vk * 1.6)}k',
-                    '-bufsize', f'{vk * 2}k', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', '30', '-passlogfile', lg]
+            base = ['ffmpeg', '-y', '-loglevel', 'error', '-i', src, '-vf', 'scale=720:1280:flags=lanczos', '-c:v', 'libx264', '-preset', 'veryslow', '-tune', 'stillimage',
+                    '-b:v', f'{vk}k', '-maxrate', f'{vk * 2}k', '-bufsize', f'{vk * 4}k', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', '30', '-g', '300',
+                    '-passlogfile', lg]
             subprocess.run(base + ['-pass', '1', '-an', '-f', 'mp4', os.devnull], check=True)
-            subprocess.run(base + ['-pass', '2', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', out], check=True)
+            subprocess.run(base + ['-pass', '2', '-c:a', 'aac', '-b:a', f'{ab}k', '-use_editlist', '0', '-movflags', '+faststart', out], check=True)
         if os.path.getsize(out) <= alvo:
             return out
-        fator *= 0.85
-    return out
+        fator *= 0.88
+        ab = 48
+    raise SystemExit(f'a cópia de envio ficou com {os.path.getsize(out)} bytes, acima de {alvo}: vídeo longo demais para o envio ao Drive')
 
 
 def baixar(url, out):
